@@ -10,3 +10,12 @@
 #   flood the log with findings the harness itself provokes by design.
 export ASAN_OPTIONS="exitcode=86:abort_on_error=0:detect_leaks=0:allocator_may_return_null=1:log_path=stderr"
 export UBSAN_OPTIONS="exitcode=86:halt_on_error=1:print_stacktrace=1"
+
+# Without this, ASan/UBSan print raw addresses instead of function names
+# and source lines in crash reports. Ubuntu's llvm-21 package only installs
+# a versioned binary (llvm-symbolizer-21), not the plain "llvm-symbolizer"
+# name sanitizers look for on PATH by default, so it has to be pointed at
+# explicitly. Install it with: sudo apt install llvm-21
+if [[ -x /usr/lib/llvm-21/bin/llvm-symbolizer ]]; then
+  export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-21/bin/llvm-symbolizer
+fi
