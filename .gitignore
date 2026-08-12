@@ -1,6 +1,7 @@
 # .gitignore
 planning/
 planning-*.md
+info.md
 
 # Python
 __pycache__/
