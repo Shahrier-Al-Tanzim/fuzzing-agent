@@ -1,0 +1,5 @@
+# grammar/GRAMMAR_SOURCE.txt
+source:    https://github.com/antlr/grammars-v4/tree/master/toml
+files:     TomlLexer.g4, TomlParser.g4
+fetched:   2026-08-12
+describes: TOML v1.0.0

@@ -1,0 +1,12 @@
+title = "TOML Example"
+enabled = true
+port = 8080
+ratio = 0.5
+hex = 0xDEADBEEF
+octal = 0o755
+binary = 0b11010110
+big = 9223372036854775807
+neg = -17
+exp = 5e+22
+inf_val = inf
+nan_val = nan

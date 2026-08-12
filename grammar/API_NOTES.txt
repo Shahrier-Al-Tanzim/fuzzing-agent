@@ -1,0 +1,4 @@
+# grammar/API_NOTES.txt
+pinned commit exposes: both
+parse entrypoint:      toml_parse(char *conf, char *errbuf, int errbufsz)
+free:                  toml_free(toml_table_t*)
