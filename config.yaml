@@ -1,0 +1,33 @@
+# Central configuration. Every module reads this; nothing hardcodes these.
+
+harness:
+  binary: harness/build/toml_harness
+  timeout_seconds: 5          # assignment constraint: per-input timeout
+  max_input_bytes: 1048576    # must match MAX_INPUT in toml_harness.c
+
+  # Exit-code contract from Module 2. Changing these here without changing
+  # the C file will silently misclassify every run.
+  exit_accept: 0
+  exit_reject: 2
+  exit_usage: 64
+  exit_sanitizer: 86
+
+run:
+  max_examples: 500           # assignment constraint: per iteration
+  wall_clock_cap_seconds: 600 # assignment constraint: 10 min backstop
+
+loop:
+  max_iterations: 5           # assignment constraint
+  acceptance_rate_floor: 0.20 # below this, the generator is broken (Module 5)
+
+llm:
+  base_url: http://localhost:11434
+  model: qwen2.5-coder:7b
+  temperature: 0.3            # low: we want valid Python, not creativity
+  num_ctx: 16384
+  request_timeout_seconds: 300
+
+paths:
+  logs: pipeline/logs
+  state: agent/state
+  crashes: triage/reports
