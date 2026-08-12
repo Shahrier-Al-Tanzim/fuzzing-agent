@@ -1,2 +1,23 @@
+# .gitignore
 planning/
 planning-*.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.hypothesis/
+
+# Build output
+harness/build/
+harness/vendor/
+*.o
+*.so
+a.out
+
+# Run artifacts
+**/logs/*.jsonl
+agent/state/
+triage/reports/
+!**/logs/.gitkeep
