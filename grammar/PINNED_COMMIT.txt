@@ -1,0 +1,5 @@
+# grammar/PINNED_COMMIT.txt
+repository: https://github.com/cktan/tomlc99
+commit:     5221b3d3d66c25a1dc6f0372b4f824f1202fe398
+date:       2023-09-30
+chosen because: predates current HEAD; fixed target for reproducible builds; older version ensures target bugs are present

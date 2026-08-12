@@ -1,0 +1,10 @@
+basic = "escaped \" quote and \n newline and é unicode"
+literal = 'no \escapes\ here'
+multiline = """
+line one
+line two \
+continued
+"""
+multiline_literal = '''
+raw \n stays literal
+'''

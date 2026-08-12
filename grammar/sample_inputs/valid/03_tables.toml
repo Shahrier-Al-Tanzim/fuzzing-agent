@@ -1,0 +1,14 @@
+[server]
+host = "localhost"
+
+[server.tls]
+enabled = true
+
+[[products]]
+name = "hammer"
+
+[[products]]
+name = "nail"
+
+[inline]
+point = { x = 1, y = 2 }
