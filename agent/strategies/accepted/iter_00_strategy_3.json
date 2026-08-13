@@ -1,0 +1,56 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: Expected date but got min_value='1970-01-01' (type=str)",
+      "stats": {},
+      "tokens": 4917,
+      "seconds": 1.87
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "stats": {
+        "samples": 25,
+        "mean_len": 87.3,
+        "max_len": 306,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.275,
+        "top_rejects": [
+          "line 2: extra chars after value",
+          "line 1: extra chars after value",
+          "line 2: key exists"
+        ]
+      },
+      "tokens": 4816,
+      "seconds": 1.39
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 87.3,
+    "max_len": 306,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.275,
+    "top_rejects": [
+      "line 2: extra chars after value",
+      "line 1: extra chars after value",
+      "line 2: key exists"
+    ]
+  },
+  "usage": {
+    "model": "llama-3.3-70b-versatile",
+    "calls": 2,
+    "total_tokens": 9733,
+    "total_seconds": 3.3,
+    "usd_cost": 0.0
+  },
+  "generated_at": "2026-08-13T08:31:38.796076+00:00"
+}

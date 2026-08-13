@@ -21,13 +21,33 @@ loop:
   acceptance_rate_floor: 0.20 # below this, the generator is broken (Module 5)
 
 llm:
-  base_url: http://localhost:11434
+  base_url: auto
   model: qwen2.5-coder:7b
   temperature: 0.3            # low: we want valid Python, not creativity
   num_ctx: 16384
   request_timeout_seconds: 300
 
+  # 7B-model reliability budget. Each attempt re-prompts with the previous
+  # failure quoted back. 4 is empirical: attempts 1-2 fail often on
+  # formatting, by 3-4 the quoted error usually fixes it.
+  max_attempts: 4
+  # Examples drawn from a candidate strategy during validation gate 5.
+  validation_samples: 25
+  # Inputs actually run through the harness during validation gate 6.
+  validation_probe_examples: 40
+
+  # Which backend agent/seed.py uses when --provider isn't passed on the
+  # command line. ollama | groq. Currently groq: qwen2.5-coder:7b kept
+  # hitting a real reliability ceiling (see OBSERVATIONS.md Case 1) that
+  # Groq's larger model doesn't hit as often (Case 2). Switch back to
+  # ollama here, or to a new provider entirely, once an OpenAI key is
+  # available - --provider on the command line always overrides this.
+  provider: groq
+  groq_model: llama-3.3-70b-versatile
+
 paths:
   logs: pipeline/logs
   state: agent/state
   crashes: triage/reports
+  strategies: agent/strategies
+  prompts: agent/state/prompts
