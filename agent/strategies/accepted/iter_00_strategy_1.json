@@ -1,0 +1,65 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised TypeError: dates() got an unexpected keyword argument 'min_date'. Did you mean 'min_value'?",
+      "stats": {},
+      "tokens": 4862,
+      "seconds": 1.92
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "draw",
+      "error": "produced non-str values (['list']). Every example must be a `str` of TOML text - add .map() to join/format.",
+      "stats": {},
+      "tokens": 5137,
+      "seconds": 2.33
+    },
+    {
+      "attempt": 3,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "stats": {
+        "samples": 25,
+        "mean_len": 34.3,
+        "max_len": 81,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.4,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 2: key exists",
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)"
+        ]
+      },
+      "tokens": 4900,
+      "seconds": 12.83
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 34.3,
+    "max_len": 81,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.4,
+    "top_rejects": [
+      "line 1: missing =",
+      "line 2: key exists",
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)"
+    ]
+  },
+  "usage": {
+    "model": "llama-3.3-70b-versatile",
+    "calls": 3,
+    "total_tokens": 14899,
+    "total_seconds": 17.1,
+    "usd_cost": 0.0
+  },
+  "generated_at": "2026-08-13T07:25:56.513875+00:00"
+}

@@ -3,6 +3,9 @@ planning/
 planning-*.md
 info.md
 
+# Secrets - never commit
+.env
+
 # Python
 __pycache__/
 *.py[cod]

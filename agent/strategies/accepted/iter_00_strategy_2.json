@@ -1,0 +1,77 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised TypeError: dates() got an unexpected keyword argument 'min_date'. Did you mean 'min_value'?",
+      "stats": {},
+      "tokens": 4946,
+      "seconds": 1.86
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 0/40 (0%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: missing =', 'line 1: syntax error', 'line 1: invalid or missing key']. Fix the syntax causing these before adding more edge cases.",
+      "stats": {
+        "samples": 25,
+        "mean_len": 317.0,
+        "max_len": 1030,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.0,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: syntax error",
+          "line 1: invalid or missing key"
+        ]
+      },
+      "tokens": 4926,
+      "seconds": 1.61
+    },
+    {
+      "attempt": 3,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "stats": {
+        "samples": 25,
+        "mean_len": 12.5,
+        "max_len": 81,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.375,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: invalid or missing key",
+          "line 1: invalid key"
+        ]
+      },
+      "tokens": 4990,
+      "seconds": 13.86
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 12.5,
+    "max_len": 81,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.375,
+    "top_rejects": [
+      "line 1: missing =",
+      "line 1: invalid or missing key",
+      "line 1: invalid key"
+    ]
+  },
+  "usage": {
+    "model": "llama-3.3-70b-versatile",
+    "calls": 3,
+    "total_tokens": 14862,
+    "total_seconds": 17.3,
+    "usd_cost": 0.0
+  },
+  "generated_at": "2026-08-13T08:28:01.027554+00:00"
+}

@@ -1,0 +1,76 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised AttributeError: 'str' object has no attribute 'map'",
+      "stats": {},
+      "tokens": 5109,
+      "seconds": 2.41
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 2/40 (5%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: missing =', 'line 1: syntax error']. Fix the syntax causing these before adding more edge cases.",
+      "stats": {
+        "samples": 25,
+        "mean_len": 250.8,
+        "max_len": 1155,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.05,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: syntax error"
+        ]
+      },
+      "tokens": 4805,
+      "seconds": 1.35
+    },
+    {
+      "attempt": 3,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "stats": {
+        "samples": 25,
+        "mean_len": 12.6,
+        "max_len": 72,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.425,
+        "top_rejects": [
+          "line 1: invalid key",
+          "line 1: invalid or missing key",
+          "line 1: missing ="
+        ]
+      },
+      "tokens": 4952,
+      "seconds": 13.85
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 12.6,
+    "max_len": 72,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.425,
+    "top_rejects": [
+      "line 1: invalid key",
+      "line 1: invalid or missing key",
+      "line 1: missing ="
+    ]
+  },
+  "usage": {
+    "model": "llama-3.3-70b-versatile",
+    "calls": 3,
+    "total_tokens": 14866,
+    "total_seconds": 17.6,
+    "usd_cost": 0.0
+  },
+  "generated_at": "2026-08-13T08:41:33.424677+00:00"
+}
