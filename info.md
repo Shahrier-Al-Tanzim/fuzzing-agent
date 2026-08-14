@@ -293,3 +293,123 @@ compiled with ASan/UBSan checks baked in, if `toml_parse()` or any
 conversion function ever touches memory incorrectly, the program gets
 stopped right there — before it ever reaches its own `return` lines —
 with a report of exactly what went wrong.
+
+---
+
+## Stack trace / frame
+
+**What it means:** the list of function calls that were active at the
+exact moment a program crashed — "who called who," in order, leading up
+to the failure. Each single line of that list is called a **frame**.
+
+**Example from our project:** our known stack-overflow crash's trace
+looks like this near the top:
+```
+#0  malloc
+#1  expand toml.c:411
+#2  expand_arritem toml.c:436
+#3  create_array_in_array toml.c:882
+#4  parse_array toml.c:1057
+```
+Read bottom-to-top-ish as "how we got here": `parse_array` (at line 1057
+of the library's source) called `create_array_in_array`, which called
+`expand_arritem`, which called `expand`, which called `malloc` — and
+`malloc` is where the actual crash happened, because the recursive
+parsing had eaten all available stack space by that point. Our crash's
+raw trace actually has around 191-250 frames total, because
+`parse_array` calls itself over and over (recursion) — one frame per
+level of nesting in the input.
+
+---
+
+## Signature / fingerprint / digest
+
+**What it means:** a short code computed from a crash's stack trace,
+used to answer one question: "have I seen this exact bug before?" Two
+crashes with the same signature are treated as the same bug.
+
+**How it's built, in our project** (`triage/signature.py`):
+1. Read the crash type from the sanitizer's own error line (e.g.
+   `stack-overflow`).
+2. Pull every frame out of the raw stack trace.
+3. Throw away frames that aren't real library code — our own harness
+   code, and sanitizer-internal frames like
+   `__sanitizer::BufferedStackTrace::UnwindImpl`.
+4. If the same frame repeats many times in a row (which happens with
+   recursion), squash the whole run down to one entry.
+5. Keep only the first 5 frames left after that.
+6. Hash those 5 frames into a short code — the digest. Ours came out as
+   `939402a0547c` for the known crash, with the short label
+   `stack-overflow@malloc`.
+
+**Why steps 3 and 4 matter:** skipping either one would make the exact
+same real bug look like a different bug depending on tiny, irrelevant
+differences — which internal function the sanitizer happened to unwind
+through, or exactly how many times the recursion happened to repeat
+before running out of stack.
+
+---
+
+## Deduplication / bucket
+
+**What it means:** sorting a pile of crashing inputs into groups, where
+every crash in one group is believed to be the *same* underlying bug
+(same signature). Each group is called a **bucket**.
+
+**Why this matters:** fuzzing can find the same real bug dozens of
+times, in dozens of slightly different inputs. Without deduplication, a
+report would list "50 bugs" when it's actually 1 bug found 50 different
+ways. `triage/run_triage.py` prints this as, e.g., `"7 crashes -> 2
+unique bug(s)"` — that arrow is the entire point of this step.
+
+---
+
+## Minimization / delta debugging
+
+**What it means:** shrinking a crashing input down to the smallest
+version that still triggers the *exact same* bug (same signature, not
+just "still crashes somehow"). **Delta debugging** is the specific
+technique used for inputs that don't have a "generating strategy"
+attached anymore (e.g. one recovered from an old log, or made by hand)
+— it works by repeatedly trying to remove or shrink chunks of the raw
+text directly, keeping any change that still produces the same crash.
+
+**Example from our project:** the known crash's original input was
+120,006 bytes. Minimizing it produced different results on different
+runs — 15,409 bytes (87% smaller) one time, 30,005 bytes (75% smaller)
+another time, 27,418 bytes (77% smaller) a third time. All three are
+legitimate, correctly-verified reproducers; they landed at different
+sizes because of run-to-run variation in exactly where the recursion
+happens to run out of stack (see the next entry).
+
+---
+
+## Deterministic / flaky / unstable signature (verification)
+
+**What it means:** after minimizing a crash down, you have to
+double-check the smaller version still actually works reliably —
+re-running it a few times (3, in our project) and seeing what happens
+each time. There are three genuinely different possible outcomes:
+
+- **Deterministic** — crashed all 3 times, with the exact same
+  signature every time. The clean, ideal case.
+- **Flaky** — crashed only *some* of the 3 runs, not all. A real,
+  interesting finding, but must be reported honestly as
+  "sometimes," not claimed to always happen.
+- **Unstable signature** — crashed *all 3* times, but the exact stack
+  signature wasn't identical every time (e.g. matched on 2 of the 3, or
+  1 of the 3). This is different from flaky — the crash itself is fully
+  reliable, it's specifically the fingerprint of it that varies slightly
+  run to run.
+
+**Real example from our project:** the known stack-overflow crash
+showed the "unstable signature" outcome on more than one separate run —
+2 out of 3 matched once, then 1 out of 3 matched on a different run,
+while crashing 3 out of 3 times both times. This is a genuine, repeated
+characteristic of this specific bug (it plausibly sits right at a
+recursion-depth threshold sensitive to small differences between runs),
+not a one-off glitch — and a real bug in our own verification code
+originally mislabeled this exact situation as "did not reproduce,"
+which was flatly wrong, since it reproduced every single time. Fixed by
+giving this outcome its own name instead of letting it fall through to
+a guess.

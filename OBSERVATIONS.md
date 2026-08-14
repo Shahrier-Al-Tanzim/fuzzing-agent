@@ -211,3 +211,40 @@ The **zero** in the last row is the real finding, not the pass count by itself. 
 ### Cost and speed, for the report
 
 All 22 Groq attempts combined: free tier, $0.00. Per-attempt latency ranged roughly 1.4s–25s (plus occasional rate-limit backoffs of a few seconds to tens of seconds, all handled automatically) — far faster than qwen's 20–115s per attempt on local CPU/GPU-shared inference. The free tier's actual constraint turned out to be a **daily** token quota, not the per-minute one: one API key was fully exhausted mid-session (a 2,693-second/~45-minute wait was reported), resolved by generating a second free key, after which the same prompt completed normally. Worth noting for the report as a practical limitation of relying on a free tier for repeated testing, separate from the model-quality question this case is actually about.
+
+---
+
+## Case 3: Crash-triage tooling — two real bugs found on first real use, plus a genuine finding about the crash itself
+
+**Date:** 2026-08-14
+**Module:** Module 6 (`triage/`), first real run against the known stack-overflow crash from Module 1 (`grammar/early_findings/01_array_nesting_stackoverflow.toml`)
+
+Both bugs below were invisible from reading the code alone — both only surfaced the first time `triage/run_triage.py` was actually run against a real crash and the output was read closely rather than just checked for "did it exit 0."
+
+### Bug 1: a sanitizer-internal frame wasn't filtered out
+
+`triage/signature.py`'s `ignore_frame_patterns` (in `config.yaml`) is supposed to drop any frame that isn't part of the actual library being tested — that's judgment call 2 from the module's design ("bucket on library frames only"). The very first real run put `__sanitizer::BufferedStackTrace::UnwindImpl` — AddressSanitizer's own internal stack-unwinding code, not program code at all — at the top of the signature. The ignore list already covered `__asan`/`__ubsan`-prefixed frames but had no entry for the separate `__sanitizer::` prefix, so this one frame slipped through and pushed the real `parse_array toml.c:1057` frame out of the kept top-5 window entirely.
+
+| | Before fix | After fix |
+|---|---|---|
+| `short` label | `stack-overflow@__sanitizer::BufferedStackTrace::UnwindImpl` | `stack-overflow@malloc` |
+| Top frame kept | sanitizer-internal noise | real library frame |
+| `digest` | `38e1a362e477` | `939402a0547c` |
+
+Fixed by adding `"__sanitizer"` to `ignore_frame_patterns`. One line, but it directly restored the judgment call the module's whole design depends on — without it, the fingerprint was describing sanitizer internals, not the library's bug.
+
+### Bug 2: a crash that reproduced 100% of the time was labeled "did not reproduce"
+
+`triage/verify.py`'s `VerifyResult` only named two outcomes: **deterministic** (crashed every run, identical signature every time) and **flaky** (crashed some runs, not others). A third, real outcome showed up in actual data: the minimized reproducer crashed on **all 3** verification runs, but the exact stack signature wasn't identical every time (`crashes == runs` but `signature_matches < runs`). Since the code only recognized two named outcomes, this third one silently fell through `describe()`'s final `else` branch — written under the unstated assumption that "not deterministic, not flaky" could only mean zero crashes — producing the literally false message `"DID NOT REPRODUCE (0/3)"` on an input that crashed 3 times out of 3. `run_triage.py`'s `_render_report()` had an independent, duplicated copy of the same two-outcome logic inline, so the same bug existed in two places at once.
+
+**The fix, and the more important part of it:**
+- A real third state, `unstable_signature`, was named and described accurately (`"crashed every run (3/3) but signature unstable (2/3 matched)"`).
+- The fallback case was changed from a silent guess to a loud failure: `describe()` now explicitly checks for `crashes == 0` as the true "did not reproduce" case, and anything matching *none* of the four known states raises `AssertionError` with the exact numbers involved, instead of quietly producing another plausible-looking wrong label. The four states are provably exhaustive today (`signature_matches <= crashes <= runs` always, by construction), but that proof depends on an invariant nothing enforces long-term — this way, if it's ever broken by a future change, the failure is immediate and visible instead of being a third silent occurrence of the same mistake.
+
+### The finding underneath the bug: this specific crash's signature is genuinely unstable
+
+This isn't just a tooling story. Re-running triage multiple times against the *identical* original 120,006-byte input produced a different `signature_matches` ratio each time — 2/3 matched on one run, 1/3 matched on another, both while still crashing 3/3 times. That's a real, repeatable characteristic of this particular stack-overflow bug, not a fluke of the fix: it plausibly sits right at a recursion-depth threshold sensitive to small run-to-run environment differences — the same kind of sensitivity that separately made `minimize.py`'s achieved reduction vary between runs (87% one time, 75% another, 0% a third). Worth a line in the final report as an observed property of this specific bug, distinct from the tooling bug that happened to reveal it.
+
+### Why this belongs in the report
+
+The assignment explicitly asks for documented normalization choices and judgment calls, not just a working pipeline. Both bugs here are exactly that kind of material: a concrete example of a normalization gap (frame filtering) and a concrete example of an incomplete state model being caught and fixed by choosing to fail loudly rather than silently — a defensible, explainable engineering decision, with the "why" traceable to a real defect it would have prevented.
