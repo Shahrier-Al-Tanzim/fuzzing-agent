@@ -24,5 +24,8 @@ a.out
 # Run artifacts
 **/logs/*.jsonl
 agent/state/
-triage/reports/
 !**/logs/.gitkeep
+
+# triage/reports/ is intentionally NOT ignored - it's the deduplicated,
+# minimized, verified crash evidence report/ARTIFACTS.md points at as a
+# deliverable, not disposable output like the raw logs above.

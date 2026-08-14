@@ -248,3 +248,68 @@ This isn't just a tooling story. Re-running triage multiple times against the *i
 ### Why this belongs in the report
 
 The assignment explicitly asks for documented normalization choices and judgment calls, not just a working pipeline. Both bugs here are exactly that kind of material: a concrete example of a normalization gap (frame filtering) and a concrete example of an incomplete state model being caught and fixed by choosing to fail loudly rather than silently — a defensible, explainable engineering decision, with the "why" traceable to a real defect it would have prevented.
+
+---
+
+## Case 4: the first full 5-iteration loop run — coverage climbed, but the proxy signal got gamed
+
+**Date:** 2026-08-14
+**Module:** Module 5 (`agent/loop.py`), first full `python -m agent.loop` run, Groq/`llama-3.3-70b-versatile`
+**Status: fixed.** The five fixes originally listed at the end of this case (as "not yet applied") have since been implemented and verified — see the updated section below. Left the original finding text as-is above this line so the before/after is visible; only the fix section itself was rewritten in place.
+
+### TL;DR
+
+- The one real success: **cumulative grammar coverage climbed every iteration — 18% → 26% → 32% → 40% → 47%.** That is the core evidence the feedback signal works, and it's genuine.
+- Everything else about this run is a problem, and none of it was visible from the console output alone:
+  - Only **9-11% of the configured 500 examples per iteration actually ran** (38, 43, 54, 44, 51) — the console printed "running 500 examples..." regardless, because that line is hardcoded to the config value, not the actual count.
+  - **Nesting depth never moved off 1**, across all five iterations, including in *rejected* documents — not merely "deep documents got rejected," the strategy structurally could not produce depth > 1 at all.
+  - **Generated documents shrank every iteration** (max bytes 285 → 87 → 69 → 43 → 48; mean 34 → 18 → 18 → 11 → 13), and the coverage gain came from generating more distinct *trivial* scalar values, not more structural complexity.
+  - `findings: 0` for all five iterations was therefore inevitable, not informative — the known stack-overflow bug needs ~48,000 levels of nesting, and this generator never exceeded 1.
+
+This is a close-to-textbook case of **a proxy signal being gamed**: coverage (the metric being optimized) went up, while the thing coverage was supposed to be a stand-in for (structural testing depth) went to essentially zero. Worth stating plainly in the report as exactly this — not hidden, not softened.
+
+### The example-count shortfall: two different root causes now observed, not one
+
+This is the **second time** a "fewer examples than configured" shortfall has been measured (see `planning/how/HOW_TO_RUN_EVERYTHING.md` Appendix A for the first), and the root cause this time is **demonstrably different**, not a repeat of the same bug:
+
+- **First observation** (an earlier, separately-generated `iter_00_strategy.py`, tested in isolation with the harness removed entirely): Hypothesis slowed and stopped early as documents grew large/deep, consistent with hitting an internal buffer limit on oversized generated values. ~145 examples in 123s, with visible slowdown (50 examples at 0s, 100 at 44s).
+- **This run** (`iter_00`-`iter_04_strategy.py` from the full loop): documents stayed *tiny* (max 285 bytes, shrinking to max 48 by iteration 4) — the opposite of "too large." Reading the actual generated code found the real cause here: several `st.text(...).filter(lambda x: x.startswith('"') and x.endswith('"'))`-style calls, asking Hypothesis to draw random text and then discard nearly all of it because it happens to start and end with a specific character. Hypothesis exhausts its own internal retry budget on these near-impossible filters and gives up well short of `max_examples`, independent of document size.
+
+Both are real, both produce the same visible symptom (way fewer than 500 examples logged), but they are not the same bug — one is "values too big," the other is "values statistically almost impossible to draw." Worth documenting as two distinct instances of the same category of problem (Hypothesis giving up early for a reason the loop's own console output never surfaces), not conflating them into one fix.
+
+### The depth-1 ceiling: `uses_recursion: True` was never actually true
+
+`agent/validator.py`'s recursion check is a pure text search over the generated source:
+```python
+RECURSION_MARKERS = ("st.recursive", "@composite", "@st.composite", "recursive(")
+...
+"uses_recursion": any(m in code for m in RECURSION_MARKERS),
+```
+It checks whether the string `@composite` appears anywhere in the file — not whether anything actually calls itself. The final strategy from this run (`agent/strategies/iter_04_strategy.py`) uses `@composite` throughout and reports `uses_recursion: True`, but reading the actual container functions shows none of them are self-referential:
+```python
+def array(draw):
+    elements = draw(st.lists(st.one_of(pair(), value()), ...))   # never array() itself
+def inline_table(draw):
+    pairs = draw(st.lists(pair(), ...))                          # never inline_table() itself
+```
+An array can never contain another array. This is why every generated document — accepted or rejected, all five iterations — never exceeded depth 1: the gate meant to catch exactly this ("the assignment grades whether recursion was flattened," per `prompts.py`'s own comment) cannot actually detect a flattened container, because it never inspects structure, only source text.
+
+### The feedback loop was answered with dead code
+
+The final strategy defines `quoted_key()` and `dotted_key()` — functions that only make sense as a direct response to feedback directives asking the model to "generate `quoted_key`" / "generate `dotted_key`," since those exact names match the missing-productions list verbatim. Neither function is ever called from `document()`, `pair()`, or `value()`. The model appeared to respond to the feedback (it wrote code with the right names) without the response doing anything (the code is unreachable), so those productions correctly kept showing up as missing every subsequent iteration, and the model kept adding more dead functions rather than wiring the existing ones in.
+
+### Fixes applied
+
+All five, verified working before the next real loop run was attempted:
+
+1. **Prompt rule 9** (`agent/prompts.py`'s `STRATEGY_CONTRACT`): forbids `.filter()` on `st.text()` for shape/prefix/suffix constraints, with the exact failing pattern and a corrected `.map()`-based replacement shown side by side — the same worked-example technique that fully fixed rule 6 in Module 4 (Case 1), used here on a different failure class.
+2. **Prompt rule 10**: containers must be genuinely self-referential — `array()`'s element strategy must include `array()`/`inline_table()` themselves, with the exact flat (non-nesting) pattern from the real generated code shown as the thing *not* to do.
+3. **Validator fix** (`agent/validator.py`, gate 5): `RECURSION_MARKERS`'s text-search was deleted entirely. `uses_recursion` is now computed from the *drawn samples* — `pipeline.features.extract_features()` (already used elsewhere in the project, not reimplemented) measures each sample's actual bracket depth, and `uses_recursion` is `True` only if some sample actually exceeded depth 1. Verified directly: a hand-written strategy reproducing the exact Case 4 bug (uses `@composite`, never nests) now correctly reports `uses_recursion: False, sample_max_depth: 1`; a genuinely self-referential one reports `True, sample_max_depth: 12`. The old check would have reported `True` for both.
+4. **Console fix** (`agent/loop.py`): now prints "running up to N examples..." beforehand and the real `len(records)` afterward, with an explicit `!!` warning line (pointing back at this case) whenever the actual count falls short of the configured cap — this can no longer be invisible from the terminal.
+5. **Log-contamination fix** (`agent/loop.py`, `run_iteration()`): each iteration's `.jsonl` log is now deleted before that iteration runs, so re-running the same iteration number replaces its log instead of appending a second strategy's records onto the first's (this was a targeted fix inside `agent/loop.py`, not a change to `RunLogger` itself, which correctly still appends for Module 3's baseline runs). The existing contaminated `pipeline/logs/iteration_*.jsonl` files (185 mixed records) were deleted so the next run starts clean.
+
+**Not changed:** whether a flat strategy should now be treated as a hard validation failure (gate 5 rejecting it outright) rather than an accurately-reported statistic. The fix makes the report honest; it doesn't yet make flatness un-passable. Worth deciding explicitly before the next full run, not by default.
+
+### Why this belongs in the report
+
+This is arguably the single most report-worthy finding in the whole project so far. The assignment explicitly warns against a proxy signal that can be gamed, and this run demonstrated exactly that failure mode with real numbers: coverage climbing while the generator quietly got structurally simpler, not more complex. Catching it, tracing it to two specific code defects (a prompt gap and a validator gap that let the defect hide), and fixing and verifying both is stronger evidence of understanding the signal's limitations than a run that happened not to hit this failure mode at all.

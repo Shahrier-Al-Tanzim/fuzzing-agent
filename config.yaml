@@ -30,7 +30,7 @@ llm:
   # 7B-model reliability budget. Each attempt re-prompts with the previous
   # failure quoted back. 4 is empirical: attempts 1-2 fail often on
   # formatting, by 3-4 the quoted error usually fixes it.
-  max_attempts: 4
+  max_attempts: 8
   # Examples drawn from a candidate strategy during validation gate 5.
   validation_samples: 25
   # Inputs actually run through the harness during validation gate 6.

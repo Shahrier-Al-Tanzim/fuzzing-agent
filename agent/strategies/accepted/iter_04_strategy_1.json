@@ -1,0 +1,47 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "produced non-str values (['list']). Every example must be a `str` of TOML text - add .map() to join/format.",
+      "tokens": 6294,
+      "seconds": 2.76,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 6229,
+      "seconds": 2.35,
+      "stats": {
+        "samples": 25,
+        "mean_len": 24.0,
+        "max_len": 123,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.35,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: invalid key",
+          "line 1: invalid or missing key"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 24.0,
+    "max_len": 123,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.35,
+    "top_rejects": [
+      "line 1: missing =",
+      "line 1: invalid key",
+      "line 1: invalid or missing key"
+    ]
+  }
+}
