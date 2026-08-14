@@ -1,81 +1,54 @@
 """Generated strategy - iteration 0, attempt 3.
 accepted: False
-generated: 2026-08-13T07:59:12.899675+00:00
+generated: 2026-08-13T11:54:02.162843+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
 @composite
-def int_value(draw):
-    return str(draw(st.integers(min_value=-2**63, max_value=2**63-1)))
-
-@composite
-def float_value(draw):
-    return str(draw(st.floats(min_value=-1e100, max_value=1e100)))
-
-@composite
-def bool_value(draw):
-    return str(draw(st.sampled_from([True, False])))
-
-@composite
-def string_value(draw):
-    return draw(st.text(max_size=100))
-
-@composite
 def key(draw):
-    return draw(st.text(max_size=100, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'))
+    return draw(st.one_of(
+        st.text(min_size=1, max_size=20).filter(lambda s: s.isidentifier()),
+        st.text(min_size=2, max_size=20).filter(lambda s: s.startswith('"') and s.endswith('"')),
+        st.text(min_size=2, max_size=20).filter(lambda s: s.startswith("'") and s.endswith("'"))
+    ))
+
+@composite
+def value(draw):
+    return draw(st.one_of(
+        st.text(min_size=1, max_size=20),
+        st.integers(min_value=-1000000, max_value=1000000).map(str),
+        st.floats(min_value=-1000000, max_value=1000000).map(str),
+        st.sampled_from(["true", "false"]),
+        st.sampled_from(["inf", "-inf", "nan"])
+    ))
 
 @composite
 def pair(draw):
-    k = draw(key())
-    v = draw(st.one_of(int_value(), float_value(), bool_value(), string_value()))
-    return (k, v)
+    return (draw(key()), draw(value()))
 
 @composite
-def table(draw, max_size=10):
-    pairs = draw(st.lists(pair(), min_size=0, max_size=max_size))
-    return pairs
+def array(draw):
+    return draw(st.lists(value(), min_size=0, max_size=10))
 
 @composite
-def array(draw, max_size=10):
-    values = draw(st.lists(st.one_of(int_value(), float_value(), bool_value(), string_value()), min_size=0, max_size=max_size))
-    return values
+def inline_table(draw):
+    return draw(st.lists(pair(), min_size=0, max_size=10))
 
 @composite
-def inline_table(draw, max_size=10):
-    pairs = draw(st.lists(pair(), min_size=0, max_size=max_size))
-    return pairs
+def table(draw):
+    return draw(st.lists(pair(), min_size=0, max_size=10))
 
 @composite
-def document(draw, max_size=10):
-    elements = draw(st.lists(st.one_of(pair(), table(), array(), inline_table()), min_size=0, max_size=max_size))
-    return elements
+def document(draw):
+    elements = []
+    for _ in range(draw(st.integers(min_value=0, max_value=10))):
+        elements.append(draw(st.one_of(
+            pair().map(lambda p: f"{p[0]} = {p[1]}"),
+            table().map(lambda t: "[table]\n" + "\n".join(f"{k} = {v}" for k, v in t)),
+            inline_table().map(lambda t: "{ " + ", ".join(f"{k} = {v}" for k, v in t) + " }"),
+            array().map(lambda a: "[" + ", ".join(a) + "]")
+        )))
+    return "\n".join(elements)
 
-@composite
-def toml_string(draw):
-    elements = draw(document())
-    result = []
-    for element in elements:
-        if isinstance(element, tuple):
-            result.append(f"{element[0]} = {element[1]}")
-        elif isinstance(element, list) and all(isinstance(x, tuple) for x in element):
-            result.append("{")
-            for pair in element:
-                result.append(f"  {pair[0]} = {pair[1]}")
-            result.append("}")
-        elif isinstance(element, list) and all(isinstance(x, str) for x in element):
-            result.append("[")
-            for value in element:
-                result.append(f"  {value}")
-            result.append("]")
-        elif isinstance(element, list) and all(isinstance(x, list) for x in element):
-            result.append("[")
-            for inner_list in element:
-                result.append("  [")
-                for value in inner_list:
-                    result.append(f"    {value}")
-                result.append("  ]")
-            result.append("]")
-    return "\n".join(result)
-
-toml_strategy = toml_string()
+toml_strategy = document()
