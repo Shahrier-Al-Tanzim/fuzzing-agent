@@ -30,7 +30,6 @@ from pipeline.config import load
 
 ALLOWED_IMPORTS = {"hypothesis", "hypothesis.strategies"}
 REQUIRED_EXPORT = "toml_strategy"
-RECURSION_MARKERS = ("st.recursive", "@composite", "@st.composite", "recursive(")
 
 
 @dataclass
@@ -132,11 +131,24 @@ def validate_strategy(code: str, probe: bool = True) -> ValidationResult:
             f"produced non-str values ({sorted(set(non_str))}). Every example "
             "must be a `str` of TOML text - add .map() to join/format.")
 
+    # Whether recursion is real, not just present in the source. A strategy
+    # can use @composite throughout and still never let a container hold
+    # another instance of itself - Case 4 in OBSERVATIONS.md found exactly
+    # that: `uses_recursion` reported True from a text search for
+    # "@composite" while every generated document, across an entire 5
+    # -iteration run, stayed at nesting depth 1. Checking the *drawn samples*
+    # instead is the actual, structural question: did this strategy ever
+    # produce something nested more than one level deep?
+    from pipeline.features import extract_features
+    sample_max_depth = max(
+        (extract_features(s)["max_depth"] for s in samples), default=0)
+
     stats = {
         "samples": len(samples),
         "mean_len": round(sum(len(s) for s in samples) / max(len(samples), 1), 1),
         "max_len": max((len(s) for s in samples), default=0),
-        "uses_recursion": any(m in code for m in RECURSION_MARKERS),
+        "sample_max_depth": sample_max_depth,
+        "uses_recursion": sample_max_depth > 1,
     }
 
     if not probe:

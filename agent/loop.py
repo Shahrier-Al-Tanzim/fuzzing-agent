@@ -82,6 +82,16 @@ def run_iteration(iteration: int, strategy, state: LoopState) -> tuple[list, int
     max_examples = cfg.get("run.max_examples", 500)
     wall_cap = cfg.get("run.wall_clock_cap_seconds", 600)
 
+    # RunLogger appends - correct for Module 3's baseline runs, wrong here:
+    # re-running this same iteration must replace its log, not mix a new
+    # strategy's records in with a previous strategy's (see OBSERVATIONS.md
+    # Case 4 - iteration_00.jsonl held 185 records from two different
+    # strategies before this fix). Each iteration's log represents exactly
+    # one strategy's run.
+    log_path = load().path("paths.logs") / f"iteration_{iteration:02d}.jsonl"
+    if log_path.exists():
+        log_path.unlink()
+
     runner = HarnessRunner(iteration=iteration)
     records: list = []
     novel = 0
@@ -176,9 +186,22 @@ def main() -> int:
             current_code = code
 
         # --- run ---
-        print(f"  running {cfg.get('run.max_examples', 500)} examples...")
+        configured_max = cfg.get('run.max_examples', 500)
+        print(f"  running up to {configured_max} examples...")
         strategy = load_strategy_object(iteration)
         records, novel = run_iteration(iteration, strategy, state)
+        if len(records) < configured_max:
+            # Hypothesis can stop well short of max_examples with no error
+            # at all - e.g. a near-impossible .filter() exhausting its
+            # retry budget (OBSERVATIONS.md Case 4). The old version of this
+            # print always showed the configured cap regardless of what
+            # actually ran, which hid that finding until someone counted
+            # the JSONL log lines by hand.
+            print(f"  !! only {len(records)}/{configured_max} examples "
+                  "actually ran - Hypothesis stopped early (a strict "
+                  ".filter() is the usual cause; see OBSERVATIONS.md Case 4)")
+        else:
+            print(f"  ran {len(records)} examples")
 
         # --- summarize ---
         summary = summarize_iteration(records, state, novel)
