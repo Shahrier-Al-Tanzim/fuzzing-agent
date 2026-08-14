@@ -119,3 +119,43 @@ def build_seed_prompt() -> str:
         grammar_context=grammar_context(),
         contract=STRATEGY_CONTRACT,
     )
+
+
+REFINE_TEMPLATE = """\
+You are improving an existing Hypothesis strategy that fuzzes the C library
+`tomlc99`. Below are the grammar, the current strategy, and measured results
+from running it.
+
+{grammar_context}
+
+## Current strategy (iteration {prev_iteration})
+
+```python
+{current_code}
+```
+
+{feedback}
+
+## Your task
+
+Produce a REVISED strategy that addresses the priority list above. Keep what
+is working - do not rewrite from scratch, and do not drop constructs that are
+already being generated successfully. Keep using `st.recursive`/`@composite`
+for recursive productions.
+
+{contract}
+
+Reply now with only the ```python block."""
+
+
+def build_refine_prompt(current_code: str, feedback: str,
+                        prev_iteration: int) -> str:
+    return REFINE_TEMPLATE.format(
+        grammar_context=grammar_context(),
+        current_code=current_code,
+        feedback=feedback,
+        prev_iteration=prev_iteration,
+        contract=STRATEGY_CONTRACT,
+    )
+
+    
