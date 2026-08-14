@@ -249,6 +249,8 @@ This isn't just a tooling story. Re-running triage multiple times against the *i
 
 The assignment explicitly asks for documented normalization choices and judgment calls, not just a working pipeline. Both bugs here are exactly that kind of material: a concrete example of a normalization gap (frame filtering) and a concrete example of an incomplete state model being caught and fixed by choosing to fail loudly rather than silently — a defensible, explainable engineering decision, with the "why" traceable to a real defect it would have prevented.
 
+**Addendum, 2026-08-14:** the exact same bug — the two-state `deterministic`/`flaky` model missing the `unstable_signature` case — was found a *third* time, independently, in `report/generate_artifacts.py`'s `crash_table()` while checking Module 7. That file re-derived the same verification-status logic inline instead of reading `metadata.json`'s already-fixed `description` field, and reintroduced the identical mislabeling bug in the process. It was dormant only by coincidence (the crash happened to read as `deterministic: True` at the time), not because the code was correct. Fixed the same way: read the shared `description` field, with a fail-loud fallback rather than a re-derived guess. The recurrence itself is the finding — it's evidence this specific mistake (re-deriving state logic instead of reusing a single computed source of truth) isn't a one-off, but a pattern worth watching for anywhere verification status gets displayed.
+
 ---
 
 ## Case 4: the first full 5-iteration loop run — coverage climbed, but the proxy signal got gamed
