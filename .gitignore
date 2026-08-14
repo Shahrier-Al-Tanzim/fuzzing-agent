@@ -1,7 +1,7 @@
 # .gitignore
 planning/
 planning-*.md
-info.md
+
 
 # Secrets - never commit
 .env
