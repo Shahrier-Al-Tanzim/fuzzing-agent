@@ -51,3 +51,37 @@ paths:
   crashes: triage/reports
   strategies: agent/strategies
   prompts: agent/state/prompts
+
+
+features:
+  # Depth buckets reported to the model. The top bucket is deliberately far
+  # beyond anything a normal document reaches - the known stack-overflow
+  # needs ~48k, so "deep" here means "heading in that direction", not "safe".
+  depth_buckets: [0, 1, 2, 3, 5, 8, 16, 32, 64]
+  # Reject messages shown back to the model per iteration.
+  top_reject_messages: 5
+  # Productions listed as "missing" in one prompt. Listing all 30 produces a
+  # scattershot retry; 8 produces a focused one.
+  max_missing_shown: 8
+
+triage:
+  # Frames kept in a signature, after normalization. 5 is the usual choice:
+  # enough to separate distinct bugs, few enough that an unrelated deeper
+  # call path does not split one bug into several.
+  signature_frames: 5
+  # Collapse runs of identical consecutive frames before hashing. Required
+  # for recursion bugs - see the planning doc.
+  collapse_recursive_frames: true
+  # Ignore frames from our own harness; bucket on library frames only.
+  ignore_frame_patterns:
+    - "toml_harness"
+    - "__asan"
+    - "__ubsan"
+    - "__sanitizer"   # e.g. __sanitizer::BufferedStackTrace::UnwindImpl -
+                       # ASan's own stack-unwinding internals, not our code
+    - "libc_start"
+    - "_start"
+  # Times a minimized reproducer must crash in a row to be called deterministic.
+  verify_runs: 3
+  # Safety cap on minimization work.
+  minimize_max_steps: 400
