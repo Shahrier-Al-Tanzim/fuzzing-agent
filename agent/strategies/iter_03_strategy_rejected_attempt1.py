@@ -1,6 +1,6 @@
-"""Generated strategy - iteration 1, attempt 1.
-accepted: True
-generated: 2026-08-15T09:49:37.204378+00:00
+"""Generated strategy - iteration 3, attempt 1.
+accepted: False
+generated: 2026-08-15T09:51:12.312828+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
@@ -17,6 +17,29 @@ def key(draw):
 def dotted_key(draw):
     parts = draw(st.lists(key(), min_size=2, max_size=5))
     return ".".join(parts)
+
+@composite
+def escape_sequence(draw):
+    return draw(st.one_of(
+        st.text(min_size=1, max_size=1).map(lambda x: f'\\{x}'),
+        st.sampled_from(['\\b', '\\f', '\\n', '\\r', '\\t'])
+    ))
+
+@composite
+def unicode_escape(draw):
+    return draw(st.sampled_from(['\\u', '\\U']).map(lambda x: f'{x}{draw(st.text(min_size=4, max_size=4))}'))
+
+@composite
+def hex_int(draw):
+    return draw(st.text(min_size=1, max_size=10).map(lambda x: f'0x{x}'))
+
+@composite
+def inf(draw):
+    return draw(st.sampled_from(['inf', '-inf']))
+
+@composite
+def nan(draw):
+    return draw(st.sampled_from(['nan', '-nan']))
 
 @composite
 def value(draw):
@@ -41,6 +64,11 @@ def value(draw):
                   st.integers(0, 23), st.integers(0, 59), st.integers(0, 59),
                   st.integers(0, 999999), st.sampled_from(['Z', '+00:00', '-00:00']))
             .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}.{t[6]:06d}{t[7]}"),
+        hex_int(),
+        inf(),
+        nan(),
+        escape_sequence(),
+        unicode_escape(),
         array(),
         inline_table(),
         st.text(min_size=2, max_size=10).map(lambda x: f'"{x}"'),
@@ -59,6 +87,7 @@ def value(draw):
         st.integers(min_value=0, max_value=999999).map(lambda x: f".{x:06d}-00:00"),
         st.integers(min_value=0, max_value=999999).map(lambda x: f".{x:06d}Z+00:00"),
         st.integers(min_value=0, max_value=999999).map(lambda x: f".{x:06d}Z-00:00"),
+        st.integers(min_value=-2**63, max_value=2**63-1).map(lambda x: f"{x:020d}"),
     ))
 
 @composite
@@ -88,5 +117,22 @@ def table(draw):
 def document(draw):
     elements = draw(st.lists(st.one_of(pair(), table()), min_size=0, max_size=10))
     return "\n".join(elements)
+
+@composite
+def escape_sequence_value(draw):
+    return draw(st.text(min_size=1, max_size=1).map(lambda x: f'\\{x}'))
+
+@composite
+def unicode_escape_value(draw):
+    return draw(st.sampled_from(['\\u', '\\U']).map(lambda x: f'{x}{draw(st.text(min_size=4, max_size=4))}'))
+
+@composite
+def int_underscore_value(draw):
+    return draw(st.integers(min_value=-2**63, max_value=2**63-1).map(lambda x: f"{x:020d}"))
+
+@composite
+def trailing_comma_inline_table(draw):
+    pairs = draw(st.lists(st.tuples(st.one_of(key(), dotted_key()), value()), min_size=0, max_size=10))
+    return f"{{{', '.join(f'{k} = {v}' for k, v in pairs)}},"
 
 toml_strategy = document()

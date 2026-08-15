@@ -1,41 +1,40 @@
 {
-  "iteration": 1,
   "attempts": [
     {
       "attempt": 1,
       "ok": true,
       "stage": "acceptance",
       "error": "",
-      "tokens": 8163,
-      "seconds": 20.15,
+      "tokens": 7838,
+      "seconds": 2.62,
       "stats": {
         "samples": 25,
-        "mean_len": 45.2,
-        "max_len": 125,
-        "sample_max_depth": 2,
+        "mean_len": 55.4,
+        "max_len": 202,
+        "sample_max_depth": 3,
         "uses_recursion": true,
         "probe_examples": 40,
-        "acceptance_rate": 0.5,
+        "acceptance_rate": 0.45,
         "top_rejects": [
           "line 2: key exists",
-          "line 2: invalid char U+000c",
-          "line 1: invalid char U+000c"
+          "line 1: invalid char U+0015",
+          "line 1: extra chars after value"
         ]
       }
     }
   ],
   "stats": {
     "samples": 25,
-    "mean_len": 45.2,
-    "max_len": 125,
-    "sample_max_depth": 2,
+    "mean_len": 55.4,
+    "max_len": 202,
+    "sample_max_depth": 3,
     "uses_recursion": true,
     "probe_examples": 40,
-    "acceptance_rate": 0.5,
+    "acceptance_rate": 0.45,
     "top_rejects": [
       "line 2: key exists",
-      "line 2: invalid char U+000c",
-      "line 1: invalid char U+000c"
+      "line 1: invalid char U+0015",
+      "line 1: extra chars after value"
     ]
   }
 }

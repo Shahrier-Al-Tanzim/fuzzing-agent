@@ -15,6 +15,7 @@ from agent.extract import extract_python
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
 from agent.prompts import SYSTEM_PROMPT, build_seed_prompt
+from agent.run_history import log_attempt
 from agent.strategy_store import save_strategy
 from agent.validator import validate_strategy
 from pipeline.config import load
@@ -59,6 +60,11 @@ def generate_validated_strategy(iteration: int = 0, probe: bool = True,
             "tokens": resp.total_tokens,
             "seconds": resp.duration_s,
         })
+        log_attempt(source="seed", iteration=iteration, attempt=attempt,
+                    ok=result.ok, stage=result.stage, error=result.error,
+                    tokens=resp.total_tokens, seconds=resp.duration_s,
+                    provider=provider, model=client.model,
+                    stats=result.stats)
 
         if verbose:
             print(f"    tokens={resp.total_tokens} time={resp.duration_s}s")

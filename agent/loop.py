@@ -31,6 +31,7 @@ from agent.extract import extract_python
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
 from agent.prompts import SYSTEM_PROMPT, build_refine_prompt, build_seed_prompt
+from agent.run_history import log_attempt
 from agent.strategy_store import (load_strategy_code, load_strategy_object,
                                   save_strategy)
 from agent.summarize import render_feedback, summarize_iteration
@@ -50,7 +51,7 @@ Fix exactly that problem. Reply again with only one ```python block."""
 
 
 def _generate(client: OllamaClient | GroqClient, prompt: str, iteration: int,
-              max_attempts: int) -> tuple[str | None, dict]:
+              max_attempts: int, provider: str = "") -> tuple[str | None, dict]:
     """Prompt → validated code. Retries with the validator error quoted back."""
     attempts: list[dict] = []
     base = prompt
@@ -63,12 +64,18 @@ def _generate(client: OllamaClient | GroqClient, prompt: str, iteration: int,
             "error": result.error[:300], "tokens": resp.total_tokens,
             "seconds": resp.duration_s, "stats": result.stats,
         })
+        log_attempt(source="loop", iteration=iteration, attempt=attempt,
+                    ok=result.ok, stage=result.stage, error=result.error,
+                    tokens=resp.total_tokens, seconds=resp.duration_s,
+                    provider=provider, model=client.model,
+                    stats=result.stats)
         print(f"    attempt {attempt}: "
               f"{'PASS' if result.ok else 'FAIL ' + result.stage} "
               f"({resp.total_tokens} tok, {resp.duration_s}s)")
         if result.ok:
             save_strategy(iteration, code, accepted=True, attempt=attempt,
-                          meta={"attempts": attempts, "stats": result.stats})
+                          meta={"iteration": iteration, "attempts": attempts,
+                                "stats": result.stats})
             return code, {"attempts": attempts, "stats": result.stats}
         if code:
             save_strategy(iteration, code, accepted=False, attempt=attempt)
@@ -173,7 +180,8 @@ def main() -> int:
             feedback = render_feedback(state.iterations[-1]["summary"], state)
             prompt = build_refine_prompt(current_code, feedback, iteration - 1)
 
-        code, gen_meta = _generate(client, prompt, iteration, max_attempts)
+        code, gen_meta = _generate(client, prompt, iteration, max_attempts,
+                                   provider=provider)
 
         if code is None:
             print("  !! generation failed; reusing previous strategy")
