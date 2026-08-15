@@ -1,0 +1,50 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: Did you mean st.sampled_from(['[\"00\"]', '[[\"00\"]]'])?  st.one_of() is used to combine strategies, but all of the arguments were of other types.",
+      "tokens": 6515,
+      "seconds": 2.02,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 6615,
+      "seconds": 4.03,
+      "stats": {
+        "samples": 25,
+        "mean_len": 45.8,
+        "max_len": 180,
+        "sample_max_depth": 2,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.6,
+        "top_rejects": [
+          "line 2: key exists",
+          "line 2: invalid char U+0004",
+          "line 2: unterminated s-quote"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 45.8,
+    "max_len": 180,
+    "sample_max_depth": 2,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.6,
+    "top_rejects": [
+      "line 2: key exists",
+      "line 2: invalid char U+0004",
+      "line 2: unterminated s-quote"
+    ]
+  }
+}

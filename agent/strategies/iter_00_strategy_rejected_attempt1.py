@@ -1,50 +1,65 @@
 """Generated strategy - iteration 0, attempt 1.
 accepted: False
-generated: 2026-08-14T08:52:45.446055+00:00
+generated: 2026-08-15T11:03:14.367869+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
 @composite
-def int_strategy(draw):
-    return draw(st.integers(min_value=-2**63, max_value=2**63-1))
+def key(draw):
+    return draw(st.one_of(
+        st.text(min_size=1, max_size=10).filter(lambda x: x.isidentifier()),
+        st.text(min_size=2, max_size=10).map(lambda x: f'"{x}"'),
+        st.text(min_size=2, max_size=10).map(lambda x: f"'{x}'")
+    ))
 
 @composite
-def float_strategy(draw):
-    return draw(st.floats(min_value=-1e308, max_value=1e308, allow_nan=True, allow_infinity=True))
+def dotted_key(draw):
+    return draw(st.lists(key(), min_size=2, max_size=5)).map(lambda keys: ".".join(keys))
 
 @composite
-def string_strategy(draw):
-    return draw(st.text(min_size=1, max_size=100))
+def value(draw):
+    return draw(st.one_of(
+        st.integers(min_value=-2**63, max_value=2**63-1).map(str),
+        st.floats(min_value=-1e100, max_value=1e100).map(str),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
+        st.booleans().map(lambda x: "true" if x else "false"),
+        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28))
+            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"),
+        st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
+            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
+        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28),
+                  st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
+            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}"),
+        array(),
+        inline_table()
+    ))
 
 @composite
-def key_strategy(draw):
-    return draw(st.one_of(string_strategy(), int_strategy().map(str)))
+def pair(draw):
+    return draw(st.tuples(key(), value())).map(lambda p: f"{p[0]} = {p[1]}")
 
 @composite
-def value_strategy(draw):
-    return draw(st.one_of(string_strategy(), int_strategy(), float_strategy()))
+def array(draw):
+    elements = draw(st.lists(st.one_of(value(), array(), inline_table()), min_size=0, max_size=10))
+    return f"[{', '.join(elements)}]"
 
 @composite
-def pair_strategy(draw):
-    key = draw(key_strategy())
-    value = draw(value_strategy())
-    return (key, value)
+def inline_table(draw):
+    elements = draw(st.lists(st.tuples(key(), value()), min_size=0, max_size=10))
+    return f"{{{', '.join(f'{k} = {v}' for k, v in elements)}}}"
 
 @composite
-def array_strategy(draw, max_size=10):
-    size = draw(st.integers(min_value=0, max_value=max_size))
-    return draw(st.lists(value_strategy(), min_size=size, max_size=size))
+def table(draw):
+    return draw(st.one_of(
+        key().map(lambda k: f"[{k}]"),
+        key().map(lambda k: f"[[{k}]]")
+    ))
 
 @composite
-def table_strategy(draw, max_size=10):
-    size = draw(st.integers(min_value=0, max_value=max_size))
-    return draw(st.lists(pair_strategy(), min_size=size, max_size=size))
+def document(draw):
+    elements = draw(st.lists(st.one_of(pair(), table()), min_size=0, max_size=10))
+    return "\n".join(elements)
 
-@composite
-def document_strategy(draw, max_size=10):
-    size = draw(st.integers(min_value=0, max_value=max_size))
-    tables = draw(st.lists(table_strategy(), min_size=size, max_size=size))
-    return "\n".join([f"[{table[0][0]}]\n" + "\n".join([f"{key} = {value}" for key, value in table]) for table in tables])
-
-toml_strategy = document_strategy()
+toml_strategy = document()

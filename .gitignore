@@ -29,3 +29,10 @@ agent/state/
 # triage/reports/ is intentionally NOT ignored - it's the deduplicated,
 # minimized, verified crash evidence report/ARTIFACTS.md points at as a
 # deliverable, not disposable output like the raw logs above.
+
+# logs/RUN_HISTORY.* is intentionally NOT ignored either, same reason -
+# it's the permanent, append-only attempt record, not disposable per-run
+# output like pipeline/logs/*.jsonl. The **/logs/*.jsonl rule above would
+# otherwise silently catch it since it also lives in a folder named logs/.
+!logs/RUN_HISTORY.jsonl
+!logs/RUN_HISTORY.md

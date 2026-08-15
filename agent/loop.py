@@ -31,6 +31,8 @@ from agent.extract import extract_python
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
 from agent.prompts import SYSTEM_PROMPT, build_refine_prompt, build_seed_prompt
+from agent.run_history import (get_next_run_id, log_attempt,
+                               log_iteration_result, log_run_complete)
 from agent.strategy_store import (load_strategy_code, load_strategy_object,
                                   save_strategy)
 from agent.summarize import render_feedback, summarize_iteration
@@ -50,7 +52,8 @@ Fix exactly that problem. Reply again with only one ```python block."""
 
 
 def _generate(client: OllamaClient | GroqClient, prompt: str, iteration: int,
-              max_attempts: int) -> tuple[str | None, dict]:
+              max_attempts: int, provider: str = "",
+              run_id: int = 0) -> tuple[str | None, dict]:
     """Prompt → validated code. Retries with the validator error quoted back."""
     attempts: list[dict] = []
     base = prompt
@@ -63,12 +66,18 @@ def _generate(client: OllamaClient | GroqClient, prompt: str, iteration: int,
             "error": result.error[:300], "tokens": resp.total_tokens,
             "seconds": resp.duration_s, "stats": result.stats,
         })
+        log_attempt(run_id=run_id, source="loop", iteration=iteration,
+                    attempt=attempt, ok=result.ok, stage=result.stage,
+                    error=result.error, tokens=resp.total_tokens,
+                    seconds=resp.duration_s, provider=provider,
+                    model=client.model, stats=result.stats)
         print(f"    attempt {attempt}: "
               f"{'PASS' if result.ok else 'FAIL ' + result.stage} "
               f"({resp.total_tokens} tok, {resp.duration_s}s)")
         if result.ok:
             save_strategy(iteration, code, accepted=True, attempt=attempt,
-                          meta={"attempts": attempts, "stats": result.stats})
+                          meta={"iteration": iteration, "attempts": attempts,
+                                "stats": result.stats})
             return code, {"attempts": attempts, "stats": result.stats}
         if code:
             save_strategy(iteration, code, accepted=False, attempt=attempt)
@@ -160,82 +169,140 @@ def main() -> int:
     current_code: str | None = (
         load_strategy_code(start_at - 1) if start_at else None)
 
-    for iteration in range(start_at, n_iters):
-        print(f"\n{'=' * 62}\n=== iteration {iteration}/{n_iters - 1}\n{'=' * 62}")
-        t0 = time.perf_counter()
+    # run_id auto-increments from logs/RUN_HISTORY.jsonl - "run N+1" picks
+    # up wherever the last logged run left off, so a rate-limit/API-key
+    # swap mid-project never causes two runs to collide under one number.
+    # log_run_complete() fires from the finally block below no matter how
+    # this function exits (normal completion, an early `return 1`, or an
+    # uncaught exception from e.g. the API key finally running out) - a run
+    # that dies mid-way always gets an explicit FAILED record instead of
+    # just trailing off with no explanation in logs/RUN_HISTORY.md.
+    run_id = get_next_run_id()
+    print(f"Run: {run_id}")
+    iterations_completed = 0
+    completed_ok = False
+    # Only "exhausted_attempts" and "keyboard_interrupt" render as FAILED
+    # (see agent/run_history.py). Anything else - including this default,
+    # which covers an unexpected error or the process dying somewhere not
+    # explicitly handled below - renders as STOPPED instead: iterations
+    # that already passed with real metrics aren't a "failure" just
+    # because something else ended the run before iteration 4.
+    stop_reason = "error"
 
-        # --- generate (seed on 0, refine after) ---
-        if iteration == 0 or current_code is None:
-            print("  generating seed strategy from grammar...")
-            prompt = build_seed_prompt()
-        else:
-            print("  refining previous strategy from feedback...")
-            feedback = render_feedback(state.iterations[-1]["summary"], state)
-            prompt = build_refine_prompt(current_code, feedback, iteration - 1)
+    try:
+        for iteration in range(start_at, n_iters):
+            print(f"\n{'=' * 62}\n=== iteration {iteration}/{n_iters - 1}\n{'=' * 62}")
+            t0 = time.perf_counter()
 
-        code, gen_meta = _generate(client, prompt, iteration, max_attempts)
+            # --- generate (seed on 0, refine after) ---
+            if iteration == 0 or current_code is None:
+                print("  generating seed strategy from grammar...")
+                prompt = build_seed_prompt()
+            else:
+                print("  refining previous strategy from feedback...")
+                feedback = render_feedback(state.iterations[-1]["summary"], state)
+                prompt = build_refine_prompt(current_code, feedback, iteration - 1)
 
-        if code is None:
-            print("  !! generation failed; reusing previous strategy")
-            if current_code is None:
-                print("  !! no previous strategy to fall back on - stopping")
-                return 1
-            save_strategy(iteration, current_code, accepted=True,
-                          meta={"note": "reused: generation failed"})
-        else:
-            current_code = code
+            code, gen_meta = _generate(client, prompt, iteration, max_attempts,
+                                       provider=provider, run_id=run_id)
 
-        # --- run ---
-        configured_max = cfg.get('run.max_examples', 500)
-        print(f"  running up to {configured_max} examples...")
-        strategy = load_strategy_object(iteration)
-        records, novel = run_iteration(iteration, strategy, state)
-        if len(records) < configured_max:
-            # Hypothesis can stop well short of max_examples with no error
-            # at all - e.g. a near-impossible .filter() exhausting its
-            # retry budget (OBSERVATIONS.md Case 4). The old version of this
-            # print always showed the configured cap regardless of what
-            # actually ran, which hid that finding until someone counted
-            # the JSONL log lines by hand.
-            print(f"  !! only {len(records)}/{configured_max} examples "
-                  "actually ran - Hypothesis stopped early (a strict "
-                  ".filter() is the usual cause; see OBSERVATIONS.md Case 4)")
-        else:
-            print(f"  ran {len(records)} examples")
+            if code is None:
+                print("  !! generation failed; reusing previous strategy")
+                if current_code is None:
+                    print("  !! no previous strategy to fall back on - stopping")
+                    stop_reason = "exhausted_attempts"
+                    return 1
+                save_strategy(iteration, current_code, accepted=True,
+                              meta={"note": "reused: generation failed"})
+            else:
+                current_code = code
 
-        # --- summarize ---
-        summary = summarize_iteration(records, state, novel)
-        state.iterations.append({
-            "iteration": iteration,
-            "summary": summary,
-            "generation": gen_meta,
-            "elapsed_s": round(time.perf_counter() - t0, 1),
-            "at": datetime.now(timezone.utc).isoformat(),
-        })
-        state.total_tokens = client.total_tokens
-        state.save()
+            # --- run ---
+            configured_max = cfg.get('run.max_examples', 500)
+            print(f"  running up to {configured_max} examples...")
+            strategy = load_strategy_object(iteration)
+            records, novel = run_iteration(iteration, strategy, state)
+            if len(records) < configured_max:
+                # Hypothesis can stop well short of max_examples with no error
+                # at all - e.g. a near-impossible .filter() exhausting its
+                # retry budget (OBSERVATIONS.md Case 4). The old version of this
+                # print always showed the configured cap regardless of what
+                # actually ran, which hid that finding until someone counted
+                # the JSONL log lines by hand.
+                print(f"  !! only {len(records)}/{configured_max} examples "
+                      "actually ran - Hypothesis stopped early (a strict "
+                      ".filter() is the usual cause; see OBSERVATIONS.md Case 4)")
+            else:
+                print(f"  ran {len(records)} examples")
 
-        print(f"  accepted    : {summary['acceptance_rate']:.0%}")
-        print(f"  coverage    : {summary['cumulative_coverage']:.0%} "
-              f"(+{len(summary['productions_this_iteration'])} this run)")
-        print(f"  novelty     : {summary['novelty_rate']:.0%}")
-        print(f"  max depth   : {summary['max_depth_cumulative']}")
-        print(f"  findings    : {summary['findings']}")
-        print(f"  elapsed     : {state.iterations[-1]['elapsed_s']}s")
+            # --- summarize ---
+            summary = summarize_iteration(records, state, novel)
+            elapsed_s = round(time.perf_counter() - t0, 1)
+            state.iterations.append({
+                "iteration": iteration,
+                "summary": summary,
+                "generation": gen_meta,
+                "elapsed_s": elapsed_s,
+                "at": datetime.now(timezone.utc).isoformat(),
+            })
+            state.total_tokens = client.total_tokens
+            state.save()
+            log_iteration_result(run_id=run_id, iteration=iteration,
+                                 summary=summary, elapsed_s=elapsed_s)
+            iterations_completed += 1
 
-        _write_iteration_summary(iteration, summary, state)
+            print(f"  accepted    : {summary['acceptance_rate']:.0%}")
+            print(f"  coverage    : {summary['cumulative_coverage']:.0%} "
+                  f"(+{len(summary['productions_this_iteration'])} this run)")
+            print(f"  novelty     : {summary['novelty_rate']:.0%}")
+            print(f"  max depth   : {summary['max_depth_cumulative']}")
+            print(f"  findings    : {summary['findings']}")
+            print(f"  elapsed     : {elapsed_s}s")
 
-    # --- final report data ---
-    print(f"\n{'=' * 62}\n=== loop complete\n{'=' * 62}")
-    for it in state.iterations:
-        s = it["summary"]
-        print(f"  iter {it['iteration']}: accept {s['acceptance_rate']:.0%}  "
-              f"cov {s['cumulative_coverage']:.0%}  "
-              f"depth {s['max_depth_cumulative']:>3}  "
-              f"findings {s['findings']}")
-    print(f"\nusage: {json.dumps(client.usage_summary())}")
-    print(f"state: {state.save()}")
-    return 0
+            _write_iteration_summary(iteration, summary, state)
+
+        # --- final report data ---
+        print(f"\n{'=' * 62}\n=== loop complete\n{'=' * 62}")
+        for it in state.iterations:
+            s = it["summary"]
+            print(f"  iter {it['iteration']}: accept {s['acceptance_rate']:.0%}  "
+                  f"cov {s['cumulative_coverage']:.0%}  "
+                  f"depth {s['max_depth_cumulative']:>3}  "
+                  f"findings {s['findings']}")
+        print(f"\nusage: {json.dumps(client.usage_summary())}")
+        print(f"state: {state.save()}")
+        completed_ok = True
+        stop_reason = "completed"
+        return 0
+    except KeyboardInterrupt:
+        # KeyboardInterrupt isn't an Exception subclass, so it was never
+        # caught by GroqClient's `except urllib.error.HTTPError` around its
+        # rate-limit sleep - it already propagated all the way up here
+        # correctly, before this handler was even added. This only makes
+        # the outcome legible instead of dumping a raw traceback: a Ctrl+C
+        # during a long rate-limit wait (e.g. a daily quota's ~hour-long
+        # Retry-After) is a deliberate, expected way to abandon a run, not
+        # a bug - completed_ok is still False, so `finally` below still
+        # logs this run as failed either way.
+        stop_reason = "keyboard_interrupt"
+        print(f"\n\n!! Interrupted by user (Ctrl+C) - run {run_id} stopped "
+              f"after {iterations_completed}/{n_iters} iterations. "
+              "Logged as FAILED in logs/RUN_HISTORY.md.")
+        return 130
+    except Exception as exc:
+        # Anything else - e.g. Groq's own retry budget exhausting on a
+        # 429 and raising RuntimeError, or any other unhandled error. This
+        # is NOT the same as a generation dead-end (that's
+        # "exhausted_attempts" above) - re-raised after logging so it's
+        # never silently swallowed, but rendered as STOPPED rather than
+        # FAILED, since any iterations that already passed are still real.
+        print(f"\n\n!! Unexpected error: {type(exc).__name__}: {exc}")
+        stop_reason = "error"
+        raise
+    finally:
+        log_run_complete(run_id=run_id, ok=completed_ok,
+                         iterations_completed=iterations_completed,
+                         reason=stop_reason)
 
 
 def _write_iteration_summary(iteration: int, summary: dict,

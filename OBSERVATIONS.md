@@ -312,6 +312,43 @@ All five, verified working before the next real loop run was attempted:
 
 **Not changed:** whether a flat strategy should now be treated as a hard validation failure (gate 5 rejecting it outright) rather than an accurately-reported statistic. The fix makes the report honest; it doesn't yet make flatness un-passable. Worth deciding explicitly before the next full run, not by default.
 
+### Prompt-rule fix log
+
+A standing, numbered record of every `STRATEGY_CONTRACT` rule added in response to a real observed failure, kept separate from the rule numbers inside `agent/prompts.py` itself (those renumber/shift; this log doesn't - it's chronological, one entry per fix cycle, appended to as new fixes land).
+
+1. **Rules 9 + 10** (2026-08-14) - added together as the direct fix for this case's root cause. Rule 9: banned `.filter()` for shaping random text (the cause of the ~145-vs-500 example shortfall). Rule 10: containers must be genuinely self-referential (the cause of depth being stuck at 1). **Outcome, confirmed on the next real run:** genuine recursion now happens - `sample_max_depth` of 3, 4, 5, 6, 7 across a single run's attempts, versus permanently 1 before. Rule 10 worked.
+2. **Rule 11** (2026-08-14) - added after `st.dates(min_value=...)`/`st.times(min_time=...)` kept recurring across multiple sessions (first flagged in Case 2, still happening in the run right before this fix). Bans `st.dates()`/`st.times()`/`st.datetimes()` entirely, since the real fix - passing actual `date`/`time` objects - is unreachable anyway under rule 3's import restriction; redirects to building the string from integers instead. **Outcome, confirmed on the next real run:** zero `dates()`/`times()` errors across all 8 attempts in the very next run, where they had appeared in 3 of 4 attempts the run before. Not a controlled A/B test, but a strong signal in one data point.
+
+3. **Rule 12** (2026-08-14) - added immediately after rule 11's own test run surfaced a new bottleneck once genuine recursion started working: acceptance rate collapsed to 2-5% (floor is 20%). Real generated samples showed the cause directly - bare, standalone lines like `{}` and `[14:36:03, true, 13:19:07]` sitting at the top level of the document with no key in front of them, which is invalid TOML at any depth. `document()` was choosing `array()`/`inline_table()` directly as one of its own top-level options instead of only ever reaching them as a value after `key =`. Rule 12 states the top-level document grammar explicitly: every line must be `key = value`, `[table]`, or `[[array_table]]`, never a bare container. **Outcome: confirmed working, and then some.** The next full 5-iteration loop run passed generation on attempt 1 for *every* iteration (5 API calls total for the whole loop, versus a worst case of 40), all 500/500 examples ran every iteration (the earlier ~145-example shortfall from before rules 9-12 didn't recur once), and acceptance held steady at 31-41% throughout, never approaching the floor. All four fixes (9, 10, 11, 12) validated together in one clean run.
+4. **Rule 13** (2026-08-15) - added after a full loop run (logged live in `logs/RUN_HISTORY.md`, the project's new permanent attempt-history file) passed iterations 0-2 cleanly but failed all 7 attempts at iteration 3, every single one at the `acceptance` stage (8-18% accepted, floor 20%) - no crashes, no fabricated APIs, just consistently-too-low acceptance. Checked 5 of the 7 rejected attempts' code directly: **all 5 had the identical bug**, independently generated each time - `table()` built `[header]`/`[[header]]` lines from raw, unrestricted `st.text()` instead of reusing the already-correct `key()` function, which properly quotes or restricts its output. Real generated samples showed the damage directly: bare, unquoted headers like `[[\x9f7]]` and `[衜@¶À]` containing control characters and non-ASCII symbols with no quoting at all - invalid, since TOML's unquoted-key rule only allows ASCII letters/digits/`_`/`-`. Since `document()` picks between `pair()` and `table()` roughly evenly, a broken `table()` drags down a large share of every generated document. Rule 13 states explicitly that table/array-table headers must be built from the same key-generation logic as regular keys, never raw text directly. **Outcome: confirmed working.** The very next full loop run (`logs/RUN_HISTORY.md`, 2026-08-15 09:48-09:53) passed all 5 iterations - specifically iteration 3, the one that had just failed 7/7 attempts in a row, passed on attempt 2. Full run: iter 0 passed on attempt 2, iter 1 on attempt 1, iter 2 on attempt 1, iter 3 on attempt 2, iter 4 on attempt 1 - 6 total attempts for the whole 5-iteration loop.
+
+### Latest full run (2026-08-14) — rules 9-12 confirmed working together, plus one new finding
+
+✅ **Status: passing.** All 5 iterations passed generation on attempt 1 (5 total API calls for the whole loop — the best result seen so far), all 500/500 examples ran every iteration, and acceptance held 31-41% throughout without ever threatening the floor. Real numbers:
+
+| Iter | Accept | Coverage | Novelty | Depth | Findings |
+|---|---|---|---|---|---|
+| 0 | 31% | 60% | 40% | 3 | 0 |
+| 1 | 41% | 74% | 20% | 3 | 0 |
+| 2 | 34% | 76% | 18% | 3 | 0 |
+| 3 | 31% | 76% | 20% | 3 | 0 |
+| 4 | 36% | 76% | 20% | 3 | 0 |
+
+**New finding: depth locked at exactly 3 across all 5 iterations, despite 4 rounds of "increase nesting depth" feedback — and the code's own safety cap isn't why.** Reading the final strategy:
+
+```python
+def array(draw, max_depth=12, current_depth=0):
+    if current_depth >= max_depth:
+        elements = draw(st.lists(st.one_of(value(), string())))
+    else:
+        elements = draw(st.lists(st.one_of(value(), string(), array(), inline_table())))
+    return f"[{', '.join(elements)}]"
+```
+
+`current_depth` is never incremented on the recursive call - `array()` calls `array()` with no arguments, always falling back to the default `current_depth=0`, so `current_depth >= max_depth` can never be true. The `max_depth=12` cap is dead code. The real limiter is Hypothesis's own default behavior: an unweighted `st.one_of(value(), string(), array(), inline_table())` combined with `st.lists(...)`'s built-in bias toward short/empty lists means the probability of independently choosing to recurse compounds down fast at each level, so depth naturally plateaus low regardless of what the (non-functional) cap allows. This is why the depth-directive in `agent/summarize.py`'s `render_feedback()` had zero measurable effect across 4 iterations of asking for it - it isn't an instruction-following failure, it's that "try to go deeper" can't shift a probability distribution without a concrete technique (e.g. weighting `one_of` toward the recursive options, or raising `min_size` on the recursive branch specifically).
+
+**Not yet fixed** - proposed as the next prompt-rule-fix-log entry (rule 13: bias toward recursion + fix the dead `current_depth` counter), pending confirmation before applying.
+
 ### Why this belongs in the report
 
 This is arguably the single most report-worthy finding in the whole project so far. The assignment explicitly warns against a proxy signal that can be gamed, and this run demonstrated exactly that failure mode with real numbers: coverage climbing while the generator quietly got structurally simpler, not more complex. Catching it, tracing it to two specific code defects (a prompt gap and a validator gap that let the defect hide), and fixing and verifying both is stronger evidence of understanding the signal's limitations than a run that happened not to hit this failure mode at all.

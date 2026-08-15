@@ -1,0 +1,59 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised AttributeError: 'tuple' object has no attribute 'map'",
+      "tokens": 6669,
+      "seconds": 2.59,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised AttributeError: 'str' object has no attribute 'map'",
+      "tokens": 6507,
+      "seconds": 3.93,
+      "stats": {}
+    },
+    {
+      "attempt": 3,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 6651,
+      "seconds": 36.37,
+      "stats": {
+        "samples": 25,
+        "mean_len": 91.5,
+        "max_len": 195,
+        "sample_max_depth": 3,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.225,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: invalid key",
+          "line 1: unterminated s-quote"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 91.5,
+    "max_len": 195,
+    "sample_max_depth": 3,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.225,
+    "top_rejects": [
+      "line 1: missing =",
+      "line 1: invalid key",
+      "line 1: unterminated s-quote"
+    ]
+  }
+}

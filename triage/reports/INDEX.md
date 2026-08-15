@@ -4,6 +4,6 @@
 
 | Signature | Type | Occurrences | Minimized | Deterministic |
 |---|---|---|---|---|
-| `939402a0547c` | stack-overflow | 1 | 15408 B | yes |
+| `e857b4530c96` | stack-overflow | 1 | 42756 B | unstable-sig |
 
-Generated 2026-08-14T08:50:29.103733+00:00
+Generated 2026-08-15T11:08:13.245015+00:00

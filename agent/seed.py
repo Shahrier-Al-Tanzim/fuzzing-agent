@@ -15,6 +15,7 @@ from agent.extract import extract_python
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
 from agent.prompts import SYSTEM_PROMPT, build_seed_prompt
+from agent.run_history import get_next_run_id, log_attempt, log_run_complete
 from agent.strategy_store import save_strategy
 from agent.validator import validate_strategy
 from pipeline.config import load
@@ -39,54 +40,70 @@ def generate_validated_strategy(iteration: int = 0, probe: bool = True,
     prompt = base_prompt
     attempts_log: list[dict] = []
 
-    for attempt in range(1, max_attempts + 1):
-        if verbose:
-            print(f"\n--- attempt {attempt}/{max_attempts} "
-                  f"(prompt {len(prompt)} chars) ---")
-
-        resp = client.generate(prompt, system=SYSTEM_PROMPT)
-        _save_transcript(iteration, attempt, prompt, resp.text)
-
-        code = extract_python(resp.text)
-        result = validate_strategy(code or "", probe=probe)
-
-        attempts_log.append({
-            "attempt": attempt,
-            "ok": result.ok,
-            "stage": result.stage,
-            "error": result.error,
-            "stats": result.stats,
-            "tokens": resp.total_tokens,
-            "seconds": resp.duration_s,
-        })
-
-        if verbose:
-            print(f"    tokens={resp.total_tokens} time={resp.duration_s}s")
-            if result.ok:
-                print(f"    PASS  {result.stats}")
-            else:
-                print(f"    FAIL  [{result.stage}] {result.error[:180]}")
-
-        if result.ok:
-            path = save_strategy(
-                iteration, code, accepted=True, attempt=attempt,
-                meta={
-                    "iteration": iteration,
-                    "attempts": attempts_log,
-                    "stats": result.stats,
-                    "usage": client.usage_summary(),
-                    "generated_at": datetime.now(timezone.utc).isoformat(),
-                },
-            )
+    # Shares the same run-numbering sequence as agent.loop - both write to
+    # logs/RUN_HISTORY.jsonl, so "run N" is just "the Nth invocation of
+    # either script," in order. finally ensures a crashed/interrupted seed
+    # attempt still gets an explicit FAILED record.
+    run_id = get_next_run_id()
+    completed_ok = False
+    try:
+        for attempt in range(1, max_attempts + 1):
             if verbose:
-                print(f"\nsaved: {path}")
-            return result, path, client
+                print(f"\n--- attempt {attempt}/{max_attempts} "
+                      f"(prompt {len(prompt)} chars) ---")
 
-        if code:
-            save_strategy(iteration, code, accepted=False, attempt=attempt)
-        prompt = base_prompt + "\n\n" + RETRY_HEADER.format(error=result.feedback)
+            resp = client.generate(prompt, system=SYSTEM_PROMPT)
+            _save_transcript(iteration, attempt, prompt, resp.text)
 
-    return None, None, client
+            code = extract_python(resp.text)
+            result = validate_strategy(code or "", probe=probe)
+
+            attempts_log.append({
+                "attempt": attempt,
+                "ok": result.ok,
+                "stage": result.stage,
+                "error": result.error,
+                "stats": result.stats,
+                "tokens": resp.total_tokens,
+                "seconds": resp.duration_s,
+            })
+            log_attempt(run_id=run_id, source="seed", iteration=iteration,
+                        attempt=attempt, ok=result.ok, stage=result.stage,
+                        error=result.error, tokens=resp.total_tokens,
+                        seconds=resp.duration_s, provider=provider,
+                        model=client.model, stats=result.stats)
+
+            if verbose:
+                print(f"    tokens={resp.total_tokens} time={resp.duration_s}s")
+                if result.ok:
+                    print(f"    PASS  {result.stats}")
+                else:
+                    print(f"    FAIL  [{result.stage}] {result.error[:180]}")
+
+            if result.ok:
+                path = save_strategy(
+                    iteration, code, accepted=True, attempt=attempt,
+                    meta={
+                        "iteration": iteration,
+                        "attempts": attempts_log,
+                        "stats": result.stats,
+                        "usage": client.usage_summary(),
+                        "generated_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+                if verbose:
+                    print(f"\nsaved: {path}")
+                completed_ok = True
+                return result, path, client
+
+            if code:
+                save_strategy(iteration, code, accepted=False, attempt=attempt)
+            prompt = base_prompt + "\n\n" + RETRY_HEADER.format(error=result.feedback)
+
+        return None, None, client
+    finally:
+        log_run_complete(run_id=run_id, ok=completed_ok,
+                         iterations_completed=1 if completed_ok else 0)
 
 
 def main() -> int:

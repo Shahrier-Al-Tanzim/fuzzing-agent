@@ -1,49 +1,47 @@
 """Generated strategy - iteration 0, attempt 3.
 accepted: False
-generated: 2026-08-14T08:53:00.311096+00:00
+generated: 2026-08-15T09:23:26.787638+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
 @composite
-def scalar_value(draw):
+def value(draw):
     return draw(st.one_of(
         st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-        st.floats(allow_nan=False, allow_infinity=False, min_value=-1e100, max_value=1e100).map(str),
-        st.sampled_from(["true", "false"]),
-        st.sampled_from(["inf", "-inf", "nan"]),
-        st.text(min_size=1, max_size=100).map(lambda s: f'"{s}"'),
-        st.text(min_size=1, max_size=100).map(lambda s: f"'{s}'")
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=True, allow_infinity=True).map(str),
+        st.booleans().map(lambda x: "true" if x else "false"),
+        st.text(min_size=1, max_size=100).map(lambda x: f'"{x}"'),
+        st.text(min_size=1, max_size=100).map(lambda x: f"'{x}'"),
+        array(),
+        inline_table()
     ))
 
 @composite
-def array_value(draw):
-    return draw(st.lists(scalar_value(), min_size=0, max_size=10))
+def pair(draw):
+    key = draw(st.text(min_size=1, max_size=100))
+    val = draw(value())
+    return f"{key} = {val}"
 
 @composite
-def inline_table_value(draw):
-    pairs = draw(st.lists(st.tuples(st.text(min_size=1, max_size=100), scalar_value()), min_size=0, max_size=10))
-    return draw(st.one_of(
-        st.just(""),
-        st.just(","),
-        st.just(f"{{{', '.join(f'{k} = {v}' for k, v in pairs)}}}"),
-        st.just(f"{{{', '.join(f'{k} = {v}' for k, v in pairs)}, }}")
-    ))
+def table(draw):
+    name = draw(st.text(min_size=1, max_size=100))
+    elements = draw(st.lists(pair(), min_size=0, max_size=10))
+    return f"[{name}]\n" + "\n".join(elements)
 
 @composite
-def table_value(draw):
-    return draw(st.one_of(
-        scalar_value(),
-        array_value(),
-        inline_table_value()
-    ))
+def array(draw):
+    elements = draw(st.lists(st.one_of(value(), array(), inline_table()), min_size=0, max_size=10))
+    return f"[{', '.join(elements)}]"
+
+@composite
+def inline_table(draw):
+    elements = draw(st.lists(pair(), min_size=0, max_size=10))
+    return f"{{{', '.join(elements)}}}"
 
 @composite
 def document(draw):
-    return draw(st.one_of(
-        st.just(""),
-        table_value(),
-        st.lists(table_value(), min_size=1, max_size=10).map(lambda values: "\n".join(values))
-    ))
+    elements = draw(st.lists(st.one_of(pair(), table()), min_size=0, max_size=10))
+    return "\n".join(elements)
 
 toml_strategy = document()

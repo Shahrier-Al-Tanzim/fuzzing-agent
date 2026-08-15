@@ -1,96 +1,81 @@
 """Generated strategy - iteration 0, attempt 7.
 accepted: False
-generated: 2026-08-14T08:54:43.953251+00:00
+generated: 2026-08-15T09:25:28.533442+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
 @composite
-def simple_key(draw):
+def integer(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=20, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'),
-        st.text(min_size=1, max_size=20, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-').map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=20, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-').map(lambda x: f"'{x}'")
+        st.integers(min_value=-2**63, max_value=2**63-1),
+        st.integers(min_value=-2**63, max_value=2**63-1).map(lambda x: f"0{x}"),
     ))
 
 @composite
-def dotted_key(draw):
-    keys = [draw(simple_key()) for _ in range(2)]
-    return '.'.join(keys)
-
-@composite
-def key(draw):
-    return draw(st.one_of(simple_key(), dotted_key()))
+def float_(draw):
+    return draw(st.one_of(
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False),
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x:.20f}"),
+    ))
 
 @composite
 def string(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=20, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-').map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=20, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-').map(lambda x: f"'{x}'")
+        st.text(min_size=1, max_size=100).map(lambda x: f'"{x}"'),
+        st.text(min_size=1, max_size=100).map(lambda x: f"'{x}'"),
+        st.text(min_size=1, max_size=100).map(lambda x: f'"""{x}"""'),
+        st.text(min_size=1, max_size=100).map(lambda x: f"'''{x}'''"),
     ))
 
 @composite
-def integer(draw):
-    return draw(st.one_of(
-        st.integers(min_value=-1000, max_value=1000).map(str),
-        st.text(min_size=1, max_size=20, alphabet='0123456789').map(lambda x: f'{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789').map(lambda x: f'-{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789').map(lambda x: f'0x{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789').map(lambda x: f'0o{x}'),
-        st.text(min_size=1, max_size=20, alphabet='01').map(lambda x: f'0b{x}')
-    ))
+def boolean(draw):
+    return draw(st.booleans())
 
 @composite
-def floating_point(draw):
-    return draw(st.one_of(
-        st.floats(min_value=-1000, max_value=1000).map(str),
-        st.text(min_size=1, max_size=20, alphabet='0123456789.').map(lambda x: f'{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789.e').map(lambda x: f'{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789.E').map(lambda x: f'{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789.').map(lambda x: f'-{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789.e').map(lambda x: f'-{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789.E').map(lambda x: f'-{x}')
-    ))
-
-@composite
-def bool_(draw):
-    return draw(st.one_of(st.just('true'), st.just('false')))
-
-@composite
-def date_time(draw):
-    return draw(st.one_of(
-        st.text(min_size=1, max_size=20, alphabet='0123456789-:').map(lambda x: f'{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789-:Z').map(lambda x: f'{x}'),
-        st.text(min_size=1, max_size=20, alphabet='0123456789-:+').map(lambda x: f'{x}')
-    ))
+def datetime(draw):
+    return draw(st.tuples(
+        st.integers(1970, 2100),
+        st.integers(1, 12),
+        st.integers(1, 28),
+        st.integers(0, 23),
+        st.integers(0, 59),
+        st.integers(0, 59),
+    )).map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}-07:00")
 
 @composite
 def value(draw):
-    return draw(st.one_of(string(), integer(), floating_point(), bool_(), date_time()))
+    return draw(st.one_of(
+        integer(),
+        float_(),
+        string(),
+        boolean(),
+        datetime(),
+    ))
 
 @composite
-def key_value(draw):
-    k = draw(key())
-    v = draw(value())
-    return f'{k} = {v}'
+def array(draw, elements=value()):
+    return draw(st.lists(elements)).map(lambda x: f"[{', '.join(map(str, x))}]")
 
 @composite
-def array(draw):
-    values = [draw(value()) for _ in range(draw(st.integers(min_value=0, max_value=10)))]
-    return f'[{", ".join(values)}]'
-
-@composite
-def inline_table(draw):
-    key_values = [draw(key_value()) for _ in range(draw(st.integers(min_value=0, max_value=10)))]
-    return f'{{{", ".join(key_values)}}}'
+def inline_table(draw, elements=value()):
+    return draw(st.lists(st.tuples(st.text(min_size=1, max_size=100), elements))).map(
+        lambda x: f"{{{', '.join(f'{k} = {v}' for k, v in x)}}}"
+    )
 
 @composite
 def table(draw):
-    return draw(st.one_of(array(), inline_table()))
+    return draw(st.text(min_size=1, max_size=100)).map(lambda x: f"[{x}]")
+
+@composite
+def pair(draw):
+    return draw(st.tuples(
+        st.text(min_size=1, max_size=100),
+        st.one_of(value(), array(), inline_table()),
+    )).map(lambda x: f"{x[0]} = {x[1]}")
 
 @composite
 def document(draw):
-    expressions = [draw(st.one_of(key_value(), table())) for _ in range(draw(st.integers(min_value=0, max_value=10)))]
-    return '\n'.join(expressions)
+    return draw(st.lists(st.one_of(pair(), table()))).map(lambda x: "\n".join(map(str, x)))
 
 toml_strategy = document()
