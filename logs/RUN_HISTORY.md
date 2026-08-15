@@ -1,60 +1,148 @@
 # Run History
 
-**Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time a new attempt is logged.
-Every generation attempt, across every run of `agent.seed` and `agent.loop`, grouped by iteration, oldest attempt first within each group.
+**Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
+One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total: 9/29 attempts passed, across 5 distinct iteration numbers.**
+**Total runs: 3**
 
-## Iteration 0 — 3/12 attempts passed
+---
 
-| At (UTC) | Source | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
-|---|---|---|---|---|---|---|---|---|
-| 2026-08-15 09:22:56 | loop | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 5945 | 1.74 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
-| 2026-08-15 09:23:00 | loop | 2 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 6127 | 2.21 | only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:23:26 | loop | 3 | FAIL | draw | groq/llama-3.3-70b-versatile | 6053 | 26.06 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
-| 2026-08-15 09:24:02 | loop | 4 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 6050 | 32.26 | only 1/40 (2%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
-| 2026-08-15 09:24:31 | loop | 5 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 5990 | 25.87 | only 1/40 (2%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
-| 2026-08-15 09:24:59 | loop | 6 | FAIL | draw | groq/llama-3.3-70b-versatile | 6048 | 28.0 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
-| 2026-08-15 09:25:28 | loop | 7 | FAIL | draw | groq/llama-3.3-70b-versatile | 6290 | 29.06 | drawing an example raised AttributeError: 'list' object has no attribute 'map' |
-| 2026-08-15 09:26:21 | loop | 8 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6012 | 32.08 |  |
-| 2026-08-15 09:32:33 | loop | 1 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 5938 | 1.99 | only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:32:40 | loop | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6373 | 3.63 |  |
-| 2026-08-15 09:48:48 | loop | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 6525 | 2.07 | drawing an example raised AttributeError: 'str' object has no attribute 'map' |
-| 2026-08-15 09:48:55 | loop | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6585 | 4.16 |  |
+## Run 1 — ✅ PASSED (all iterations completed)
 
-## Iteration 1 — 2/5 attempts passed
+### Iteration 0 — 1/3 attempts passed
 
-| At (UTC) | Source | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
-|---|---|---|---|---|---|---|---|---|
-| 2026-08-15 09:29:02 | loop | 1 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 7200 | 3.34 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:29:23 | loop | 2 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 6892 | 3.1 | only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:33:08 | loop | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 7268 | 10.69 | drawing an example raised TypeError: unsupported operand type(s) for +: 'LazyStrategy' and… |
-| 2026-08-15 09:33:49 | loop | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7183 | 38.65 |  |
-| 2026-08-15 09:49:37 | loop | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8163 | 20.15 |  |
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:41:35 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 6744 | 2.62 | drawing an example raised AttributeError: 'list' object has no attribute 'map' |
+| 2026-08-15 10:41:44 | 2 | FAIL | draw | groq/llama-3.3-70b-versatile | 6582 | 8.38 | drawing an example raised InvalidArgument: Did you mean st.sampled_from(['["0"]', '[["0"]]… |
+| 2026-08-15 10:42:19 | 3 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6700 | 33.65 |  |
 
-## Iteration 2 — 2/2 attempts passed
+**Result:** accepted 34% · coverage 55% · novelty 33% · max depth 4 · findings 0 · examples 500 · elapsed 63.6s
 
-| At (UTC) | Source | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
-|---|---|---|---|---|---|---|---|---|
-| 2026-08-15 09:34:23 | loop | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7315 | 11.77 |  |
-| 2026-08-15 09:50:27 | loop | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9296 | 21.72 |  |
+### Iteration 1 — 1/1 attempts passed
 
-## Iteration 3 — 1/9 attempts passed
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:42:56 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7731 | 17.78 |  |
 
-| At (UTC) | Source | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
-|---|---|---|---|---|---|---|---|---|
-| 2026-08-15 09:35:02 | loop | 1 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 7679 | 20.15 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:35:42 | loop | 2 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 7774 | 37.08 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:36:22 | loop | 3 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 7672 | 37.34 | only 3/40 (8%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
-| 2026-08-15 09:36:59 | loop | 4 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 7878 | 35.52 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:37:38 | loop | 5 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 7621 | 37.01 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:38:20 | loop | 6 | FAIL | extract | groq/llama-3.3-70b-versatile | 10806 | 41.72 | no Python code block found in the reply. |
-| 2026-08-15 09:39:23 | loop | 7 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 8507 | 59.71 | only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
-| 2026-08-15 09:51:12 | loop | 1 | FAIL | syntax | groq/llama-3.3-70b-versatile | 9713 | 16.39 | the code does not parse: line 132: f-string: single '}' is not allowed |
-| 2026-08-15 09:52:07 | loop | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9542 | 51.66 |  |
+**Result:** accepted 37% · coverage 63% · novelty 25% · max depth 4 · findings 0 · examples 500 · elapsed 35.8s
 
-## Iteration 4 — 1/1 attempts passed
+### Iteration 2 — 1/1 attempts passed
 
-| At (UTC) | Source | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
-|---|---|---|---|---|---|---|---|---|
-| 2026-08-15 09:52:56 | loop | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9554 | 11.63 |  |
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:43:37 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8169 | 23.25 |  |
+
+**Result:** accepted 33% · coverage 74% · novelty 23% · max depth 5 · findings 0 · examples 500 · elapsed 41.9s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:44:19 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8311 | 22.55 |  |
+
+**Result:** accepted 39% · coverage 84% · novelty 28% · max depth 5 · findings 0 · examples 500 · elapsed 40.3s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:45:03 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8687 | 26.87 |  |
+
+**Result:** accepted 39% · coverage 84% · novelty 23% · max depth 5 · findings 0 · examples 500 · elapsed 44.8s
+
+---
+
+## Run 2 — ⚠️ STOPPED (not a generation failure - see reason below)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:51:56 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 6716 | 2.64 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
+| 2026-08-15 10:52:02 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6662 | 4.23 |  |
+
+**Result:** accepted 39% · coverage 53% · novelty 34% · max depth 2 · findings 0 · examples 500 · elapsed 21.8s
+
+### Iteration 1 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:52:42 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 7642 | 26.6 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
+| 2026-08-15 10:53:21 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7567 | 37.18 |  |
+
+**Result:** accepted 31% · coverage 58% · novelty 19% · max depth 2 · findings 0 · examples 500 · elapsed 80.3s
+
+### Iteration 2 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:53:59 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 7785 | 23.51 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
+| 2026-08-15 10:54:41 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7752 | 39.3 |  |
+
+**Result:** accepted 27% · coverage 63% · novelty 18% · max depth 2 · findings 0 · examples 500 · elapsed 78.2s
+
+### Iteration 3 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:55:18 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 7950 | 23.74 | drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or m… |
+| 2026-08-15 10:56:02 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8437 | 40.79 |  |
+
+**Result:** accepted 38% · coverage 71% · novelty 20% · max depth 3 · findings 0 · examples 500 · elapsed 85.5s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 10:56:51 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9430 | 28.04 |  |
+
+**STOPPED** — stopped after iteration 4. reason: unknown (not a generation failure - iterations shown above with a Result line genuinely passed).
+
+---
+
+## Run 3 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 11:03:14 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 6658 | 2.6 | drawing an example raised AttributeError: 'tuple' object has no attribute 'map' |
+| 2026-08-15 11:03:22 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6682 | 4.4 |  |
+
+**Result:** accepted 36% · coverage 63% · novelty 35% · max depth 4 · findings 0 · examples 500 · elapsed 33.0s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 11:04:03 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7824 | 16.04 |  |
+
+**Result:** accepted 30% · coverage 74% · novelty 22% · max depth 4 · findings 0 · examples 500 · elapsed 37.8s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 11:04:48 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8353 | 21.51 |  |
+
+**Result:** accepted 26% · coverage 84% · novelty 15% · max depth 4 · findings 0 · examples 500 · elapsed 52.0s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 11:05:34 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8681 | 12.35 |  |
+
+**Result:** accepted 22% · coverage 84% · novelty 25% · max depth 4 · findings 0 · examples 500 · elapsed 60.4s
+
+### Iteration 4 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-15 11:06:24 | 1 | FAIL | acceptance | groq/llama-3.3-70b-versatile | 8864 | 4.38 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-08-15 11:07:04 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8934 | 33.34 |  |
+
+**Result:** accepted 20% · coverage 87% · novelty 21% · max depth 4 · findings 0 · examples 500 · elapsed 85.8s
+
+---

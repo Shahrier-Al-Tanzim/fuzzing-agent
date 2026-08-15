@@ -1,6 +1,6 @@
-"""Generated strategy - iteration 3, attempt 1.
-accepted: False
-generated: 2026-08-15T10:55:18.112393+00:00
+"""Generated strategy - iteration 3, attempt 2.
+accepted: True
+generated: 2026-08-15T10:56:02.040211+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
@@ -38,13 +38,28 @@ def value(draw):
         st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\u0000'"),
         st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\n"'),
         st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\n'"),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\n"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\n'"),
+        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0x{x:x}"),
+        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0o{x:o}"),
+        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0b{x:b}"),
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x}e-10"),
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x}e10"),
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x}e100"),
         st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '"'),
         st.text(min_size=1, max_size=10).map(lambda x: f"'" + x + "'"),
         st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0x{x:x}"),
         st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0o{x:o}"),
         st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0b{x:b}"),
-        st.floats(min_value=-1e100, max_value=1e100, allow_nan=True).map(str),
-        st.floats(min_value=-1e100, max_value=1e100, allow_nan=True).map(lambda x: f"{x:.20f}")
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x}e-10"),
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x}e10"),
+        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(lambda x: f"{x}e100"),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'" + x + "'"),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\u0000"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\u0000'"),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\n"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\n'")
     ))
 
 @composite

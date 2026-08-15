@@ -1,0 +1,50 @@
+{
+  "iteration": 2,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: Cannot have allow_nan=True, with min_value or max_value",
+      "tokens": 7785,
+      "seconds": 23.51,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 7752,
+      "seconds": 39.3,
+      "stats": {
+        "samples": 25,
+        "mean_len": 43.9,
+        "max_len": 224,
+        "sample_max_depth": 2,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.45,
+        "top_rejects": [
+          "line 3: key exists",
+          "line 1: invalid char U+0016",
+          "line 4: invalid char U+000c"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 43.9,
+    "max_len": 224,
+    "sample_max_depth": 2,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.45,
+    "top_rejects": [
+      "line 3: key exists",
+      "line 1: invalid char U+0016",
+      "line 4: invalid char U+000c"
+    ]
+  }
+}

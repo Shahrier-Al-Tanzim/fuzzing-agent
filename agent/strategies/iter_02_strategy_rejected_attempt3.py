@@ -1,6 +1,6 @@
-"""Generated strategy - iteration 0, attempt 2.
+"""Generated strategy - iteration 2, attempt 3.
 accepted: False
-generated: 2026-08-15T10:41:44.130628+00:00
+generated: 2026-08-15T10:32:20.561216+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
@@ -10,13 +10,12 @@ def key(draw):
     return draw(st.one_of(
         st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
         st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.text(min_size=1, max_size=10).filter(lambda x: all(c.isalnum() or c in '-_' for c in x))
-    ))
+        st.text(min_size=1, max_size=10).map(lambda x: x)))
 
 @composite
 def dotted_key(draw):
-    parts = draw(st.lists(key(), min_size=2))
-    return draw(st.sampled_from(parts)).map(lambda k: '.'.join(parts))
+    keys = draw(st.lists(key(), min_size=2))
+    return ".".join(keys)
 
 @composite
 def value(draw):
@@ -25,14 +24,11 @@ def value(draw):
         st.floats(min_value=-1e100, max_value=1e100).map(str),
         st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
         st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.booleans().map(lambda x: 'true' if x else 'false'),
+        st.booleans().map(lambda x: "true" if x else "false"),
         st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28))
             .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"),
         st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
-        array(),
-        inline_table()
-    ))
+            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}")))
 
 @composite
 def pair(draw):
@@ -41,22 +37,26 @@ def pair(draw):
     return f"{k} = {v}"
 
 @composite
-def array(draw):
-    elements = draw(st.lists(st.one_of(value(), array(), inline_table()), min_size=0, max_size=10))
-    return f"[{', '.join(map(str, elements))}]"
+def array(draw, max_depth=5, current_depth=0):
+    if current_depth >= max_depth:
+        elements = draw(st.lists(value(), min_size=0, max_size=10))
+    else:
+        elements = draw(st.lists(st.one_of(value(), array(max_depth=max_depth, current_depth=current_depth+1)), min_size=0, max_size=10))
+    return f"[{', '.join(elements)}]"
 
 @composite
-def inline_table(draw):
-    pairs = draw(st.lists(pair(), min_size=0, max_size=10))
-    return f"{{{', '.join(pairs)}}}"
+def inline_table(draw, max_depth=5, current_depth=0):
+    if current_depth >= max_depth:
+        elements = draw(st.lists(pair(), min_size=0, max_size=10))
+    else:
+        elements = draw(st.lists(st.one_of(pair(), array(max_depth=max_depth, current_depth=current_depth+1)), min_size=0, max_size=10))
+    return f"{{{', '.join(elements)}}}"
 
 @composite
 def table(draw):
-    name = draw(key())
     return draw(st.one_of(
-        f"[{name}]",
-        f"[[{name}]]"
-    ))
+        key().map(lambda k: f"[{k}]"),
+        key().map(lambda k: f"[[{k}]]")))
 
 @composite
 def document(draw):

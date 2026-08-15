@@ -1,6 +1,6 @@
-"""Generated strategy - iteration 1, attempt 1.
-accepted: False
-generated: 2026-08-15T10:52:42.467403+00:00
+"""Generated strategy - iteration 2, attempt 2.
+accepted: True
+generated: 2026-08-15T10:54:41.052316+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
@@ -32,20 +32,17 @@ def value(draw):
             .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"),
         st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
             .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"""{x}"""'),  # ML_BASIC_STRING
-        st.text(min_size=1, max_size=10).map(lambda x: f"'''{x}'''"),  # ML_LITERAL_STRING
-        st.text(min_size=1, max_size=10).map(lambda x: f"\\u{x}"),  # unicode_escape
-        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0x{x:x}"),  # HEX_INT
-        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0o{x:o}"),  # OCT_INT
-        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0b{x:b}"),  # BIN_INT
-        st.floats(min_value=-1e100, max_value=1e100, allow_nan=True).map(str)  # allow NaN
+        st.text(min_size=2, max_size=10).map(lambda x: f'"{x}"' + '"'),
+        st.text(min_size=2, max_size=10).map(lambda x: f"'" + x + "'"),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\u0000"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\u0000'"),
+        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\n"'),
+        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\n'")
     ))
 
 @composite
 def array(draw):
-    elements = draw(st.lists(
-        st.one_of(value(), array(), inline_table())
-    ))
+    elements = draw(st.lists(st.one_of(value(), array(), inline_table())))
     return f"[{', '.join(elements)}]"
 
 @composite
