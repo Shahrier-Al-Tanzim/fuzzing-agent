@@ -1,28 +1,28 @@
 {
   "signature": {
-    "digest": "939402a0547c",
+    "digest": "55628614cd6c",
     "short": "stack-overflow@malloc",
     "bug_type": "stack-overflow",
     "frames": [
       "malloc",
-      "expand toml.c:411",
-      "expand_arritem toml.c:436",
-      "create_array_in_array toml.c:882",
-      "parse_array toml.c:1057"
+      "STRNDUP toml.c:85",
+      "normalize_key toml.c:681",
+      "create_keytable_in_table toml.c:782",
+      "parse_keyval toml.c:1132"
     ],
     "signal": null,
-    "raw_frame_count": 191,
+    "raw_frame_count": 188,
     "recursion_collapsed": true
   },
   "occurrences": 1,
   "sources": [
-    "grammar/early_findings/01_array_nesting_stackoverflow.toml"
+    "grammar/early_findings/02_dotted_key_stackoverflow.toml"
   ],
-  "original_bytes": 120006,
-  "minimized_bytes": 15408,
-  "reduction": 0.872,
+  "original_bytes": 210006,
+  "minimized_bytes": 180054,
+  "reduction": 0.143,
   "minimize_method": "delta-debugging",
-  "minimize_steps": 22,
+  "minimize_steps": 8,
   "verification": {
     "runs": 3,
     "crashes": 3,
@@ -32,5 +32,5 @@
     "unstable_signature": false,
     "description": "deterministic (3/3 runs crashed)"
   },
-  "triaged_at": "2026-08-16T12:34:30.631647+00:00"
+  "triaged_at": "2026-08-16T12:34:34.788635+00:00"
 }

@@ -39,7 +39,7 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
                     "sha256": rec.input_sha256,
                 })
 
-    # Extras have no stored stderr - run them once to get it.
+    # Extras have no stored stderr - run them to get it.
     runner = HarnessRunner(iteration=-4)
     for f in extra_files:
         p = Path(f)
@@ -47,8 +47,8 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
             print(f"  !! missing: {f}")
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
-        rec = runner.run(text)
-        if not rec.is_finding:
+        rec = _run_for_parseable_crash(runner, text)
+        if rec is None or not rec.is_finding:
             print(f"  !! {p.name} did not crash - skipping")
             continue
         found.append({
@@ -56,6 +56,38 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
             "verdict": rec.verdict, "source": str(p), "sha256": rec.input_sha256,
         })
     return found
+
+
+# A deep-recursion stack overflow is inherently unstable in whether ASan can
+# unwind its backtrace (see info.md "unstable signature"). When it can't, the
+# report has zero frames and parse_signature() falls back to the same
+# "unparsed_<verdict>" key for *every* frameless overflow - collapsing
+# genuinely distinct bugs (e.g. deep-array vs deep-dotted-key stack overflows,
+# which have different top frames) into one bucket. Since collection reads the
+# signature from a single run, one unlucky frameless run mislabels the bug.
+# Retrying a few times to obtain a parseable stack fixes that: the crash is
+# still the crash, we just want frames to bucket it correctly.
+_PARSE_RETRIES = 6
+
+
+def _run_for_parseable_crash(runner: HarnessRunner, text: str):
+    """Run `text` until it crashes with a parseable stack, or retries run out.
+
+    Returns the record with parseable frames if any run produced them; else
+    the last crashing record (so a genuinely frameless crash is still
+    reported, just in the unparsed bucket); else the last record.
+    """
+    last = None
+    last_crash = None
+    for _ in range(_PARSE_RETRIES):
+        rec = runner.run(text)
+        last = rec
+        if rec.is_finding:
+            last_crash = rec
+            sig = parse_signature(rec.stderr, rec.signal)
+            if sig is not None and sig.frames:
+                return rec
+    return last_crash or last
 
 
 def main() -> int:
