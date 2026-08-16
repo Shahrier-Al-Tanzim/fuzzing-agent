@@ -1,0 +1,55 @@
+{
+  "signature": {
+    "digest": "26e809dd9d85",
+    "short": "stack-overflow@malloc",
+    "bug_type": "stack-overflow",
+    "frames": [
+      "malloc",
+      "STRNDUP toml.c:85",
+      "normalize_key toml.c:681",
+      "create_keytable_in_table toml.c:782",
+      "parse_keyval toml.c:1177"
+    ],
+    "signal": null,
+    "raw_frame_count": 184,
+    "recursion_collapsed": false
+  },
+  "occurrences": 105,
+  "sources": [
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0",
+    "crashhunt_deep_inline_table.jsonl#0"
+  ],
+  "original_bytes": 340005,
+  "minimized_bytes": 306855,
+  "reduction": 0.097,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 6,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 3,
+    "deterministic": true,
+    "flaky": false,
+    "unstable_signature": false,
+    "description": "deterministic (3/3 runs crashed)"
+  },
+  "triaged_at": "2026-08-16T12:52:53.727285+00:00"
+}

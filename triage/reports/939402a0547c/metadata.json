@@ -14,15 +14,34 @@
     "raw_frame_count": 191,
     "recursion_collapsed": true
   },
-  "occurrences": 1,
+  "occurrences": 110,
   "sources": [
-    "grammar/early_findings/01_array_nesting_stackoverflow.toml"
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0",
+    "crashhunt_deep_array.jsonl#0"
   ],
-  "original_bytes": 120006,
-  "minimized_bytes": 15408,
-  "reduction": 0.872,
+  "original_bytes": 120005,
+  "minimized_bytes": 30005,
+  "reduction": 0.75,
   "minimize_method": "delta-debugging",
-  "minimize_steps": 22,
+  "minimize_steps": 8,
   "verification": {
     "runs": 3,
     "crashes": 3,
@@ -32,5 +51,5 @@
     "unstable_signature": false,
     "description": "deterministic (3/3 runs crashed)"
   },
-  "triaged_at": "2026-08-16T12:34:30.631647+00:00"
+  "triaged_at": "2026-08-16T12:52:48.596294+00:00"
 }

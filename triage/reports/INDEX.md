@@ -1,10 +1,11 @@
 # Crash triage index
 
-2 unique bug(s) after deduplication.
+3 unique bug(s) after deduplication.
 
 | Signature | Type | Occurrences | Minimized | Deterministic |
 |---|---|---|---|---|
-| `939402a0547c` | stack-overflow | 1 | 15408 B | yes |
-| `55628614cd6c` | stack-overflow | 1 | 180054 B | yes |
+| `939402a0547c` | stack-overflow | 110 | 30005 B | yes |
+| `55628614cd6c` | stack-overflow | 111 | 180506 B | unstable-sig |
+| `26e809dd9d85` | stack-overflow | 105 | 306855 B | yes |
 
-Generated 2026-08-16T12:34:34.788903+00:00
+Generated 2026-08-16T12:52:53.727565+00:00

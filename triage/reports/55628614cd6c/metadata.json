@@ -14,23 +14,42 @@
     "raw_frame_count": 188,
     "recursion_collapsed": true
   },
-  "occurrences": 1,
+  "occurrences": 111,
   "sources": [
-    "grammar/early_findings/02_dotted_key_stackoverflow.toml"
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0",
+    "crashhunt_deep_dotted_key.jsonl#0"
   ],
-  "original_bytes": 210006,
-  "minimized_bytes": 180054,
-  "reduction": 0.143,
+  "original_bytes": 200006,
+  "minimized_bytes": 180506,
+  "reduction": 0.097,
   "minimize_method": "delta-debugging",
-  "minimize_steps": 8,
+  "minimize_steps": 6,
   "verification": {
     "runs": 3,
     "crashes": 3,
-    "signature_matches": 3,
-    "deterministic": true,
+    "signature_matches": 2,
+    "deterministic": false,
     "flaky": false,
-    "unstable_signature": false,
-    "description": "deterministic (3/3 runs crashed)"
+    "unstable_signature": true,
+    "description": "crashed every run (3/3) but signature unstable (2/3 matched)"
   },
-  "triaged_at": "2026-08-16T12:34:34.788635+00:00"
+  "triaged_at": "2026-08-16T12:52:51.357535+00:00"
 }
