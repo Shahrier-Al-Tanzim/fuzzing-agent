@@ -147,7 +147,7 @@ One section per run, in order; within each run, one section per iteration, in or
 
 ---
 
-## Run 4 — ✅ PASSED (all iterations completed)
+## Run 4 — ⚠️ STOPPED (not a generation failure - see reason below)
 
 ### Iteration 0 — 1/2 attempts passed
 
@@ -178,11 +178,24 @@ One section per run, in order; within each run, one section per iteration, in or
 
 | At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
 |---|---|---|---|---|---|---|---|
+| 2026-08-16 07:28:40 | 1 | FAIL | extract | groq/llama-3.3-70b-versatile | 11537 | 27.8 | no Python code block found in the reply. |
+| 2026-08-16 07:29:47 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8977 | 63.31 |  |
+
+**STOPPED** — stopped after iteration 3. reason: error (not a generation failure - iterations shown above with a Result line genuinely passed).
+
+---
+
+## Run 5 — ✅ PASSED (all iterations completed)
+
+### Iteration 3 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
 | 2026-08-16 07:37:25 | 1 | FAIL | extract | groq/llama-3.3-70b-versatile | 11577 | 7.73 | no Python code block found in the reply. |
 | 2026-08-16 07:38:01 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9115 | 33.72 |  |
 
 **Result:** accepted 40% · coverage 87% · novelty 20% · max depth 3 · findings 0 · examples 500 · elapsed 65.5s
-    
+
 ### Iteration 4 — 1/1 attempts passed
 
 | At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
