@@ -1,6 +1,6 @@
 """Generated strategy - iteration 3, attempt 2.
 accepted: True
-generated: 2026-08-16T07:38:01.145033+00:00
+generated: 2026-08-16T07:29:47.991443+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
@@ -55,14 +55,12 @@ def value(draw):
         st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0b{x:b}"),
         st.floats(min_value=-1e100, max_value=1e100).map(lambda x: f"{x:.20f}"),
         st.floats(min_value=-1e100, max_value=1e100).map(lambda x: f"inf" if x == float('inf') else f"-inf" if x == float('-inf') else f"nan" if x != x else f"{x:.20f}"),
+        st.just("inf"),
+        st.just("nan"),
         st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"0b{x:b}"),
         st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"0o{x:o}"),
         st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"0x{x:x}"),
-        st.text(min_size=1, max_size=10).map(lambda x: f"{x}"),
-        st.text(min_size=1, max_size=10).map(lambda x: f"0{x}"),
-        st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"{x:020b}"),
-        st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"{x:020o}"),
-        st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"{x:020x}"),
+        st.text(min_size=1, max_size=10).map(lambda x: f"{x:07d}"),
     ))
 
 @composite

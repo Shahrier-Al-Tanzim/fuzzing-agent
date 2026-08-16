@@ -3,7 +3,7 @@
 **Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
 One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total runs: 3**
+**Total runs: 5**
 
 ---
 
@@ -144,5 +144,51 @@ One section per run, in order; within each run, one section per iteration, in or
 | 2026-08-15 11:07:04 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8934 | 33.34 |  |
 
 **Result:** accepted 20% · coverage 87% · novelty 21% · max depth 4 · findings 0 · examples 500 · elapsed 85.8s
+
+---
+
+## Run 4 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-16 07:26:23 | 1 | FAIL | draw | groq/llama-3.3-70b-versatile | 6479 | 1.89 | drawing an example raised AttributeError: 'str' object has no attribute 'map' |
+| 2026-08-16 07:26:29 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 6559 | 4.03 |  |
+
+**Result:** accepted 39% · coverage 55% · novelty 35% · max depth 3 · findings 0 · examples 500 · elapsed 22.2s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-16 07:27:09 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 7656 | 22.61 |  |
+
+**Result:** accepted 40% · coverage 68% · novelty 22% · max depth 3 · findings 0 · examples 500 · elapsed 45.1s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-16 07:27:51 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 8485 | 19.45 |  |
+
+**Result:** accepted 35% · coverage 84% · novelty 21% · max depth 3 · findings 0 · examples 500 · elapsed 44.4s
+
+### Iteration 3 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-16 07:37:25 | 1 | FAIL | extract | groq/llama-3.3-70b-versatile | 11577 | 7.73 | no Python code block found in the reply. |
+| 2026-08-16 07:38:01 | 2 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9115 | 33.72 |  |
+
+**Result:** accepted 40% · coverage 87% · novelty 20% · max depth 3 · findings 0 · examples 500 · elapsed 65.5s
+    
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-16 07:39:06 | 1 | PASS | acceptance | groq/llama-3.3-70b-versatile | 9407 | 40.93 |  |
+
+**Result:** accepted 42% · coverage 90% · novelty 19% · max depth 3 · findings 0 · examples 500 · elapsed 64.8s
 
 ---

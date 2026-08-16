@@ -169,15 +169,24 @@ def main() -> int:
     current_code: str | None = (
         load_strategy_code(start_at - 1) if start_at else None)
 
-    # run_id auto-increments from logs/RUN_HISTORY.jsonl - "run N+1" picks
-    # up wherever the last logged run left off, so a rate-limit/API-key
-    # swap mid-project never causes two runs to collide under one number.
+    # run_id identifies which "Run N" section of logs/RUN_HISTORY.md this
+    # invocation belongs to. A --resume continues the SAME run_id (carried
+    # in state.run_id, saved/loaded with the rest of LoopState) so a
+    # rate-limit death + --resume appends to the run already in progress
+    # instead of opening a new "Run N+1" for what is really iteration 3 of
+    # an existing run. Only a fresh (non-resumed) invocation mints a new
+    # run_id via get_next_run_id() - see OBSERVATIONS.md, "resume opens a
+    # new Run number instead of continuing the last one".
     # log_run_complete() fires from the finally block below no matter how
     # this function exits (normal completion, an early `return 1`, or an
     # uncaught exception from e.g. the API key finally running out) - a run
     # that dies mid-way always gets an explicit FAILED record instead of
     # just trailing off with no explanation in logs/RUN_HISTORY.md.
-    run_id = get_next_run_id()
+    if args.resume and state.run_id:
+        run_id = state.run_id
+    else:
+        run_id = get_next_run_id()
+        state.run_id = run_id
     print(f"Run: {run_id}")
     iterations_completed = 0
     completed_ok = False

@@ -36,6 +36,12 @@ class LoopState:
     # budget table reads these.
     provider: str = ""
     model: str = ""
+    # Which logs/RUN_HISTORY.md "Run N" this state belongs to. Set once on
+    # a fresh run and carried forward by --resume, so continuing a run
+    # after a crash/rate-limit appends to the same Run N section instead
+    # of opening a new one - see OBSERVATIONS.md, "resume opens a new Run
+    # number instead of continuing the last one".
+    run_id: int = 0
 
     # ---- queries -------------------------------------------------------
     @property
