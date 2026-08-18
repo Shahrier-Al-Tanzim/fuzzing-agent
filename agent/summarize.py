@@ -1,8 +1,14 @@
 """Turns one iteration's run log into compact feedback for the model.
 
 Budget-aware: the refine prompt must hold the grammar, the current strategy
-source, and this summary inside num_ctx (16384). So this stays under roughly
-1500 characters - counts and directives, never raw inputs.
+source, and this summary inside num_ctx (16384 tokens, ~4 chars/token). This
+stays under roughly 2200 characters worst-case (~550 tokens, still a small
+slice of the budget) - counts and directives, never raw inputs. The ceiling
+moved up from an earlier ~1500 to fit the depth-escalation directive (see
+DEPTH_TARGETS below), which has to teach a concrete biasing technique once
+depth is asked to go past a few hundred - a flat "aim for N" doesn't work
+past that point (see the directive's own comment), so it costs more
+characters than the rest of the directives combined.
 """
 from __future__ import annotations
 
@@ -48,6 +54,15 @@ def summarize_iteration(records: list[RunRecord], state: LoopState,
     }
 
 
+# Geometric, not linear, depth escalation - a flat "aim for 12+" can never
+# close the gap to a real stack-overflow threshold (tomlc99's confirmed bugs
+# need ~48k-105k levels; see planning/planning-crash-hunting.md and
+# grammar/early_findings/). Indexed by how many iterations have already
+# completed (len(state.iterations)), so the target ramps up hard across the
+# 5-iteration budget instead of asking for the same modest number every time.
+DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]
+
+
 def render_feedback(summary: dict, state: LoopState) -> str:
     """The text actually pasted into the refine prompt."""
     cfg = load()
@@ -76,11 +91,36 @@ def render_feedback(summary: dict, state: LoopState) -> str:
     for p in missing[:5]:
         directives.append(
             f"Generate `{p}` - it has never appeared in an accepted document.")
-    if summary["max_depth_cumulative"] < 12:
-        directives.append(
-            f"Increase nesting depth. Best reached so far is "
-            f"{summary['max_depth_cumulative']}; aim for 12+ by raising the "
-            "`max_leaves`/depth limit in your st.recursive call.")
+    depth_target = DEPTH_TARGETS[min(len(state.iterations),
+                                     len(DEPTH_TARGETS) - 1)]
+    if summary["max_depth_cumulative"] < depth_target:
+        if depth_target <= 200:
+            directives.append(
+                f"Increase nesting depth. Best reached so far is "
+                f"{summary['max_depth_cumulative']}; aim for {depth_target}+ "
+                "by raising the `max_leaves`/depth limit in your "
+                "st.recursive call.")
+        else:
+            # Past a few hundred, a balanced/uniform recursion choice cannot
+            # reach this target - Hypothesis's own bias toward short lists
+            # collapses depth long before then. Ask for the specific
+            # technique, not just a bigger number.
+            directives.append(
+                f"PUSH DEPTH MUCH FURTHER. Best reached so far is "
+                f"{summary['max_depth_cumulative']}; target {depth_target}+ "
+                "this time - a real bug in tomlc99 needs tens of thousands "
+                "of nesting levels to trigger, so a balanced 1-in-3 "
+                "one_of(value(), array(), inline_table()) choice will never "
+                "get there (it decays to near-zero probability of nesting "
+                "that deep). Add a SEPARATE strategy variant that recurses "
+                "with heavy bias toward itself - e.g. repeat the recursive "
+                "option several times in one_of() so it is drawn far more "
+                "often than scalars, or thread an explicit depth counter "
+                "through draw() (incrementing it on every recursive call - "
+                "not just declaring one) and only stop recursing once that "
+                "counter passes a high threshold. Combine both generation "
+                "styles with st.one_of() so the balanced style still covers "
+                "the grammar broadly while the biased style hunts depth.")
     if summary["novelty_rate"] < 0.25:
         directives.append(
             f"Increase structural variety - only {summary['novelty_rate']:.0%} "

@@ -1,0 +1,50 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "imports",
+      "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+      "tokens": 8899,
+      "seconds": 3.57,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 8613,
+      "seconds": 24.68,
+      "stats": {
+        "samples": 25,
+        "mean_len": 563.2,
+        "max_len": 10006,
+        "sample_max_depth": 4999,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.6,
+        "top_rejects": [
+          "line 2: key exists",
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          "line 5: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 563.2,
+    "max_len": 10006,
+    "sample_max_depth": 4999,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.6,
+    "top_rejects": [
+      "line 2: key exists",
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+      "line 5: key exists"
+    ]
+  }
+}

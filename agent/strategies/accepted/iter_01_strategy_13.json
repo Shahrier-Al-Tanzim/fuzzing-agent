@@ -1,0 +1,50 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised ValueError: Unknown format code 'x' for object of type 'str'",
+      "tokens": 9759,
+      "seconds": 39.61,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 9766,
+      "seconds": 50.55,
+      "stats": {
+        "samples": 25,
+        "mean_len": 956.4,
+        "max_len": 10008,
+        "sample_max_depth": 5000,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.275,
+        "top_rejects": [
+          "line 5: key exists",
+          "line 3: key exists",
+          "line 2: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 956.4,
+    "max_len": 10008,
+    "sample_max_depth": 5000,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.275,
+    "top_rejects": [
+      "line 5: key exists",
+      "line 3: key exists",
+      "line 2: key exists"
+    ]
+  }
+}

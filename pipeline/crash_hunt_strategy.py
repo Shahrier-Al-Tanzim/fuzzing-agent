@@ -62,9 +62,20 @@ def deep_inline_table(draw) -> str:
     return "x = " + ("{a=" * depth) + "1" + ("}" * depth)
 
 
+@st.composite
+def deep_mixed_nesting(draw) -> str:
+    """`x = [{a= ... 1 ... }]` - arrays and inline tables alternating each
+    level, not either construct alone. Confirmed a DISTINCT signature
+    (af1d0280777e) from both deep_array and deep_inline_table, reproducing
+    4/4 with parseable frames - the most stable of the four campaigns."""
+    depth = draw(st.integers(min_value=60_000, max_value=80_000))
+    return "x = " + ("[{a=" * depth) + "1" + ("}]" * depth)
+
+
 # name -> strategy object. run_crash_hunt.py iterates this.
 CRASH_HUNT_STRATEGIES = {
     "deep_array": deep_array(),
     "deep_dotted_key": deep_dotted_key(),
     "deep_inline_table": deep_inline_table(),
+    "deep_mixed_nesting": deep_mixed_nesting(),
 }

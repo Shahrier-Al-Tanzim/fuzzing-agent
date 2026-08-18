@@ -8,6 +8,33 @@ assumed to relate to earlier ones unless stated.
 
 ---
 
+> ## ⭐ START HERE — the headline finding
+>
+> **[Case 5: prompt anchoring — an example's constant became a hard
+> ceiling](#case-5-prompt-anchoring--an-examples-constant-became-a-hard-ceiling-)**
+>
+> A prompt rule told the model to reach extreme nesting depth by drawing an
+> integer and repeating a string instead of recursing. It worked
+> immediately: **max depth went from 4 to 5,000 — a ~1,250× jump, the
+> largest single improvement in the project.**
+>
+> But depth then froze at *exactly* 5,000, because the model had copied the
+> rule's own illustrative bound (`max_value=5000`) **verbatim** — treating a
+> number written casually into an example as the specification, **in
+> preference to the feedback signal that was concurrently asking for
+> 30,000–90,000.**
+>
+> **An illustrative constant in a prompt example acts as a hard ceiling, not
+> a starting point.** This is the most transferable finding here — nothing
+> about it is specific to TOML, `tomlc99`, or fuzzing.
+>
+> Runner-up, for the "proxy signal" part of the report:
+> **[Case 4](#case-4-the-first-full-5-iteration-loop-run--coverage-climbed-but-the-proxy-signal-got-gamed)**
+> — coverage climbed while the generator quietly got structurally simpler,
+> the exact signal-gaming failure the assignment warns about.
+
+---
+
 ## Case 1: 7B model reliability in Module 4 (agentic seed generation)
 
 **Date:** 2026-08-13
@@ -333,6 +360,15 @@ A standing, numbered record of every `STRATEGY_CONTRACT` rule added in response 
 
 3. **Rule 12** (2026-08-14) - added immediately after rule 11's own test run surfaced a new bottleneck once genuine recursion started working: acceptance rate collapsed to 2-5% (floor is 20%). Real generated samples showed the cause directly - bare, standalone lines like `{}` and `[14:36:03, true, 13:19:07]` sitting at the top level of the document with no key in front of them, which is invalid TOML at any depth. `document()` was choosing `array()`/`inline_table()` directly as one of its own top-level options instead of only ever reaching them as a value after `key =`. Rule 12 states the top-level document grammar explicitly: every line must be `key = value`, `[table]`, or `[[array_table]]`, never a bare container. **Outcome: confirmed working, and then some.** The next full 5-iteration loop run passed generation on attempt 1 for *every* iteration (5 API calls total for the whole loop, versus a worst case of 40), all 500/500 examples ran every iteration (the earlier ~145-example shortfall from before rules 9-12 didn't recur once), and acceptance held steady at 31-41% throughout, never approaching the floor. All four fixes (9, 10, 11, 12) validated together in one clean run.
 4. **Rule 13** (2026-08-15) - added after a full loop run (logged live in `logs/RUN_HISTORY.md`, the project's new permanent attempt-history file) passed iterations 0-2 cleanly but failed all 7 attempts at iteration 3, every single one at the `acceptance` stage (8-18% accepted, floor 20%) - no crashes, no fabricated APIs, just consistently-too-low acceptance. Checked 5 of the 7 rejected attempts' code directly: **all 5 had the identical bug**, independently generated each time - `table()` built `[header]`/`[[header]]` lines from raw, unrestricted `st.text()` instead of reusing the already-correct `key()` function, which properly quotes or restricts its output. Real generated samples showed the damage directly: bare, unquoted headers like `[[\x9f7]]` and `[衜@¶À]` containing control characters and non-ASCII symbols with no quoting at all - invalid, since TOML's unquoted-key rule only allows ASCII letters/digits/`_`/`-`. Since `document()` picks between `pair()` and `table()` roughly evenly, a broken `table()` drags down a large share of every generated document. Rule 13 states explicitly that table/array-table headers must be built from the same key-generation logic as regular keys, never raw text directly. **Outcome: confirmed working.** The very next full loop run (`logs/RUN_HISTORY.md`, 2026-08-15 09:48-09:53) passed all 5 iterations - specifically iteration 3, the one that had just failed 7/7 attempts in a row, passed on attempt 2. Full run: iter 0 passed on attempt 2, iter 1 on attempt 1, iter 2 on attempt 1, iter 3 on attempt 2, iter 4 on attempt 1 - 6 total attempts for the whole 5-iteration loop.
+5. **Rule 14** (2026-08-16, `module-7b-crash-hunting`) - added after crash-hunting work (see `planning/hunting-generation/`) proved the loop's 0-findings history was a *reachability* gap, not an empty search: a hand-written parametric generator (`pipeline/crash_hunt_strategy.py`) found 3-4 distinct stack-overflow bugs the agentic loop never came close to, because `render_feedback()`'s depth directive only ever asked for "12+" against bugs that need 48,000-105,000+ levels of nesting - and even a perfectly-obedient model can't get there with a balanced `st.one_of(value(), array(), inline_table())`, since a uniform 1-in-3 recursion choice decays to near-zero probability of reaching four-to-five-digit depths. Two changes together: `agent/summarize.py`'s flat "aim for 12+" replaced with `DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`, escalating geometrically per completed iteration; and rule 14 added to `STRATEGY_CONTRACT`, which stops asking for a bigger number past target 200 and instead teaches two concrete biasing techniques with working code - repeating the recursive branch in `one_of()`, and threading a depth counter through `draw()` that is *actually incremented on the recursive call* (directly naming the earlier dead-`current_depth` bug class from this file's "Latest full run (2026-08-14)" entry, so the model is shown the exact mistake to avoid, not just told "don't do that"). **Outcome: not yet confirmed.** Both changes were verified structurally (imports clean, escalation targets correct at every iteration count via direct calls to `render_feedback()` with synthetic data, prompts build without error) but **never tested against a real Groq call** - no `python -m agent.loop` was run this session. Whether the model actually follows rule 14 and reaches meaningfully higher depth in a live run is an open question, not a confirmed result - unlike every earlier entry in this log, which was validated against a real run before being marked done.
+
+**Addendum, 2026-08-16 - the first live test found a real regression in rule 14 itself.** Run 6 (`logs/RUN_HISTORY.md`): depth barely moved (3 -> 4 across 5 iterations, nowhere near the escalating targets), and iteration 4's acceptance collapsed from 42% to 7% - `pipeline/logs/iteration_04.jsonl` showed 389/464 rejects were `"missing ="`. Read the actual generated `agent/strategies/iter_04_strategy.py`: `toml_strategy` was built as `st.one_of(document(), document(), document(), document(), document(), array(), dotted_key(), ml_basic_string(), ..., st.integers(...).map(lambda x: f"0x{x:x}"))` - only 5 of 17 branches were real documents; the other 12 exposed bare fragments (a raw array, a raw dotted key, a raw hex number) directly as if they were whole files, which is invalid TOML at any depth (a file must be `key=value`/table lines, never a bare value alone). **Root cause traced to rule 14's own closing sentence**, which said to "combine both with `st.one_of()` in the final `toml_strategy`" without stating that every branch must still be a complete document - the model took that literally and stopped routing the depth-seeking constructs through `pair()`'s value position (which rule 12 already establishes as the only valid place for `array()`/`inline_table()`), instead giving them a second, unwrapped, top-level home right next to `document()`. **Fixed the same day**, before any further live testing: rule 14's closing paragraph now explicitly forbids bare recursive/scalar strategies inside `toml_strategy`'s own `one_of()`, with a "Wrong" example matching the actual failure verbatim and a "Right" example showing depth-seeking routed through a `document_depth_biased()` variant that still emits full `key =` lines throughout. Not yet re-tested against a live run. Notable process point: this is the *fastest* a new rule has gone from "written" to "found breaking something in production" to "patched" in this log - a single run - which argues for treating any newly-added rule as unverified until it survives at least one live iteration, not just a structural/import check.
+
+6. **Rule 15** (2026-08-16, Run 7) - the rule-14 fix above got its live test immediately, and surfaced a *different*, pre-existing bug that rule 14 wasn't responsible for: acceptance stayed chronically low (12-23%) across *all 5* iterations this time (not just one), and depth barely moved (2-4). `"missing ="` was again the dominant reject reason in every iteration - but this time the generated `toml_strategy = document()` alone, no bare fragments (rule 14's fix held). Traced to the actual generated documents instead of guessed at: `key()`'s unquoted branch was completely unrestricted `st.text(...).map(lambda x: x)`, producing literal keys like `[»\x1aî(\U0008e78b\U00055fad!v9×]` (control characters and symbols; unquoted TOML keys may only contain ASCII letters/digits/`_`/`-`). Separately, `value()`'s quoted-string branches wrapped raw, unrestricted `st.text()` output in quotes with no exclusion of the quote character or control characters, producing `"\nDJ" = 0` - a literal, unescaped newline landing inside a single-line basic string, which doesn't just invalidate that one value but corrupts line-counting for the rest of the document (hence the many "line 2: ..." errors that were actually fallout from line 1's corruption). Rule 15 requires both branches to restrict their alphabet directly at construction time (never `.filter()`, per rule 9) - `string.ascii_letters + string.digits + "-_"` for unquoted keys, and the printable set minus the quote character/backslash/newline/carriage-return for quoted content. **Outcome: not yet tested.** Structurally verified only (15 rules present, prompts build, imports clean) - this fix has not yet survived a live run, and per the process point above should be treated as unconfirmed until it does.
+
+7. **Rule 16** (2026-08-17, Run 8) - **the most important finding in this log for the report's "Challenges" section: recursive generation is structurally incapable of reaching crash depth, and no prompt can fix that.** Rule 15 worked (Run 8 acceptance recovered to 40-53%, the best sustained figures across all 8 runs, and the `"missing ="`/`"invalid key"` rejects that dominated Run 7 vanished entirely - the top reject became the benign `"key exists"`). But depth still sat at 1-4, so the generated `iter_04_strategy.py` was measured directly instead of assumed about. **The model had obeyed rule 14 correctly** - `array()` listed its recursive branch 4x against `VALUE` once and genuinely threaded `depth=depth+1` - yet 30 direct `.example()` draws of that same `array()` never exceeded depth 2. A controlled A/B isolated the cause: holding the bias ratio and depth counter identical and changing only the list size, unconstrained `st.lists(...)` reached **max depth 3** while forcing `min_size=1, max_size=1` reached **max depth 13**. Hypothesis's default `st.lists()` averages ~50-90 elements, so a biased recursive strategy spreads *sideways* into a bushy tree and burns its data budget on width at depth 2-3 - the branching factor, not the recursion bias, was the real cap. **But the deeper conclusion is that even the corrected chain shape only reached 13**, against bugs needing 48,000-105,000: Hypothesis's own generation budget inherently resists deep recursion, so `st.recursive`/`@composite` cannot reach crash depth *by any amount of prompt engineering*. This reframes the whole "loop finds no crashes" story - it was never a model-obedience or prompt-quality failure. Rule 16 therefore teaches the only technique that does work, the same one `pipeline/crash_hunt_strategy.py` already uses to hit 60k-115k reliably: draw the depth as an *integer* and build the string by repetition (`"[" * n + "1" + "]" * n`), no recursion involved, wrapped in a normal `key = value` line per rules 12/14 and kept as one branch beside the shallow ones so grammar breadth survives. **Outcome: not yet tested** (16 rules present, prompts build, imports clean) - though unlike rules 14/15 the underlying *technique* is already proven, since `crash_hunt` uses it to find all four stack-overflow bugs; what's unverified is only whether the model adopts it when told to.
+
+**Addendum, 2026-08-17 - Run 9: rule 16 worked, and immediately exposed prompt-anchoring as a distinct failure mode.** *(Written up as a standalone case — see [Case 5](#case-5-prompt-anchoring--an-examples-constant-became-a-hard-ceiling-) for the report-facing version; this entry keeps the chronological rule-change record.)* Depth went from 4 to **5,000** in a single iteration - a ~1,250x jump, and the single largest metric improvement of the entire project - while acceptance stayed healthy (32-46%) and coverage reached 84%. The model fully adopted the integer-repetition technique, confirming the rule-16 diagnosis was correct. But depth then sat at *exactly* 4999-5000 for all five iterations, which is not a plateau the model discovered - reading the generated `iter_04_strategy.py` showed it had copied the rule's example bounds **verbatim**: `n = draw(st.integers(min_value=200, max_value=5000))`. The measured crash thresholds are ~48,000 (arrays), ~80,000 (inline tables), ~90,000-100,000 (dotted keys), so a hard ceiling of 5,000 put every generated document safely below all of them - hence `findings: 0` again despite the technique working perfectly. **The finding worth reporting: an illustrative constant inside a prompt example acts as a hard ceiling, not a starting point.** The model treated `max_value=5000` as the specification rather than the `DEPTH_TARGETS` escalation (which was concurrently asking for 30,000-90,000) - so a number written casually into an example silently overrode the actual feedback signal. A second, smaller instance of the same class: the model defined `deep_inline_table` and `deep_dotted_key` but wired only `deep_array` into `toml_strategy`, so two of three shapes never executed once. Rule 16 was amended for both: example bounds raised to `1_000`-`120_000` (verified to stay under the 1 MB harness cap - 234 KB, 469 KB, 234 KB respectively at max depth), an explicit instruction to set `max_value` *from the feedback's depth target rather than from the example*, and a requirement to wire all three shapes into `one_of`. Also added a guard against a subtle self-defeating interaction discovered while reasoning about the change: a crashing document is not an "accepted" one, so if deep branches dominate `toml_strategy` the measured acceptance rate drops below the 20% validator floor and the strategy is rejected *before it runs* - losing the very crashes it exists to find. The rule now requires deep branches to stay a minority (~1 per 2 ordinary `document()` branches). Not yet re-tested.
 
 ### Latest full run (2026-08-14) — rules 9-12 confirmed working together, plus one new finding
 
@@ -374,3 +410,80 @@ This isn't a bug in the loop - it's a structural mismatch between what the loop 
 **This is a legitimate, reportable outcome** - the assignment's own Step 5 wording anticipates it directly: *"if none were found, a documented explanation of why, and what you'd try next."* The honest framing for the report: the agentic loop succeeded at its actual job (turning a grammar into a self-improving generator under a feedback signal, with no coverage instrumentation available) but the specific proxy signal chosen wasn't tuned to reproduce the one bug already known to exist in this library, and that gap - between "the loop runs well" and "the loop finds bugs" - is worth stating explicitly rather than implying they're the same success criterion.
 
 **What would change it, if pursued further:** a strategy that deliberately biases toward extreme depth (e.g. weighting `st.one_of()` toward the recursive branch, or a dedicated "generate a pathologically deep array" mode alongside the balanced one), or a feedback directive that rewards depth on a log/exponential scale rather than linearly, since a linear "aim for 12+" directive (as seen in `agent/summarize.py`'s `render_feedback()`) has no mechanism to ever suggest depth 1000+.
+
+**Addendum, 2026-08-16 (`module-7b-crash-hunting`):** pursued further, on a separate branch. A hand-written parametric generator (not the LLM/loop) proved the "dedicated pathologically-deep mode" idea above directly: `pipeline/crash_hunt_strategy.py` found 3-4 distinct stack-overflow bugs (`grammar/early_findings/02_dotted_key_stackoverflow.toml` plus two/three more via `pipeline/run_crash_hunt.py`, see `planning/hunting-generation/`) beyond the one original array bug - confirming this really was a reachability gap, not a fact about `tomlc99` having no more bugs. The "log/exponential feedback directive" idea above was also implemented (`DEPTH_TARGETS` in `agent/summarize.py`, plus prompt rule 14 - see this file's "Prompt-rule fix log" entry 5) but **not yet validated against a live loop run**, so whether the *agentic* loop itself can now reach these depths remains the open question this addendum doesn't answer.
+
+---
+
+## Case 5: prompt anchoring — an example's constant became a hard ceiling ⭐
+
+**Date:** 2026-08-17 (Run 9)
+**Branch:** `module-7b-crash-hunting`
+**Why this is flagged:** this is the most transferable prompt-engineering
+finding in the project — it is not about TOML, `tomlc99`, or fuzzing, and
+would reproduce on any LLM-driven code-generation task.
+
+### TL;DR
+
+- Prompt rule 16 told the model to stop trying to reach extreme nesting via
+  recursion and instead draw an integer and repeat a string. **It worked
+  immediately and spectacularly: max depth went from 4 to 5,000 in one
+  iteration — a ~1,250× jump, the single largest metric improvement of the
+  entire project** — while acceptance stayed healthy (32–46%) and coverage
+  reached 84%.
+- **But depth then sat at exactly 4999–5000 for all five iterations.** Not a
+  plateau the model discovered — the model had copied the rule's own
+  illustrative bounds **verbatim**:
+  `n = draw(st.integers(min_value=200, max_value=5000))`.
+- The measured crash thresholds are ~48,000 (arrays), ~80,000 (inline
+  tables), ~90,000–100,000 (dotted keys). A hard ceiling of 5,000 kept every
+  generated document safely below all of them — so `findings: 0` again,
+  despite the technique itself working perfectly.
+
+### The finding
+
+**An illustrative constant inside a prompt example acts as a hard ceiling,
+not a starting point.** The number `5000` was written casually into a code
+example purely to make it concrete. The model treated it as the
+specification.
+
+Critically, it did so **in preference to the actual feedback signal**:
+`DEPTH_TARGETS` in `agent/summarize.py` was concurrently and explicitly
+asking for 30,000 → 90,000. A number embedded in an example silently
+overrode a directive written in prose — the example won.
+
+A second, milder instance of the same class appeared in the same run: the
+model defined `deep_inline_table` and `deep_dotted_key` but wired only
+`deep_array` into `toml_strategy`, so two of the three shapes never
+executed once. Anything demonstrated but not explicitly required tended not
+to be carried through.
+
+### Fixes applied to rule 16
+
+1. Example bounds raised to `1_000`–`120_000` (verified to stay under the
+   1 MB harness cap: 234 KB / 469 KB / 234 KB respectively at max depth).
+2. An explicit instruction to set `max_value` **from the feedback's depth
+   target rather than from the example**, naming the anchoring failure as a
+   real prior failure so it reads as a correction, not a suggestion.
+3. A requirement to wire **all three** deep shapes into `one_of`, not just
+   define them.
+4. A guard against a self-defeating interaction found while reasoning about
+   the change: a crashing document does not count as "accepted", so if deep
+   branches dominate `toml_strategy`, measured acceptance falls below the
+   20% validator floor and the strategy is rejected *before it ever runs* —
+   losing the very crashes it exists to find. Deep branches must stay a
+   minority (~1 per 2 ordinary `document()` branches).
+
+**Status:** not yet re-tested. 120,000 clears all three measured crash
+thresholds, so the next run is the first with a genuine chance of
+`findings > 0` from the agentic loop itself.
+
+### Why this belongs in the report
+
+The assignment asks for documented judgment calls and challenges. This is a
+clean, measured, causally-traced example of a non-obvious LLM failure mode:
+the model obeyed instructions *exactly*, produced correct code, and still
+failed the objective — because a detail chosen for illustration was read as
+a constraint. It also demonstrates the diagnostic method that caught it:
+the metric (depth pinned at a suspiciously round 5,000) prompted reading
+the actual generated source rather than trusting the summary line.

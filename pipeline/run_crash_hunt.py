@@ -32,7 +32,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from hypothesis.errors import Flaky
 
-from crash_hunt.strategies import CRASH_HUNT_STRATEGIES
+from pipeline.crash_hunt_strategy import CRASH_HUNT_STRATEGIES
 from pipeline.config import load
 from pipeline.runner import HarnessRunner, RunLogger, run_for_parseable_crash
 from pipeline.schema import Verdict
