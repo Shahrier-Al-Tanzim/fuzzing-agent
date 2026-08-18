@@ -167,6 +167,42 @@ class HarnessRunner:
         return record
 
 
+# A deep-recursion stack overflow is inherently unstable in whether ASan can
+# unwind its backtrace (see info.md "unstable signature"). When it can't, the
+# report has zero frames, and every frameless overflow then hashes to the same
+# "unparsed" signature - collapsing genuinely distinct bugs (deep-array vs
+# deep-dotted-key vs deep-inline-table, which have different top frames) into
+# one bucket. Retrying a crash a few times to obtain a parseable stack fixes
+# that: the crash is still the crash, we just want frames so distinct bugs
+# bucket correctly. Used by both triage collection (for --extra inputs) and the
+# crash-hunt driver (so logged crashes carry parseable frames, since triage
+# reads stored stderr from logs without re-running them).
+PARSEABLE_CRASH_RETRIES = 6
+
+
+def run_for_parseable_crash(runner: "HarnessRunner", text: str,
+                            retries: int = PARSEABLE_CRASH_RETRIES) -> "RunRecord":
+    """Run `text` until it crashes with a parseable stack, or retries run out.
+
+    Returns the first record whose crash produced parseable frames; else the
+    last crashing record (so a genuinely always-frameless crash is still
+    reported, just in the unparsed bucket); else the last record (no crash).
+    """
+    from triage.signature import parse_signature  # local: avoid import cycle
+
+    last = None
+    last_crash = None
+    for _ in range(max(1, retries)):
+        rec = runner.run(text)
+        last = rec
+        if rec.is_finding:
+            last_crash = rec
+            sig = parse_signature(rec.stderr, rec.signal)
+            if sig is not None and sig.frames:
+                return rec
+    return last_crash or last
+
+
 class RunLogger:
     """Appends RunRecords to a JSONL file, flushing each line.
 

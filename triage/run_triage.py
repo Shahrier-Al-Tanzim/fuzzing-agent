@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pipeline.config import load, PROJECT_ROOT
-from pipeline.runner import HarnessRunner
+from pipeline.runner import HarnessRunner, run_for_parseable_crash
 from pipeline.schema import read_log
 from triage.minimize import minimize_concrete
 from triage.signature import parse_signature
@@ -39,7 +39,7 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
                     "sha256": rec.input_sha256,
                 })
 
-    # Extras have no stored stderr - run them once to get it.
+    # Extras have no stored stderr - run them to get it.
     runner = HarnessRunner(iteration=-4)
     for f in extra_files:
         p = Path(f)
@@ -47,8 +47,8 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
             print(f"  !! missing: {f}")
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
-        rec = runner.run(text)
-        if not rec.is_finding:
+        rec = run_for_parseable_crash(runner, text)
+        if rec is None or not rec.is_finding:
             print(f"  !! {p.name} did not crash - skipping")
             continue
         found.append({

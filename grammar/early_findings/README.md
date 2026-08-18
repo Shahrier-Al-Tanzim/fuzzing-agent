@@ -40,3 +40,36 @@ pipeline rather than analyzed here.
 **Status:** reproduced with a plain (non-sanitizer) build only. Needs
 re-confirmation under the ASan/UBSan harness (Module 2) to get a proper
 stack trace and crash signature before triage.
+
+## 02_dotted_key_stackoverflow.toml
+
+**Symptom:** `harness/build/toml_harness` (ASan/UBSan build) crashes with
+`AddressSanitizer: stack-overflow` (exit 86) on a key with an extreme
+number of dotted segments, e.g. `a.a.a.…k = 1`.
+
+**Repro:**
+```bash
+source harness/sanitizer_env.sh
+harness/build/toml_harness grammar/early_findings/02_dotted_key_stackoverflow.toml
+# exit 86, ASan stack-overflow
+```
+
+**Root cause (confirmed against source):** `parse_keyval` (`toml.c:1106`)
+handles an inline dotted key by recursing into itself at `toml.c:1138`,
+once per dot, with **no depth guard**. The library *does* bound table-header
+path depth ("max allowed is 10", `toml.c:1216`) but that check only guards
+`[table.header]` paths — the inline dotted-key path is separate and
+unbounded. One native stack frame per dot; deep enough exhausts the stack.
+
+**Distinct from finding #01:** different recursing function
+(`parse_keyval` vs `parse_array`) and different normalized stack
+signature (`55628614cd6c` vs `939402a0547c`) — a genuinely separate bug,
+not a repeat. Found by reading `toml.c` during Module-7b crash-hunting
+planning, not by the fuzzing loop. See
+`planning/hunting/step-01-second-crash-dotted-key.md`.
+
+**Depth note:** the file uses depth 105,000 — comfortably above this
+machine's ~90k crash threshold, but deliberately not deeper: past ~120k
+the overflow becomes too violent for ASan to unwind a backtrace, which
+would collapse its signature into the frameless "unparsed" bucket and
+hide that it's a distinct bug.

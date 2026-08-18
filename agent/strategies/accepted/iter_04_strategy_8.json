@@ -1,0 +1,63 @@
+{
+  "iteration": 4,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: missing =', 'line 2: invalid char U+0004', 'line 1: invalid or missing key']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 8470,
+      "seconds": 3.04,
+      "stats": {
+        "samples": 25,
+        "mean_len": 26.6,
+        "max_len": 100,
+        "sample_max_depth": 2,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.1,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 2: invalid char U+0004",
+          "line 1: invalid or missing key"
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 8652,
+      "seconds": 24.43,
+      "stats": {
+        "samples": 25,
+        "mean_len": 14.3,
+        "max_len": 65,
+        "sample_max_depth": 2,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.2,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: invalid key",
+          "line 1: invalid char U+000e"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 14.3,
+    "max_len": 65,
+    "sample_max_depth": 2,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.2,
+    "top_rejects": [
+      "line 1: missing =",
+      "line 1: invalid key",
+      "line 1: invalid char U+000e"
+    ]
+  }
+}

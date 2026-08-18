@@ -1,0 +1,103 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "syntax",
+      "error": "the code does not parse: line 46: '(' was never closed",
+      "tokens": 7714,
+      "seconds": 2.75,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 3/40 (8%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid key', 'line 1: missing =', 'line 1: invalid or missing key']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 7441,
+      "seconds": 13.62,
+      "stats": {
+        "samples": 25,
+        "mean_len": 69.9,
+        "max_len": 220,
+        "sample_max_depth": 4,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.075,
+        "top_rejects": [
+          "line 1: invalid key",
+          "line 1: missing =",
+          "line 1: invalid or missing key"
+        ]
+      }
+    },
+    {
+      "attempt": 3,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: missing =', 'line 1: invalid key', 'line 2: invalid key']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 7527,
+      "seconds": 40.41,
+      "stats": {
+        "samples": 25,
+        "mean_len": 111.4,
+        "max_len": 574,
+        "sample_max_depth": 2,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.125,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 1: invalid key",
+          "line 2: invalid key"
+        ]
+      }
+    },
+    {
+      "attempt": 4,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: Expected date but got min_value=None (type=NoneType)",
+      "tokens": 7342,
+      "seconds": 34.75,
+      "stats": {}
+    },
+    {
+      "attempt": 5,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 7580,
+      "seconds": 35.51,
+      "stats": {
+        "samples": 25,
+        "mean_len": 304.4,
+        "max_len": 1087,
+        "sample_max_depth": 5,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.275,
+        "top_rejects": [
+          "line 1: invalid key",
+          "line 1: missing =",
+          "line 1: invalid char U+0011"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 304.4,
+    "max_len": 1087,
+    "sample_max_depth": 5,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.275,
+    "top_rejects": [
+      "line 1: invalid key",
+      "line 1: missing =",
+      "line 1: invalid char U+0011"
+    ]
+  }
+}

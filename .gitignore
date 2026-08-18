@@ -36,3 +36,5 @@ agent/state/
 # otherwise silently catch it since it also lives in a folder named logs/.
 !logs/RUN_HISTORY.jsonl
 !logs/RUN_HISTORY.md
+
+explanation.md

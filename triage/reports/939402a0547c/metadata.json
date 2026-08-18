@@ -14,15 +14,34 @@
     "raw_frame_count": 191,
     "recursion_collapsed": true
   },
-  "occurrences": 1,
+  "occurrences": 86,
   "sources": [
-    "grammar/early_findings/01_array_nesting_stackoverflow.toml"
+    "iteration_00.jsonl#20",
+    "iteration_00.jsonl#81",
+    "iteration_00.jsonl#200",
+    "iteration_00.jsonl#202",
+    "iteration_00.jsonl#302",
+    "iteration_00.jsonl#303",
+    "iteration_00.jsonl#305",
+    "iteration_00.jsonl#459",
+    "iteration_01.jsonl#29",
+    "iteration_01.jsonl#30",
+    "iteration_01.jsonl#74",
+    "iteration_01.jsonl#104",
+    "iteration_01.jsonl#141",
+    "iteration_01.jsonl#157",
+    "iteration_01.jsonl#244",
+    "iteration_01.jsonl#258",
+    "iteration_01.jsonl#278",
+    "iteration_01.jsonl#293",
+    "iteration_01.jsonl#301",
+    "iteration_01.jsonl#306"
   ],
-  "original_bytes": 120006,
-  "minimized_bytes": 15408,
-  "reduction": 0.872,
+  "original_bytes": 30493,
+  "minimized_bytes": 14876,
+  "reduction": 0.512,
   "minimize_method": "delta-debugging",
-  "minimize_steps": 22,
+  "minimize_steps": 20,
   "verification": {
     "runs": 3,
     "crashes": 3,
@@ -32,5 +51,5 @@
     "unstable_signature": false,
     "description": "deterministic (3/3 runs crashed)"
   },
-  "triaged_at": "2026-08-14T08:50:29.102700+00:00"
+  "triaged_at": "2026-08-17T03:42:03.398006+00:00"
 }
