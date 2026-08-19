@@ -14,6 +14,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agent.run_history import get_next_run_id
 from pipeline.config import load, PROJECT_ROOT
 from pipeline.runner import HarnessRunner, run_for_parseable_crash
 from pipeline.schema import read_log
@@ -64,10 +65,16 @@ def main() -> int:
         "grammar/early_findings/01_array_nesting_stackoverflow.toml"],
         help="crashing files found outside the pipeline")
     ap.add_argument("--no-minimize", action="store_true")
+    ap.add_argument("--run", type=int, default=None,
+                    help="tag reports under reports/run_N/ (default: the "
+                         "most recent agent.loop/seed.py run, auto-detected "
+                         "from logs/RUN_HISTORY.jsonl)")
     args = ap.parse_args()
 
-    out_dir = load().path("paths.crashes")
+    run_id = args.run if args.run is not None else get_next_run_id() - 1
+    out_dir = load().path("paths.crashes") / f"run_{run_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Tagging reports as run_{run_id}")
 
     print("=== collecting ===")
     findings = collect_findings(args.extra)
@@ -143,17 +150,17 @@ def main() -> int:
         }
         (d / "metadata.json").write_text(json.dumps(meta, indent=2),
                                          encoding="utf-8")
-        (d / "report.md").write_text(_render_report(key, sig, meta, mini),
-                                     encoding="utf-8")
+        (d / "report.md").write_text(
+            _render_report(key, sig, meta, mini, run_id), encoding="utf-8")
         summary.append(meta)
 
     idx = out_dir / "INDEX.md"
-    idx.write_text(_render_index(summary), encoding="utf-8")
+    idx.write_text(_render_index(summary, run_id), encoding="utf-8")
     print(f"\n=== done ===\n  {len(buckets)} report(s) in {out_dir}\n  index: {idx}")
     return 0
 
 
-def _render_report(key: str, sig, meta: dict, minimized: str) -> str:
+def _render_report(key: str, sig, meta: dict, minimized: str, run_id: int) -> str:
     frames = "\n".join(f"  #{i}  {f}" for i, f in
                        enumerate(sig.frames if sig else [])) or "  (none parsed)"
     v = meta["verification"]
@@ -188,7 +195,7 @@ in {meta['minimize_steps']} steps.
 
 ```bash
 source harness/sanitizer_env.sh
-harness/build/toml_harness triage/reports/{key}/minimized.toml
+harness/build/toml_harness triage/reports/run_{run_id}/{key}/minimized.toml
 echo $?   # expect 86 (sanitizer) or a signal
 ```
 
@@ -218,14 +225,14 @@ def _verify_label(v: dict) -> str:
     raise AssertionError(f"unrecognized verification state: {v}")
 
 
-def _render_index(summary: list[dict]) -> str:
+def _render_index(summary: list[dict], run_id: int) -> str:
     rows = "\n".join(
         f"| `{s['signature']['digest']}` | {s['signature'].get('bug_type','?')} "
         f"| {s['occurrences']} | {s['minimized_bytes']} B "
         f"| {_verify_label(s['verification'])} |"
         for s in summary)
     return f"""\
-# Crash triage index
+# Crash triage index — run {run_id}
 
 {len(summary)} unique bug(s) after deduplication.
 

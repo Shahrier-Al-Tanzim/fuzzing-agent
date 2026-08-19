@@ -78,7 +78,7 @@ def _generate(client: OllamaClient | GroqClient, prompt: str, iteration: int,
         if result.ok:
             save_strategy(iteration, code, accepted=True, attempt=attempt,
                           meta={"iteration": iteration, "attempts": attempts,
-                                "stats": result.stats})
+                                "stats": result.stats}, run_id=run_id)
             return code, {"attempts": attempts, "stats": result.stats}
         if code:
             save_strategy(iteration, code, accepted=False, attempt=attempt)
@@ -226,7 +226,8 @@ def main() -> int:
                     stop_reason = "exhausted_attempts"
                     return 1
                 save_strategy(iteration, current_code, accepted=True,
-                              meta={"note": "reused: generation failed"})
+                              meta={"note": "reused: generation failed"},
+                              run_id=run_id)
             else:
                 current_code = code
 

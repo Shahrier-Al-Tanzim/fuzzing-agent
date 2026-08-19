@@ -19,15 +19,22 @@ def _dir() -> Path:
     return d
 
 
-def _archive_dir() -> Path:
-    d = _dir() / "accepted"
+def _archive_dir(run_id: int | None = None) -> Path:
+    """One subfolder per run (accepted/run_23/, accepted/run_24/, ...) so
+    a whole run's 5 iterations sit together instead of being scattered
+    flat files distinguished only by a filename suffix.
+
+    Falls back to the old flat accepted/ folder (with a plain incrementing
+    counter, see _next_archive_number) only when no run_id is available -
+    keeps older/other callers working without a crash."""
+    d = _dir() / "accepted" / (f"run_{run_id}" if run_id is not None else "")
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def _next_archive_number(iteration: int) -> int:
-    """1, 2, 3, ... per iteration - so a later run never clobbers an
-    earlier pass, independent of how many times you re-ran seed.py."""
+    """1, 2, 3, ... per iteration - fallback naming only, used when no
+    run_id is passed to save_strategy(). Prefer run-folder naming."""
     nums = []
     for p in _archive_dir().glob(f"iter_{iteration:02d}_strategy_*.py"):
         tail = p.stem.rsplit("_", 1)[-1]
@@ -37,7 +44,8 @@ def _next_archive_number(iteration: int) -> int:
 
 
 def save_strategy(iteration: int, code: str, *, accepted: bool,
-                  attempt: int = 1, meta: dict | None = None) -> Path:
+                  attempt: int = 1, meta: dict | None = None,
+                  run_id: int | None = None) -> Path:
     suffix = "" if accepted else f"_rejected_attempt{attempt}"
     path = _dir() / f"iter_{iteration:02d}_strategy{suffix}.py"
     header = (
@@ -57,9 +65,16 @@ def save_strategy(iteration: int, code: str, *, accepted: bool,
     # overwritten by the latest pass, on purpose. This archive copy is
     # purely so a later successful test run never erases evidence of an
     # earlier one.
+    #
+    # Archived under accepted/run_{run_id}/ so a whole run's 5 iterations
+    # stay together in one folder, instead of flat files distinguished
+    # only by a number suffix in the filename.
     if accepted:
-        n = _next_archive_number(iteration)
-        archive_path = _archive_dir() / f"iter_{iteration:02d}_strategy_{n}.py"
+        if run_id is not None:
+            archive_path = _archive_dir(run_id) / f"iter_{iteration:02d}_strategy.py"
+        else:
+            n = _next_archive_number(iteration)
+            archive_path = _archive_dir() / f"iter_{iteration:02d}_strategy_{n}.py"
         archive_path.write_text(header + code, encoding="utf-8")
         if meta is not None:
             archive_path.with_suffix(".json").write_text(

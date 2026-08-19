@@ -341,6 +341,32 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     the deep-nesting branch from rule 16 - they are two DIFFERENT bug
     classes (a stack overflow from nesting vs. a timeout from key count),
     so both are worth generating, not just one.
+18. ALSO generate documents with ONE array holding a HUGE NUMBER of simple
+    elements, e.g. `x = [1, 1, 1, ... ]` with tens of thousands of items.
+    This is a THIRD, DIFFERENT bug class from rules 16 and 17. MEASURED
+    FACT: `tomlc99` grows an array by reallocating and copying the ENTIRE
+    array every time it appends ONE element, so building an array of N
+    elements costs O(N^2) time overall. Confirmed directly against the
+    harness: ~16,000 elements parsed in ~4.5s (fine), but ~18,000+ elements
+    (only ~36 KB of text) crossed the 5-second timeout - which the
+    assignment counts as a finding. This is even MORE byte-efficient than
+    rule 17's many-keys hang: at a fixed 100 KB budget the flat array times
+    out while the many-keys document does not, because each element is only
+    a couple of bytes (`1,`). It comes from the COUNT of array elements, not
+    from nesting depth or key count:
+      Right:  @composite
+              def wide_array(draw):
+                  n = draw(st.integers(min_value=18_000, max_value=200_000))
+                  return "wide = [" + ",".join("1" for _ in range(n)) + "]"
+    The same O(N^2) growth also affects arrays of tables (`[[a]]` repeated
+    thousands of times) and arrays of empty inline tables (`[{},{},...]`),
+    so varying the element (`1`, `{}`, `[1]`) is worthwhile but not
+    required. Add this as yet another branch in `toml_strategy`'s
+    `one_of(...)`. Keep the whole document under 1 MB (200,000 single-digit
+    elements is ~400 KB, safely under). Same minority-branch rule as rule 16
+    applies: a timing-out document is not "accepted", so do not let these
+    wide-array branches dominate `one_of` or acceptance drops below the 20%
+    floor.
 """
 
 SEED_TEMPLATE = """\

@@ -3,7 +3,7 @@
 **Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
 One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total runs: 15**
+**Total runs: 17**
 
 ---
 
@@ -563,5 +563,94 @@ One section per run, in order; within each run, one section per iteration, in or
 | 2026-08-19 07:21:52 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16643 | 36.88 |  |
 
 **Result:** accepted 24% · coverage 100% · novelty 30% · max depth 49985 · findings 34 · examples 500 · elapsed 179.0s
+
+---
+
+## Run 16 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 07:56:02 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 11963 | 488.91 |  |
+
+**Result:** accepted 41% · coverage 87% · novelty 40% · max depth 51429 · findings 33 · examples 500 · elapsed 583.2s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 07:58:05 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 14880 | 33.1 |  |
+
+**Result:** accepted 46% · coverage 95% · novelty 39% · max depth 51429 · findings 29 · examples 500 · elapsed 116.6s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 08:00:31 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15442 | 54.93 |  |
+
+**Result:** accepted 45% · coverage 100% · novelty 45% · max depth 51429 · findings 26 · examples 500 · elapsed 151.9s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 08:03:41 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15843 | 91.82 |  |
+
+**Result:** accepted 60% · coverage 100% · novelty 42% · max depth 51429 · findings 25 · examples 500 · elapsed 179.8s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 08:05:37 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16221 | 31.4 |  |
+
+**Result:** accepted 50% · coverage 100% · novelty 44% · max depth 51429 · findings 35 · examples 500 · elapsed 121.3s
+
+---
+
+## Run 17 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 10:24:11 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 12063 | 76.73 |  |
+
+**Result:** accepted 28% · coverage 66% · novelty 43% · max depth 34840 · findings 33 · examples 500 · elapsed 202.9s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 10:27:02 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15250 | 54.3 |  |
+
+**Result:** accepted 42% · coverage 95% · novelty 37% · max depth 35000 · findings 32 · examples 500 · elapsed 170.8s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 10:30:58 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16315 | 110.79 |  |
+
+**Result:** accepted 44% · coverage 97% · novelty 36% · max depth 35000 · findings 25 · examples 500 · elapsed 246.2s
+
+### Iteration 3 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 10:34:47 | 1 | FAIL | acceptance | gemini/gemini-3.6-flash | 16642 | 94.79 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-08-19 10:36:11 | 2 | PASS | acceptance | gemini/gemini-3.6-flash | 16628 | 74.04 |  |
+
+**Result:** accepted 23% · coverage 100% · novelty 36% · max depth 35000 · findings 29 · examples 500 · elapsed 291.1s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 10:42:52 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16289 | 292.24 |  |
+
+**Result:** accepted 18% · coverage 100% · novelty 35% · max depth 51935 · findings 90 · examples 500 · elapsed 424.1s
 
 ---

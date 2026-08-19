@@ -1,0 +1,7 @@
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==61348==ERROR: AddressSanitizer: stack-overflow on address 0x7fffe8075ff8 (pc 0x57f89d4f266d bp 0x00000000001e sp 0x7fffe8076000 T0)
+    <empty stack>
+
+SUMMARY: AddressSanitizer: stack-overflow
+==61348==ABORTING

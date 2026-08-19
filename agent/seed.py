@@ -96,6 +96,7 @@ def generate_validated_strategy(iteration: int = 0, probe: bool = True,
                         "usage": client.usage_summary(),
                         "generated_at": datetime.now(timezone.utc).isoformat(),
                     },
+                    run_id=run_id,
                 )
                 if verbose:
                     print(f"\nsaved: {path}")
