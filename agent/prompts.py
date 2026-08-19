@@ -322,6 +322,25 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     IMPORTANT: still use `st.recursive`/`@composite` for ordinary nesting
     (rule 10) - this integer-repetition trick is ONLY for the extreme-depth
     branch, not a replacement for real recursive structure everywhere.
+17. ALSO generate documents with MANY SIBLING keys in ONE table (not nested
+    - flat, side by side), as a second, DIFFERENT way to break the parser.
+    MEASURED FACT: `tomlc99` looks up every key with a linear scan through
+    all existing keys, so adding N keys to the same table costs O(N^2) time
+    overall. Confirmed directly against the harness: 5,000 sibling keys
+    took 0.74s (fine), but 15,000+ sibling keys took over 5 seconds and hit
+    the per-input timeout - which the assignment counts as a finding, same
+    as a crash. This needs far fewer bytes than deep nesting (a few hundred
+    KB, not tens of thousands of nesting levels) because it comes from
+    COUNT of keys, not DEPTH of nesting:
+      Right:  @composite
+              def many_siblings(draw):
+                  n = draw(st.integers(min_value=10_000, max_value=60_000))
+                  lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
+                  return "\\n".join(lines)
+    Add this as another branch in `toml_strategy`'s `one_of(...)`, alongside
+    the deep-nesting branch from rule 16 - they are two DIFFERENT bug
+    classes (a stack overflow from nesting vs. a timeout from key count),
+    so both are worth generating, not just one.
 """
 
 SEED_TEMPLATE = """\

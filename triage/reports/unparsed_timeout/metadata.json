@@ -1,0 +1,43 @@
+{
+  "signature": {
+    "digest": "unparsed_timeout"
+  },
+  "occurrences": 72,
+  "sources": [
+    "iteration_00.jsonl#32",
+    "iteration_00.jsonl#34",
+    "iteration_00.jsonl#54",
+    "iteration_00.jsonl#76",
+    "iteration_00.jsonl#104",
+    "iteration_00.jsonl#105",
+    "iteration_00.jsonl#184",
+    "iteration_00.jsonl#227",
+    "iteration_00.jsonl#239",
+    "iteration_00.jsonl#260",
+    "iteration_00.jsonl#280",
+    "iteration_00.jsonl#383",
+    "iteration_00.jsonl#487",
+    "iteration_00.jsonl#496",
+    "iteration_01.jsonl#2",
+    "iteration_01.jsonl#7",
+    "iteration_01.jsonl#46",
+    "iteration_01.jsonl#60",
+    "iteration_01.jsonl#86",
+    "iteration_01.jsonl#128"
+  ],
+  "original_bytes": 168369,
+  "minimized_bytes": 168369,
+  "reduction": 0.0,
+  "minimize_method": "none",
+  "minimize_steps": 0,
+  "verification": {
+    "runs": 3,
+    "crashes": 0,
+    "signature_matches": 0,
+    "deterministic": false,
+    "flaky": false,
+    "unstable_signature": false,
+    "description": "DID NOT REPRODUCE (0/3)"
+  },
+  "triaged_at": "2026-08-19T07:33:40.502957+00:00"
+}

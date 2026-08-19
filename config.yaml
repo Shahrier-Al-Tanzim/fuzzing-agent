@@ -37,13 +37,29 @@ llm:
   validation_probe_examples: 40
 
   # Which backend agent/seed.py uses when --provider isn't passed on the
-  # command line. ollama | groq. Currently groq: qwen2.5-coder:7b kept
-  # hitting a real reliability ceiling (see OBSERVATIONS.md Case 1) that
-  # Groq's larger model doesn't hit as often (Case 2). Switch back to
-  # ollama here, or to a new provider entirely, once an OpenAI key is
-  # available - --provider on the command line always overrides this.
-  provider: groq
-  groq_model: llama-3.3-70b-versatile
+  # command line. ollama | groq | gemini. Originally groq: qwen2.5-coder:7b
+  # kept hitting a real reliability ceiling (see OBSERVATIONS.md Case 1)
+  # that Groq's larger model didn't hit as often (Case 2). Then
+  # llama-3.3-70b-versatile was removed from Groq's lineup entirely
+  # (2026-08-18, confirmed via GET /openai/v1/models). Its replacement,
+  # openai/gpt-oss-120b, works but every currently-active Groq model
+  # (gpt-oss-120b, gpt-oss-20b, qwen/qwen3.6-27b) shares the same 8,000
+  # tokens-per-minute free-tier ceiling - too small for this project's
+  # ~8,000-9,500 token prompts once STRATEGY_CONTRACT grew past rule 13 or
+  # so. Switched default to gemini: its free tier gives ~250,000 TPM,
+  # confirmed live against a real full-size prompt, not just read from
+  # docs. --provider on the command line always overrides this.
+  provider: gemini
+  # openai/gpt-oss-120b, kept as the groq fallback if gemini also needs
+  # replacing later. Re-check `curl https://api.groq.com/openai/v1/models
+  # -H "Authorization: Bearer $GROQ_API_KEY"` if this one also disappears.
+  groq_model: openai/gpt-oss-120b
+  # gemini-2.5-flash was retired; gemini-3.6-flash is the model Google's
+  # own 404 error suggested as the replacement, confirmed working live
+  # (clean single fenced code block, no reasoning leaking into content).
+  # Re-check `curl "https://generativelanguage.googleapis.com/v1beta/models
+  # ?key=$GEMINI_API_KEY"` if this one also gets retired later.
+  gemini_model: gemini-3.6-flash
 
 paths:
   logs: pipeline/logs

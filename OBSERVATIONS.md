@@ -35,6 +35,33 @@ assumed to relate to earlier ones unless stated.
 
 ---
 
+## Bugs found — summary (updated as of Run 15, 2026-08-19)
+
+All real bugs confirmed in `tomlc99` so far, in one place. Signature IDs
+are the folder names under `triage/reports/`.
+
+| # | Bug | Mechanism | Signature(s) | How found | Deterministic? |
+|---|---|---|---|---|---|
+| 1 | Array-nesting stack overflow | `parse_array` (`toml.c:1057`) recurses into itself once per `[`, no depth limit | `939402a0547c`, `e857b4530c96` (frameless variant, same root cause) | Found by hand in Module 1 (`grammar/early_findings/01_...`), then rediscovered by the agentic loop itself in Run 11+ | Yes (3/3) |
+| 2 | Dotted-key stack overflow | `parse_keyval` (`toml.c:1106`) recurses into itself once per `.` in `a.b.c...=1`, no depth limit — separate from bug 1's function and separate from the table-header path's depth-10 guard, which doesn't cover this case | `55628614cd6c` | Found by hand reading `toml.c` during crash-hunting planning (`grammar/early_findings/02_...`) | Signature unstable (crashes 3/3, but ASan can't always get a clean backtrace at this depth) |
+| 3 | Inline-table stack overflow | `parse_inline_table` and `parse_keyval` recurse into each other once per nested `{`, no depth limit | `26e809dd9d85` | Found via the hand-written `crash_hunt` parametric generator, cross-confirmed by the agentic loop | Yes (3/3) |
+| 4 | Many-siblings O(n²) hang | `toml_table_in()` scans existing keys linearly on every insert, so N keys in one table costs O(N²) total — thousands of `kN = 1` lines under one table blows past the 5s timeout | `unparsed_timeout` | Taught to the LLM as prompt rule 17; **first fired autonomously by the agentic loop itself in Run 15** (72 occurrences) — not yet confirmed via a hand-written probe, the reverse order of bugs 1-3 | No — inherently flaky near a timing cutoff, not a memory-safety bug, expected (see Case 6) |
+
+**Bug class split:** 3 are memory-safety bugs (unbounded recursion →
+stack exhaustion, would be a real CVE-class issue in production use); 1 is
+an algorithmic-complexity / denial-of-service bug (slow, not unsafe). All
+4 stem from the same root pattern: `tomlc99`'s recursive-descent parser
+and its table implementation have no limits on attacker-controlled input
+size or nesting, anywhere.
+
+**Not a new bug class, just a new confirmation:** Run 15 (Gemini) also
+re-found bugs 1-3 (159 crashing inputs total, deduplicating to the same
+signatures as before) alongside bug 4. See Case 6 for the acceptance/
+coverage numbers from that run, and Case 5 for how bugs 1-3's crash
+thresholds were originally discovered.
+
+---
+
 ## Case 1: 7B model reliability in Module 4 (agentic seed generation)
 
 **Date:** 2026-08-13
@@ -487,3 +514,122 @@ failed the objective — because a detail chosen for illustration was read as
 a constraint. It also demonstrates the diagnostic method that caught it:
 the metric (depth pinned at a suspiciously round 5,000) prompted reading
 the actual generated source rather than trusting the summary line.
+
+### What `crash_hunt` is, and its actual (indirect) role in Run 11
+
+Worth stating plainly, since it's easy to conflate "found the depth
+threshold data" with "found the crashes" - they are not the same claim.
+
+**What it is:** `pipeline/crash_hunt_strategy.py` + `pipeline/run_crash_hunt.py`
+- a hand-written, non-LLM generator (no model involved in writing it at
+all). Four fixed campaigns, each drawing one integer and repeating a
+character that many times to build one deliberately pathological
+construct: nested arrays, dotted keys, inline tables, and alternating
+array/inline-table mixes. This is the exact "draw an integer, repeat a
+string" technique that rule 16 later taught the LLM.
+
+**How it connects to the pipeline:** fully - it lives inside `pipeline/`
+(originally a separate top-level `crash_hunt/` package, relocated after
+review to mirror `baseline_strategy.py`/`run_baseline.py`'s existing
+shape), reuses the same `HarnessRunner`/`RunLogger`/`config.yaml` as
+everything else, and logs to `pipeline/logs/crashhunt_*.jsonl` in the
+same format `triage/` already reads from `iteration_0X.jsonl`.
+
+**Its role in Run 11's actual crash results: none, directly - verified,
+not assumed.** Every one of Run 11's 4 triage reports' `sources` fields
+trace only to `iteration_00.jsonl`-`iteration_04.jsonl` (the agentic
+loop's own logs); `crash_hunt`'s logs were sitting outside
+`pipeline/logs/` at the time and contributed zero inputs to that triage
+run.
+
+**Its role in Run 11 happening at all: the reason rule 16 existed to be
+followed.** `crash_hunt` is what first *proved* the three crash
+mechanisms were reachable and *measured* their real thresholds
+(~48k/80k/90k) - that evidence became rule 16's worked example, which the
+LLM then adopted on its own in Run 11. So: zero direct contribution to
+Run 11's crashing inputs, but it is the reason the prompt knew what
+number to aim for and which technique to teach. Correlation (both
+projects found the same bugs) should not be read as the same claim as
+causation (crash_hunt did not generate any of Run 11's crashing inputs).
+
+## Case 6: Run 15 (Gemini, first full 5-iteration run) — acceptance falls every iteration while coverage sits at 100%
+
+Real output, full run, no manual intervention beyond resuming past two
+transient Gemini API failures (a read timeout and a 503 - both now
+retried automatically, see `agent/gemini_client.py`):
+
+```
+iter 0: accept 61%  cov 97%   depth 40574  findings 30
+iter 1: accept 56%  cov 100%  depth 49985  findings 32
+iter 2: accept 29%  cov 100%  depth 49985  findings 30
+iter 3: accept 26%  cov 100%  depth 49985  findings 32
+iter 4: accept 24%  cov 100%  depth 49985  findings 34
+```
+
+Two things about this table are not self-explanatory from the printed
+line alone, so worth recording precisely (traced to code, not guessed):
+
+**What "coverage" actually measures.** `agent/coverage.py`'s
+`coverage_fraction` = the fraction of a fixed list of tracked TOML
+grammar productions (`pipeline/features.py`'s `PRODUCTIONS` tuple - e.g.
+`array`, `inline_table`, `basic_string`, `datetime`) that have appeared
+at least once in an *accepted* document, **cumulative across the whole
+run**, never reset between iterations. So "100%" does not mean "no more
+bugs to find" or "every possible document shape" - it means every
+grammar construct we bothered to track has shown up in at least one
+successfully-parsed document at some point since iteration 0. It says
+nothing about depth, combination, or the pathological shapes that
+actually cause crashes. The `+36 this run` figure is also a minor
+mislabel worth flagging: it's `len(productions_this_iteration)`, i.e.
+"36 distinct productions appeared in *this* iteration's accepted
+records" - not "36 newly-covered productions." Once coverage is already
+100%, this number is not a "new ground broken" count; it just tracks
+this iteration's accepted-document diversity from the fixed set.
+
+**Why acceptance keeps dropping.** "Accepted" here means the harness
+process exited 0 - the underlying `tomlc99` library actually parsed the
+generated document (`pipeline/schema.py`'s `Verdict.ACCEPT`) - not
+Hypothesis's own internal example filtering. Acceptance rate is
+per-iteration, not cumulative (unlike coverage), recomputed fresh each
+time from that iteration's own records
+(`agent/summarize.py::render_feedback`). The decline lines up exactly
+with `DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`
+(`agent/summarize.py`): every iteration's feedback explicitly instructs
+the model to bias its strategy toward deeper, more unbalanced nesting as
+the target climbs, and Run 15's own `max depth` column confirms the
+strategy actually did this (40574 → 49985, hitting the ceiling by
+iteration 1). Pushing generation toward tens of thousands of nesting
+levels makes a document far more likely to be malformed, exceed a
+size/depth limit the parser itself enforces, or otherwise fail to parse
+- i.e. more REJECT/CRASH/TIMEOUT harness verdicts, not more Hypothesis-
+level filtering. This is the deliberate acceptance-for-depth trade the
+depth-escalation design makes on purpose (see Case 4/5): the 20%
+acceptance floor exists specifically so this trade has a hard stop
+before the strategy collapses to producing nothing useful at all. Run
+15's iteration 4 (24%) stayed just above that floor.
+
+**Why this belongs in the report:** it is the same escalating-depth
+mechanism documented in Case 4/5, now observed end-to-end on a full
+5-iteration run with real numbers, and it resolves what could otherwise
+look like two unrelated anomalies ("coverage stuck at 100%, is something
+broken?" and "why does the model seem to be getting worse?") into one
+explained, intentional trade-off.
+
+**Triage of Run 15's 159 crashing inputs (real, run after this write-up):**
+rule 17's many-siblings O(n²) hang fired autonomously for the first time
+via the agentic loop itself, not just the hand-written `crash_hunt` probe
+- 72 timeout occurrences, minimized reproducer is exactly the predicted
+shape (`[a]` followed by thousands of `kN = 1` lines). This resolves a
+previously-open question (whether rule 17 would ever be confirmed live).
+It reports `DID NOT REPRODUCE (0/3)` under `triage`'s verify step, but
+that is expected for this bug class specifically: it is a *timing*
+threshold (crosses the 5s harness cutoff), not a memory-safety crash, so
+pass/fail near the boundary is inherently sensitive to system load at
+verify-time - unlike the three stack-overflow bugs, which reproduce
+deterministically (3/3) every time. `triage`'s verify step was designed
+around deterministic crashes; it doesn't yet have a notion of "reproduces
+under load, marginal near a timing cutoff" for hang-class bugs. Worth
+noting as a known gap rather than a failure: **the other 4 signatures
+found in Run 15 are the same 3-4 stack-overflow bugs already known** -
+this run found no new memory-safety bug class, only confirmed the hang
+class was reachable by the LLM-driven loop on its own.

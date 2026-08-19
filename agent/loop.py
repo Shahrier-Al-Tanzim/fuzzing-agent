@@ -28,6 +28,7 @@ from hypothesis import HealthCheck, given, settings
 
 from agent.coverage import LoopState
 from agent.extract import extract_python
+from agent.gemini_client import GeminiClient
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
 from agent.prompts import SYSTEM_PROMPT, build_refine_prompt, build_seed_prompt
@@ -142,7 +143,7 @@ def main() -> int:
                     help="override loop.max_iterations")
     ap.add_argument("--resume", action="store_true",
                     help="continue from saved state instead of starting fresh")
-    ap.add_argument("--provider", choices=["ollama", "groq"], default=None,
+    ap.add_argument("--provider", choices=["ollama", "groq", "gemini"], default=None,
                     help="which LLM backend to use "
                          "(default: llm.provider in config.yaml)")
     args = ap.parse_args()
@@ -155,7 +156,10 @@ def main() -> int:
     # Same provider switch as agent/seed.py (Module 4) - a 5-iteration loop
     # is exactly where a provider choice matters most, so this must not
     # silently default back to Ollama regardless of config.yaml.
-    if provider == "groq":
+    if provider == "gemini":
+        print("Provider: Gemini (remote)")
+        client = GeminiClient()
+    elif provider == "groq":
         print("Provider: Groq (remote)")
         client = GroqClient()
     else:
