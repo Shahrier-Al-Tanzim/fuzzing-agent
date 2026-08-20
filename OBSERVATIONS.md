@@ -404,6 +404,10 @@ A standing, numbered record of every `STRATEGY_CONTRACT` rule added in response 
    **The deliberate trade this forces.** A crashing document does not count as "accepted", and with high per-shape floors almost every deep draw now crashes rather than only ~23-65% of them. At the previous "one deep branch per two ordinary" ratio that would have driven acceptance under the 20% validator floor, getting the strategy rejected *before it ever runs* - the exact self-defeating interaction rule 16 already warned about. So the deep-branch share was cut in the same edit: four deep branches against at least sixteen ordinary `document()` branches (~1 in 5), written as a worked `one_of` example rather than a ratio in prose. The goal is explicitly **not** more crashing documents overall - it is the same or fewer, redistributed so each one lands on a shape that clears its own threshold, including the never-yet-hit mixed shape.
    **Outcome: confirmed working, Run 25.** Acceptance held 29%-58% across all 5 iterations (never threatened the 20% floor), and the mixed-nesting shape fired autonomously - see Case 9 for the full result, including the honest correction that it surfaced as 3 triage signatures (`af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`) for one root cause rather than the single new row originally expected. The per-shape floor fix also had a large secondary effect: bug 2 went from 3 occurrences (Run 24) to 158, bug 3 from 11 to 120 - both were being drawn too shallow to trigger under the old shared floor, exactly as predicted.
 
+9. **Rule 16 extended with `deep_quoted_mixed`** (2026-08-20, `module-7b-crash-hunting-3`) - the shape was chosen by *measurement, not guesswork*, and the first candidate was discarded after being tested. Candidate A (`deep_mixed_dotted`, `"[{a.b=" * n`) reasoned that adding `parse_keyval`'s dotted self-recursion into bug 5's cycle would make it four functions per level and yield a new signature. Probed directly against the harness at n=40,000/55,000/70,000 before writing any prompt text: it crashes every time, but produced `55628614cd6c`, `80953bb88ca2` and `e857b4530c96` - **all already-known buckets**. It was therefore dropped rather than shipped, since adding a shape that yields no new signature is exactly the mistake rule 18 made. Candidate B changed *what sits at each level* instead of which constructs alternate - a QUOTED key (`'[{"k"=' * n`), which forces `normalize_key` -> `norm_basic_str` (the string-unescaping path) onto the stack. That produced **`c04d038a7956`** - `malloc / expand toml.c:411 / norm_basic_str toml.c:506 / normalize_key toml.c:652 / create_keyarray_in_table toml.c:830` - the **first signature in this project's history with `norm_basic_str` in it**. Reproducibility was measured across a depth sweep (3 trials each): 25,000 gave 3/3, and 20,000-45,000 gave 1-3/3, while 50,000+ reverted to the known `80953bb88ca2` bucket - a quoted key does more work per level, so the stack runs out sooner and going deeper actually *hides* this signature. Hence the deliberately lower `min_value=20_000, max_value=45_000` in the rule, and the rule now states the general principle the experiment established: **what sits at each nesting level matters as much as how deep the nesting goes.** **Outcome: confirmed live, Run 26** - `c04d038a7956` fired autonomously via the agentic loop (145 occurrences), the first time this signature was produced without a hand-written probe.
+
+   **Milestone worth calling out on its own: this bug was found at a LOWER depth than every other one in the project, not a higher one.** Every earlier bug hunt in this log moved in one direction - push depth further (Case 5; rule 16's original three shapes at 48k/80k/90-100k; `DEPTH_TARGETS` climbing to 90,000). `deep_quoted_mixed` breaks that pattern: it reproduces best around ~25,000, roughly half of the *shallowest* of the other four shapes, and gets LESS reliable, not more, past ~45,000 (reverting to the known `80953bb88ca2` bucket by 50,000+). So the newest bug in this project was found by going less deep, not more - direct, concrete evidence for Case 10's Defect 2 finding that raw depth was never the actual lever; what occupies each nesting level is. Worth stating plainly in the report: the project's search strategy shifted from "how far can we push one number" to "what varies at each step," and that shift produced the 5th bug's newest signature - not another round of bigger `max_value`s.
+
 ### Latest full run (2026-08-14) — rules 9-12 confirmed working together, plus one new finding
 
 ✅ **Status: passing.** All 5 iterations passed generation on attempt 1 (5 total API calls for the whole loop — the best result seen so far), all 500/500 examples ran every iteration, and acceptance held 31-41% throughout without ever threatening the floor. Real numbers:
@@ -813,3 +817,87 @@ explicitly in the report rather than quoting `INDEX.md`'s count unexamined:
 it is a real, demonstrated case where the automated triage number needed a
 human check before being trustworthy, which is itself evidence of triage
 instinct, not a flaw to hide.
+
+## Case 10: two defects in the feedback signal itself — one of them permanently unsatisfiable ⭐
+
+**Date:** 2026-08-20 · **Branch:** `module-7b-crash-hunting-3`
+
+Belongs in the report's **proxy-signal** discussion, which the assignment
+asks about directly ("what proxy signal did you choose to make the loop
+actually improve the generator across iterations, and why?"). Both defects
+are in `agent/summarize.py`'s `render_feedback()` — the function that
+*is* the feedback signal — and neither is visible from the loop's console
+output. They were found by tracing the data path rather than by observing
+a failure, which is why they survived 25 runs.
+
+### Defect 1: the depth directive could never be satisfied
+
+`DEPTH_TARGETS`' final value is **90,000**. The directive fires when
+`max_depth_cumulative < depth_target`. But tracing where that number comes
+from:
+
+- `summarize()` computes `accepted = [r for r in records if r.verdict ==
+  ACCEPT]`, then derives `depths` from `accepted` **only**;
+- `LoopState.observe()` likewise updates `max_depth_reached` inside
+  `if accepted:`.
+
+So both depth figures count **only documents that did not crash**. Arrays
+crash at ~48,000 and inline tables at ~80,000 — therefore *a document deep
+enough to reach the 90,000 target crashes, and a crashing document is never
+counted*. The target is unreachable by construction.
+
+The consequence is measurable in Run 25: accepted depths were 7 / 14 /
+4,194 / 34,899 / 41,802 against a 90,000 target, so `"PUSH DEPTH MUCH
+FURTHER"` fired on **every iteration of a run that was already producing
+1,127 crashes**. Wasted directive pressure that competed with genuinely
+useful directives, and pushed toward exactly the deep-branch dominance that
+threatens the 20% acceptance floor.
+
+**Fix:** a new `max_depth_generated` figure computed from *all* records,
+crashes included, now gates the directive; the feedback body shows both
+numbers with the distinction spelled out. `max_depth_this_iteration` and
+`max_depth_cumulative` deliberately keep their accepted-only meaning,
+because `comparison/gemini/metrics.{md,csv}` already stores those figures
+for runs 15-25 and redefining them would silently break cross-run
+comparability.
+
+**The transferable finding:** a metric that filters out failures cannot be
+used as a target for producing failures. The depth signal and the crash
+objective were in direct contradiction, and the loop had no way to report
+that — it just kept asking for something it had already achieved but
+refused to measure.
+
+### Defect 2: no crash-diversity term at all
+
+The feedback reported crashes as
+`"N unique crash signature(s) so far: 939402a0547c, e857b4530c96, ..."` —
+raw hex digests, which carry nothing the model can act on, since nothing
+tells it what *shape* produced each one. More importantly, **no directive
+in the entire list ever asked for a crash mechanism that had not been seen
+yet.** The signal steered on acceptance, missing productions, depth, and
+novelty — never on crash variety. Nothing pushed away from re-finding the
+same bugs, which is precisely the observed behaviour: runs 17, 20, 21 and
+24 each returned the identical five buckets.
+
+**Fix:** a `CRASH_MECHANISMS` table maps each known digest to the input
+shape behind it ("nested arrays", "dotted keys", "alternating
+array/inline-table nesting", …), so the feedback names mechanisms instead
+of digests; and a new directive names the shapes already found and asks for
+one that stresses a different parser path. An unrecognised digest
+deliberately falls through to the digest itself — a signature missing from
+the table is a newly-discovered one, and hiding it behind a generic label
+would defeat the purpose.
+
+**Why it points at level *content*, not more depth:** the accompanying
+experiment (fix-log entry 9) established that two documents nested equally
+deep crash in *different* parser functions depending on what each level
+contains. Changing the alternation pattern re-landed in known buckets;
+changing a bare key to a **quoted** one produced `c04d038a7956`, the first
+signature ever to contain `norm_basic_str`. So the directive asks the model
+to vary what sits at each level, which is the lever that actually moves
+signatures.
+
+**Status:** both fixes verified against synthetic state — the depth
+directive now stops firing once generated depth clears the target, the
+diversity directive fires with readable mechanism names, and an unknown
+digest survives the mapping. Not yet observed on a live run.

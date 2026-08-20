@@ -299,7 +299,11 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
               def deep_mixed_nesting(draw):
                   n = draw(st.integers(min_value=60_000, max_value=80_000))
                   return "[{a=" * n + "1" + "}]" * n
-    THE FOUR SHAPES NEED DIFFERENT `min_value`s, and the numbers above are
+      Right:  @composite
+              def deep_quoted_mixed(draw):
+                  n = draw(st.integers(min_value=20_000, max_value=45_000))
+                  return '[{"k"=' * n + "1" + "}]" * n
+    THE FIVE SHAPES NEED DIFFERENT `min_value`s, and the numbers above are
     MEASURED crash thresholds - do not flatten them to one shared floor.
     Each construct overflows the parser's stack at its own depth: arrays at
     roughly 48,000 levels, inline tables at roughly 80,000, dotted keys at
@@ -315,6 +319,20 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     -> array, cycling) than either construct nested in itself. It therefore
     crashes with a different stack signature and counts as a separate bug.
     Generating only the three "pure" shapes misses it entirely.
+    `deep_quoted_mixed` is the same alternating nesting but with a QUOTED
+    key (`"k"`) at every level instead of a bare one. MEASURED FACT: this
+    single change moves the crash into a different parser function - a
+    quoted key has to be unescaped before it can be stored, so the
+    string-normalization code sits on the stack at the moment it overflows,
+    producing a stack signature none of the other four shapes ever produce.
+    WHAT SITS AT EACH LEVEL MATTERS AS MUCH AS HOW DEEP THE NESTING GOES:
+    two documents nested equally deep crash in different functions depending
+    on what each level contains. Note its depth range is deliberately LOWER
+    than the others (20,000-45,000) - a quoted key does more work per level,
+    so the stack runs out sooner; going deeper here just crashes earlier in
+    a way that hides this signature. So vary the CONTENT of each level
+    (bare vs quoted vs dotted keys, values needing escape processing), not
+    only the depth.
     SET `max_value` FROM THE DEPTH TARGET IN THE FEEDBACK, not from this
     example. A REAL FAILURE from a previous attempt: the numbers above were
     copied verbatim as `max_value=5000` and depth then sat at exactly
@@ -325,23 +343,24 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     range by RAISING `max_value`, never by lowering `min_value` below the
     per-shape floor given above - those floors are what make each draw land
     above its own crash threshold.
-    Use ALL FOUR shapes, not just one - another REAL FAILURE: a previous
+    Use ALL FIVE shapes, not just one - another REAL FAILURE: a previous
     attempt defined `deep_inline_table` and `deep_dotted_key` but wired only
     `deep_array` into `toml_strategy`, so two of the three never ran once.
     Each shape stresses a different part of the parser, so include a branch
-    for each of the four in the final `st.one_of(...)`.
+    for each of the five in the final `st.one_of(...)`.
     Keep every one of these inside a normal `key = value` line (rule 12/14
     - a bare `[[[...]]]` alone is not a valid document), e.g.
     `f"deep = {draw(deep_array())}"`. Two hard limits: keep the whole
     document under 1 MB, and keep the deep branches a clear MINORITY of
-    `toml_strategy`'s `one_of(...)`. Concretely: list the four deep shapes
-    ONCE each (4 branches total) against AT LEAST 16 ordinary `document()`
+    `toml_strategy`'s `one_of(...)`. Concretely: list the five deep shapes
+    ONCE each (5 branches total) against AT LEAST 20 ordinary `document()`
     branches, i.e. deep shapes together must be no more than ~1 in 5 of all
     branches:
       Right:  toml_strategy = st.one_of(
-                  *([document()] * 16),
+                  *([document()] * 20),
                   deep_doc(deep_array()), deep_doc(deep_inline_table()),
-                  deep_doc(deep_dotted_key()), deep_doc(deep_mixed_nesting()))
+                  deep_doc(deep_dotted_key()), deep_doc(deep_mixed_nesting()),
+                  deep_doc(deep_quoted_mixed()))
       # where deep_doc(s) wraps the deep string in a `key = value` line
     This ratio matters for a non-obvious reason: a document that crashes the
     parser does not count as "accepted", and with the high per-shape floors

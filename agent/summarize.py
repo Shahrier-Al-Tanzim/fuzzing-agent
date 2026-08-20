@@ -29,6 +29,14 @@ def summarize_iteration(records: list[RunRecord], state: LoopState,
     accepted = [r for r in records if r.verdict == Verdict.ACCEPT.value]
 
     depths = [r.features.get("max_depth", 0) for r in accepted if r.features]
+    # Depth actually GENERATED, crashing documents included. The accepted-only
+    # figures above can never reach the higher DEPTH_TARGETS: a document deep
+    # enough to hit them crashes, and a crashing document is not accepted, so
+    # it is never counted. Gating the depth directive on the accepted figure
+    # therefore made that directive permanently unsatisfiable - see
+    # OBSERVATIONS.md, Case 10.
+    depths_generated = [r.features.get("max_depth", 0)
+                        for r in records if r.features]
     prods_this_iter: set[str] = set()
     for r in accepted:
         prods_this_iter.update(r.features.get("productions", []))
@@ -46,6 +54,7 @@ def summarize_iteration(records: list[RunRecord], state: LoopState,
         "missing_productions": state.missing_productions,
         "max_depth_this_iteration": max(depths, default=0),
         "max_depth_cumulative": state.max_depth_reached,
+        "max_depth_generated": max(depths_generated, default=0),
         "mean_bytes": round(
             sum(r.input_bytes for r in records) / total, 1),
         "findings": sum(1 for r in records if r.is_finding),
@@ -62,6 +71,32 @@ def summarize_iteration(records: list[RunRecord], state: LoopState,
 # 5-iteration budget instead of asking for the same modest number every time.
 DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]
 
+# Signature digest -> the input shape that produced it, so the feedback can
+# name a MECHANISM the model can actually act on. Previously the feedback
+# pasted raw digests ("939402a0547c, e857b4530c96, ...") which carry no
+# information the model can use, and no directive ever asked for a crash
+# mechanism that had NOT been seen yet - so nothing in the loop steered away
+# from re-finding the same bugs every run. See OBSERVATIONS.md, Case 10.
+# An unknown digest deliberately falls through to the digest itself: a
+# signature missing from this table is a NEWLY DISCOVERED one, and hiding it
+# behind a generic label would defeat the point.
+CRASH_MECHANISMS = {
+    "939402a0547c": "nested arrays",
+    "e857b4530c96": "nested arrays",
+    "26e809dd9d85": "nested inline tables",
+    "55628614cd6c": "dotted keys",
+    "af1d0280777e": "alternating array/inline-table nesting",
+    "3db1e06f41e9": "alternating array/inline-table nesting",
+    "80953bb88ca2": "alternating array/inline-table nesting",
+    "c04d038a7956": "quoted keys inside alternating nesting",
+    "unparsed_timeout": "many sibling keys (a hang, not a crash)",
+}
+
+
+def crash_mechanisms(signatures) -> list[str]:
+    """Distinct input shapes behind a set of signatures, for the feedback."""
+    return sorted({CRASH_MECHANISMS.get(s, s) for s in signatures})
+
 
 def render_feedback(summary: dict, state: LoopState) -> str:
     """The text actually pasted into the refine prompt."""
@@ -74,9 +109,10 @@ def render_feedback(summary: dict, state: LoopState) -> str:
         f"  - {n:>4}x  {msg[:70]}" for msg, n in summary["top_rejects"]
     ) or "  (none)"
 
+    mechanisms = crash_mechanisms(state.crash_signatures)
     crash_line = (
-        f"{len(state.crash_signatures)} unique crash signature(s) so far: "
-        f"{', '.join(state.crash_signatures[:3])}"
+        f"{len(state.crash_signatures)} unique crash signature(s) so far, "
+        f"produced by these input shapes: {', '.join(mechanisms)}"
         if state.crash_signatures else
         "No crashes found yet by any iteration."
     )
@@ -93,7 +129,10 @@ def render_feedback(summary: dict, state: LoopState) -> str:
             f"Generate `{p}` - it has never appeared in an accepted document.")
     depth_target = DEPTH_TARGETS[min(len(state.iterations),
                                      len(DEPTH_TARGETS) - 1)]
-    if summary["max_depth_cumulative"] < depth_target:
+    # Gated on depth GENERATED, not depth accepted: the accepted figure caps
+    # out at the crash threshold by construction, so gating on it left this
+    # directive firing forever even on runs already finding 1000+ crashes.
+    if summary.get("max_depth_generated", 0) < depth_target:
         if depth_target <= 200:
             directives.append(
                 f"Increase nesting depth. Best reached so far is "
@@ -126,6 +165,17 @@ def render_feedback(summary: dict, state: LoopState) -> str:
             f"Increase structural variety - only {summary['novelty_rate']:.0%} "
             "of documents had a shape not already seen. Vary which constructs "
             "co-occur, not just their values.")
+    if state.crash_signatures:
+        directives.append(
+            "FIND A CRASH WITH A DIFFERENT MECHANISM. These shapes are "
+            f"already found and re-finding them adds nothing: "
+            f"{', '.join(mechanisms)}. Keep generating them, but ALSO vary "
+            "WHAT SITS AT EACH NESTING LEVEL, not just how deep the nesting "
+            "goes - e.g. quoted keys instead of bare ones, dotted keys, or "
+            "keys whose text needs escape processing. Two documents nested "
+            "equally deep crash in DIFFERENT parser functions depending on "
+            "what each level contains, so this is what produces a genuinely "
+            "new crash signature rather than another copy of the ones above.")
     if not directives:
         directives.append(
             "Coverage and depth are healthy. Push further into rare "
@@ -141,7 +191,9 @@ Novel shapes    : {summary['novelty_rate']:.0%}
 Grammar coverage: {summary['cumulative_coverage']:.0%} of \
 {len(PRODUCTIONS)} tracked productions
 Max nest depth  : {summary['max_depth_this_iteration']} this run, \
-{summary['max_depth_cumulative']} cumulative
+{summary['max_depth_cumulative']} cumulative (accepted documents only)
+Deepest generated: {summary['max_depth_generated']} this run, including \
+documents that crashed the parser
 Mean size       : {summary['mean_bytes']} bytes
 {crash_line}
 
