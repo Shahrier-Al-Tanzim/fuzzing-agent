@@ -633,3 +633,89 @@ noting as a known gap rather than a failure: **the other 4 signatures
 found in Run 15 are the same 3-4 stack-overflow bugs already known** -
 this run found no new memory-safety bug class, only confirmed the hang
 class was reachable by the LLM-driven loop on its own.
+
+## Case 7: abstract prompt rules underperform concrete ones for this model — measured, then reverted
+
+A direct A/B test of a genuine assignment-design question: **should the
+prompt hand the model concrete, worked crash-shape examples, or abstract
+"go find bugs"-style guidance and let it discover the shapes itself?** The
+abstract version is more intellectually appealing (the loop does more of
+the discovery), so it was worth actually trying rather than assuming.
+
+**The change tested.** Rules 16-17 were rewritten from concrete to
+abstract. The concrete originals gave the model:
+- three fully worked deep-nesting composites (`deep_array`,
+  `deep_inline_table`, `deep_dotted_key`) with the exact integer-repetition
+  technique spelled out, and
+- a fully worked `many_siblings` composite for the O(n²) key-count hang.
+
+The abstract rewrite removed every specific shape and magic number,
+keeping only: the *technique* ("draw an integer N, build by repetition,
+because recursion provably can't reach the scale") and a list of abstract
+*dimensions* to stress ("how deeply constructs nest; how many elements a
+collection holds; how many entries share a scope; how long a single token
+is"), with the model told to work out which TOML constructs map onto each
+dimension itself.
+
+**Result (live test, Gemini `gemini-3.6-flash`):** worse on both axes the
+project cares about.
+- **Findings: did not help** - the abstract prompt did not improve on the
+  concrete baseline and, by observation, produced weaker crash-finding.
+- **Speed: markedly worse** - roughly ~5 minutes per iteration, versus the
+  concrete baseline's ~2.5-4 min/iteration in Run 15 (154s / 181s / 251s /
+  234s / 179s). The likely cause: an abstract prompt gives a reasoning
+  model more open-ended work to do (decide the dimensions, invent the
+  shapes, choose the magnitudes) on every single generation, so it spends
+  more tokens/time reasoning and still lands on less effective code.
+
+Evidence note, kept honest: the concrete baseline's per-iteration numbers
+are measured (Run 15, logged). The abstract run's underperformance is from
+a live test observed during the session (slower wall-clock, no improvement
+in findings), not a fully re-logged 5-iteration run with a saved metrics
+table - so this is recorded at "observed, decisive enough to revert"
+strength, not "fully tabulated" strength. It was decisive enough that the
+concrete rules were restored byte-for-byte to the proven Run-15 version.
+
+**Why this belongs in the report.** It directly answers a question the
+assignment implicitly raises - how much should the LLM be *told* versus
+left to *discover* - with a measured answer for this model/task:
+**concrete worked examples of a technique outperform abstract guidance,
+both in result quality and in cost.** This is not a claim that abstraction
+never works; it is a claim that for a mid-size instruction-following model
+pointed at a very specific, high-scale bug class, a concrete demonstration
+of the *technique* (not the specific bug - the technique) is what actually
+moves the metrics. It also pairs cleanly with Case 5 (prompt anchoring):
+together they show the model treats concrete numbers in the prompt as
+strong signal - which is a liability when the number is illustrative
+(Case 5) but an asset when the whole worked example is the thing you want
+followed (this case).
+
+## Case 8: Run 21 (Gemini) — same 4 bugs, but verification quality jumped from "unstable" to deterministic
+
+**Date:** 2026-08-19 (triaged) · **Model:** `gemini-3.6-flash`
+
+Run 21's triage (`triage/reports/run_21/`) produced **5 signatures after
+deduplication from 154 crashing/hanging inputs**, and every one maps to a
+bug already documented — **no new bug class**.
+
+| Signature | Bug (already known) | Type | Occurrences | Verify |
+|---|---|---|---|---|
+| `939402a0547c` | Array-nesting overflow, `parse_array` (`toml.c:1057`) | stack overflow | 92 | **deterministic 3/3** |
+| `unparsed_timeout` | O(n²) many-siblings hang (bug 4) | hang/DoS | 29 | did-not-reproduce (expected) |
+| `e857b4530c96` | Frameless variant of the array bug (crash too violent to unwind) | stack overflow | 23 | crashes 3/3, signature unstable |
+| `26e809dd9d85` | Inline-table overflow, `parse_keyval`→`parse_inline_table` (`toml.c:1177`) | stack overflow | 8 | **deterministic 3/3** |
+| `55628614cd6c` | Dotted-key overflow, `parse_keyval` self-recursion (`toml.c:1132`) | stack overflow | 2 | **deterministic 3/3** |
+
+**The reportable finding is the verification-quality jump, not a new bug.**
+In Run 20 (`triage/reports/run_20/INDEX.md`) the three parseable stack
+overflows (`939402a0547c`, `26e809dd9d85`, `55628614cd6c`) all verified as
+`unstable-sig` — they crashed every run but the captured stack shifted
+between runs. In Run 21 **all three verify cleanly as deterministic (3/3)**,
+which is stronger, cleaner evidence for the exact same bugs. The array bug
+also fired far more often (92 vs 47 occurrences).
+
+Two rows are *not* separate bugs: `e857b4530c96` is the same array overflow
+as `939402a0547c` crashing so violently ASan can't unwind a stack (frameless
+bucket, see Case/Bug 3 on frameless collapse); `unparsed_timeout` is the
+O(n²) hang, which still reports `DID NOT REPRODUCE (0/3)` under verify — that
+is expected for a timing-threshold bug, not a failure (see Case 6).

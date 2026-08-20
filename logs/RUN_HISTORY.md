@@ -3,7 +3,7 @@
 **Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
 One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total runs: 17**
+**Total runs: 24**
 
 ---
 
@@ -652,5 +652,178 @@ One section per run, in order; within each run, one section per iteration, in or
 | 2026-08-19 10:42:52 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16289 | 292.24 |  |
 
 **Result:** accepted 18% · coverage 100% · novelty 35% · max depth 51935 · findings 90 · examples 500 · elapsed 424.1s
+
+---
+
+## Run 18 — ⚠️ STOPPED (not a generation failure - see reason below)
+
+**STOPPED** — stopped before any iteration completed. reason: error (not a generation failure - iterations shown above with a Result line genuinely passed).
+
+---
+
+## Run 19 — ❌ FAILED (stopped by Ctrl+C)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 11:29:34 | 1 | FAIL | draw | gemini/gemini-3.6-flash | 12358 | 68.53 | drawing an example raised InvalidArgument: Expected a SearchStrategy but got <function acc… |
+| 2026-08-19 11:31:25 | 2 | PASS | acceptance | gemini/gemini-3.6-flash | 12336 | 108.17 |  |
+
+**Result:** accepted 59% · coverage 97% · novelty 38% · max depth 295 · findings 0 · examples 500 · elapsed 198.5s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 11:40:01 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15413 | 495.42 |  |
+
+**Result:** accepted 62% · coverage 100% · novelty 36% · max depth 300 · findings 0 · examples 500 · elapsed 521.0s
+
+**FAILED** — stopped after iteration 1. stopped by Ctrl+C.
+
+---
+
+## Run 20 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 11:56:09 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 11809 | 39.5 |  |
+
+**Result:** accepted 77% · coverage 95% · novelty 41% · max depth 30000 · findings 15 · examples 500 · elapsed 117.9s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 11:59:37 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 14436 | 122.65 |  |
+
+**Result:** accepted 80% · coverage 100% · novelty 45% · max depth 30000 · findings 11 · examples 500 · elapsed 196.8s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 12:01:40 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15113 | 53.11 |  |
+
+**Result:** accepted 86% · coverage 100% · novelty 46% · max depth 30000 · findings 15 · examples 500 · elapsed 115.6s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 12:06:37 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15626 | 234.12 |  |
+
+**Result:** accepted 96% · coverage 100% · novelty 40% · max depth 40000 · findings 10 · examples 500 · elapsed 293.9s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 12:08:45 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15998 | 65.99 |  |
+
+**Result:** accepted 80% · coverage 100% · novelty 37% · max depth 48626 · findings 53 · examples 500 · elapsed 164.9s
+
+---
+
+## Run 21 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 18:27:53 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 11971 | 50.04 |  |
+
+**Result:** accepted 62% · coverage 90% · novelty 36% · max depth 49689 · findings 20 · examples 500 · elapsed 142.3s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 18:29:52 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15061 | 26.34 |  |
+
+**Result:** accepted 60% · coverage 100% · novelty 32% · max depth 49689 · findings 21 · examples 500 · elapsed 96.3s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 18:31:34 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16022 | 29.76 |  |
+
+**Result:** accepted 36% · coverage 100% · novelty 35% · max depth 49689 · findings 17 · examples 500 · elapsed 90.2s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 18:33:16 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16750 | 36.09 |  |
+
+**Result:** accepted 38% · coverage 100% · novelty 33% · max depth 49999 · findings 34 · examples 500 · elapsed 126.8s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 18:35:27 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 17227 | 40.83 |  |
+
+**Result:** accepted 25% · coverage 100% · novelty 30% · max depth 49999 · findings 61 · examples 500 · elapsed 150.1s
+
+---
+
+## Run 22 — ❌ FAILED (stopped by Ctrl+C)
+
+**FAILED** — stopped before any iteration completed. stopped by Ctrl+C.
+
+---
+
+## Run 23 — ❌ FAILED (stopped by Ctrl+C)
+
+**FAILED** — stopped before any iteration completed. stopped by Ctrl+C.
+
+---
+
+## Run 24 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 20:04:15 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 12153 | 90.6 |  |
+
+**Result:** accepted 31% · coverage 79% · novelty 39% · max depth 47035 · findings 45 · examples 500 · elapsed 199.1s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 20:07:01 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15479 | 60.47 |  |
+
+**Result:** accepted 33% · coverage 97% · novelty 38% · max depth 48811 · findings 33 · examples 500 · elapsed 178.5s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 20:09:38 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16226 | 50.96 |  |
+
+**Result:** accepted 31% · coverage 100% · novelty 39% · max depth 50000 · findings 26 · examples 500 · elapsed 123.8s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 20:11:34 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16579 | 45.86 |  |
+
+**Result:** accepted 42% · coverage 100% · novelty 44% · max depth 50000 · findings 17 · examples 500 · elapsed 102.6s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-19 20:15:48 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16820 | 182.58 |  |
+
+**Result:** accepted 29% · coverage 100% · novelty 33% · max depth 51703 · findings 97 · examples 500 · elapsed 366.2s
 
 ---

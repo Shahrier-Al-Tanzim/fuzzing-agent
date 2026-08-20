@@ -191,7 +191,31 @@ def main() -> int:
     else:
         run_id = get_next_run_id()
         state.run_id = run_id
+        # Claim the run on disk BEFORE any work happens. state.save() used
+        # to fire only after an iteration *completed* (see below), so a run
+        # that died during iteration 0 - an API timeout, a Ctrl+C - never
+        # persisted its own run_id at all: loop_state.json still held the
+        # PREVIOUS run's state. A following --resume then silently continued
+        # that older, already-finished run (printing "Run: 21" after run 22
+        # had just died) while the next plain invocation minted run_id + 1,
+        # leaving the dead run number empty forever. Saving here means a run
+        # is resumable from its very first iteration, which is what "once an
+        # iteration is started, --resume points at that run until it
+        # finishes" requires.
+        state.save()
     print(f"Run: {run_id}")
+
+    # A --resume whose saved state is already complete has nothing to
+    # continue: range(start_at, n_iters) is empty, so the loop would fall
+    # straight through to "=== loop complete" and reprint the finished run's
+    # summary as though this invocation had just produced it. Say so plainly
+    # instead, and return before the try/finally so no second completion
+    # record is logged for a run that already finished.
+    if args.resume and start_at >= n_iters:
+        print(f"\nNothing to resume - run {run_id} already completed all "
+              f"{len(state.iterations)}/{n_iters} iterations.\n"
+              f"Start a new run with:  python -m agent.loop")
+        return 0
     iterations_completed = 0
     completed_ok = False
     # Only "exhausted_attempts" and "keyboard_interrupt" render as FAILED
