@@ -285,40 +285,70 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     string directly by repetition - no recursion involved:
       Right:  @composite
               def deep_array(draw):
-                  n = draw(st.integers(min_value=1_000, max_value=120_000))
+                  n = draw(st.integers(min_value=60_000, max_value=100_000))
                   return "[" * n + "1" + "]" * n
       Right:  @composite
               def deep_inline_table(draw):
-                  n = draw(st.integers(min_value=1_000, max_value=120_000))
+                  n = draw(st.integers(min_value=85_000, max_value=115_000))
                   return "{a=" * n + "1" + "}" * n
       Right:  @composite
               def deep_dotted_key(draw):
-                  n = draw(st.integers(min_value=1_000, max_value=120_000))
+                  n = draw(st.integers(min_value=100_000, max_value=130_000))
                   return "a." * n + "k"      # use as a KEY, not a value
+      Right:  @composite
+              def deep_mixed_nesting(draw):
+                  n = draw(st.integers(min_value=60_000, max_value=80_000))
+                  return "[{a=" * n + "1" + "}]" * n
+    THE FOUR SHAPES NEED DIFFERENT `min_value`s, and the numbers above are
+    MEASURED crash thresholds - do not flatten them to one shared floor.
+    Each construct overflows the parser's stack at its own depth: arrays at
+    roughly 48,000 levels, inline tables at roughly 80,000, dotted keys at
+    roughly 90,000-100,000. A shared low floor (e.g. 1,000 for all of them)
+    wastes most draws: a dotted key generated at depth 20,000 is five times
+    too shallow to do anything at all, which is a REAL FAILURE from previous
+    runs - the array shape crashed 120 times while the dotted-key shape
+    crashed only 3 times, purely because they shared one floor that suited
+    only the array.
+    `deep_mixed_nesting` is NOT a duplicate of the other three - it
+    alternates an array and an inline table at EVERY level, which drives a
+    different chain of parser functions (array -> inline table -> key/value
+    -> array, cycling) than either construct nested in itself. It therefore
+    crashes with a different stack signature and counts as a separate bug.
+    Generating only the three "pure" shapes misses it entirely.
     SET `max_value` FROM THE DEPTH TARGET IN THE FEEDBACK, not from this
     example. A REAL FAILURE from a previous attempt: the numbers above were
     copied verbatim as `max_value=5000` and depth then sat at exactly
     4999-5000 for all five iterations - the generator never went past the
     example's own ceiling, so it never reached the depth where anything
     interesting happens. If the feedback asks for 30000+, `max_value` must
-    be at least 30000; if it asks for 90000+, at least 90000. Always keep
-    `min_value` well below `max_value` (a wide range lets Hypothesis's
-    shrinker report the smallest depth that still matters).
-    Use ALL THREE shapes, not just one - another REAL FAILURE: a previous
+    be at least 30000; if it asks for 90000+, at least 90000. Widen the
+    range by RAISING `max_value`, never by lowering `min_value` below the
+    per-shape floor given above - those floors are what make each draw land
+    above its own crash threshold.
+    Use ALL FOUR shapes, not just one - another REAL FAILURE: a previous
     attempt defined `deep_inline_table` and `deep_dotted_key` but wired only
     `deep_array` into `toml_strategy`, so two of the three never ran once.
     Each shape stresses a different part of the parser, so include a branch
-    for each in the final `st.one_of(...)`.
+    for each of the four in the final `st.one_of(...)`.
     Keep every one of these inside a normal `key = value` line (rule 12/14
     - a bare `[[[...]]]` alone is not a valid document), e.g.
     `f"deep = {draw(deep_array())}"`. Two hard limits: keep the whole
     document under 1 MB, and keep the deep branches a clear MINORITY of
-    `toml_strategy`'s `one_of(...)` - roughly one deep branch for every two
-    ordinary `document()` branches. This matters for a non-obvious reason:
-    a document that crashes the parser does not count as "accepted", so if
-    deep branches dominate, the measured acceptance rate falls below the
-    20% floor and the whole strategy gets rejected before it ever runs -
-    losing the very crashes it was built to find.
+    `toml_strategy`'s `one_of(...)`. Concretely: list the four deep shapes
+    ONCE each (4 branches total) against AT LEAST 16 ordinary `document()`
+    branches, i.e. deep shapes together must be no more than ~1 in 5 of all
+    branches:
+      Right:  toml_strategy = st.one_of(
+                  *([document()] * 16),
+                  deep_doc(deep_array()), deep_doc(deep_inline_table()),
+                  deep_doc(deep_dotted_key()), deep_doc(deep_mixed_nesting()))
+      # where deep_doc(s) wraps the deep string in a `key = value` line
+    This ratio matters for a non-obvious reason: a document that crashes the
+    parser does not count as "accepted", and with the high per-shape floors
+    above almost EVERY deep draw now crashes. If deep branches are more than
+    a small minority, the measured acceptance rate falls below the 20% floor
+    and the whole strategy gets rejected before it ever runs - losing the
+    very crashes it was built to find.
     IMPORTANT: still use `st.recursive`/`@composite` for ordinary nesting
     (rule 10) - this integer-repetition trick is ONLY for the extreme-depth
     branch, not a replacement for real recursive structure everywhere.

@@ -35,7 +35,7 @@ assumed to relate to earlier ones unless stated.
 
 ---
 
-## Bugs found — summary (updated as of Run 15, 2026-08-19)
+## Bugs found — summary (updated as of Run 25, 2026-08-20)
 
 All real bugs confirmed in `tomlc99` so far, in one place. Signature IDs
 are the folder names under `triage/reports/`.
@@ -46,11 +46,12 @@ are the folder names under `triage/reports/`.
 | 2 | Dotted-key stack overflow | `parse_keyval` (`toml.c:1106`) recurses into itself once per `.` in `a.b.c...=1`, no depth limit — separate from bug 1's function and separate from the table-header path's depth-10 guard, which doesn't cover this case | `55628614cd6c` | Found by hand reading `toml.c` during crash-hunting planning (`grammar/early_findings/02_...`) | Signature unstable (crashes 3/3, but ASan can't always get a clean backtrace at this depth) |
 | 3 | Inline-table stack overflow | `parse_inline_table` and `parse_keyval` recurse into each other once per nested `{`, no depth limit | `26e809dd9d85` | Found via the hand-written `crash_hunt` parametric generator, cross-confirmed by the agentic loop | Yes (3/3) |
 | 4 | Many-siblings O(n²) hang | `toml_table_in()` scans existing keys linearly on every insert, so N keys in one table costs O(N²) total — thousands of `kN = 1` lines under one table blows past the 5s timeout | `unparsed_timeout` | Taught to the LLM as prompt rule 17; **first fired autonomously by the agentic loop itself in Run 15** (72 occurrences) — not yet confirmed via a hand-written probe, the reverse order of bugs 1-3 | No — inherently flaky near a timing cutoff, not a memory-safety bug, expected (see Case 6) |
+| 5 | Alternating array/inline-table stack overflow | `parse_array` and `parse_inline_table` recurse into EACH OTHER (not into themselves) once per `[{`/`}]` pair — a third, distinct recursion cycle from bugs 1 and 3, which each involve only one of the two functions calling itself | `af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2` (3 signatures, same root cause — see Case 9) | Predicted by the hand-written `crash_hunt` probe (`pipeline/crash_hunt_strategy.py`'s `deep_mixed_nesting` campaign), taught to the LLM via the rule 16 amendment on `module-7b-crash-hunting-2`, **first fired autonomously by the agentic loop in Run 25** | Crashes every run; signature not stable across runs (see Case 9 for why the instability is worse here than for bugs 1-3) |
 
-**Bug class split:** 3 are memory-safety bugs (unbounded recursion →
+**Bug class split:** 4 are memory-safety bugs (unbounded recursion →
 stack exhaustion, would be a real CVE-class issue in production use); 1 is
 an algorithmic-complexity / denial-of-service bug (slow, not unsafe). All
-4 stem from the same root pattern: `tomlc99`'s recursive-descent parser
+5 stem from the same root pattern: `tomlc99`'s recursive-descent parser
 and its table implementation have no limits on attacker-controlled input
 size or nesting, anywhere.
 
@@ -397,6 +398,12 @@ A standing, numbered record of every `STRATEGY_CONTRACT` rule added in response 
 
 **Addendum, 2026-08-17 - Run 9: rule 16 worked, and immediately exposed prompt-anchoring as a distinct failure mode.** *(Written up as a standalone case — see [Case 5](#case-5-prompt-anchoring--an-examples-constant-became-a-hard-ceiling-) for the report-facing version; this entry keeps the chronological rule-change record.)* Depth went from 4 to **5,000** in a single iteration - a ~1,250x jump, and the single largest metric improvement of the entire project - while acceptance stayed healthy (32-46%) and coverage reached 84%. The model fully adopted the integer-repetition technique, confirming the rule-16 diagnosis was correct. But depth then sat at *exactly* 4999-5000 for all five iterations, which is not a plateau the model discovered - reading the generated `iter_04_strategy.py` showed it had copied the rule's example bounds **verbatim**: `n = draw(st.integers(min_value=200, max_value=5000))`. The measured crash thresholds are ~48,000 (arrays), ~80,000 (inline tables), ~90,000-100,000 (dotted keys), so a hard ceiling of 5,000 put every generated document safely below all of them - hence `findings: 0` again despite the technique working perfectly. **The finding worth reporting: an illustrative constant inside a prompt example acts as a hard ceiling, not a starting point.** The model treated `max_value=5000` as the specification rather than the `DEPTH_TARGETS` escalation (which was concurrently asking for 30,000-90,000) - so a number written casually into an example silently overrode the actual feedback signal. A second, smaller instance of the same class: the model defined `deep_inline_table` and `deep_dotted_key` but wired only `deep_array` into `toml_strategy`, so two of three shapes never executed once. Rule 16 was amended for both: example bounds raised to `1_000`-`120_000` (verified to stay under the 1 MB harness cap - 234 KB, 469 KB, 234 KB respectively at max depth), an explicit instruction to set `max_value` *from the feedback's depth target rather than from the example*, and a requirement to wire all three shapes into `one_of`. Also added a guard against a subtle self-defeating interaction discovered while reasoning about the change: a crashing document is not an "accepted" one, so if deep branches dominate `toml_strategy` the measured acceptance rate drops below the 20% validator floor and the strategy is rejected *before it runs* - losing the very crashes it exists to find. The rule now requires deep branches to stay a minority (~1 per 2 ordinary `document()` branches). Not yet re-tested.
 
+8. **Rule 16 amended again** (2026-08-20, `module-7b-crash-hunting-2`) - added after four consecutive full runs (17, 20, 21, 24) each triaged to the *identical* five buckets (`939402a0547c`, `e857b4530c96`, `26e809dd9d85`, `55628614cd6c`, `unparsed_timeout`). The loop had plateaued: more depth and more iterations only re-found the same four bugs. Reading `pipeline/crash_hunt_strategy.py` against the triage history found the reason, and it was not a model failure - it was a gap in what rule 16 *teaches*. Two distinct defects, fixed together:
+   **(a) A proven crash shape was missing from the prompt entirely.** `crash_hunt`'s fourth campaign, `deep_mixed_nesting` (`x = [{a=` … `}]`, arrays and inline tables alternating at every level), is documented in its own docstring as producing signature **`af1d0280777e`** - "a DISTINCT signature from both deep_array and deep_inline_table, reproducing 4/4 with parseable frames - the most stable of the four campaigns." Verified directly: `af1d0280777e` appears **nowhere** in `triage/reports/`. So the hand-written prober had found a fifth bug that the agentic loop has never once reached, purely because rule 16 taught three *pure* shapes and nothing alternating. This maps exactly onto the parser: `toml.c` has four distinct recursion cycles (`parse_array`→itself at 1060; `parse_keyval`→itself at 1138; `parse_keyval`↔`parse_inline_table` at 1180/961; and `parse_array`→`parse_inline_table`→`parse_keyval`→`parse_array` at 1075/961/1171) and the loop was exercising only the first three. Rule 16 now teaches all four shapes and states why the mixed one is not a duplicate.
+   **(b) One shared depth floor across shapes with very different thresholds.** Rule 16 told the model to draw `min_value=1_000` for all three shapes, but the measured crash thresholds are ~48,000 (arrays), ~80,000 (inline tables), ~90,000-100,000 (dotted keys), and `crash_hunt` - which reproduces each bug reliably - uses shape-specific ranges far above that floor (60k-100k / 85k-115k / 100k-130k / 60k-80k). With one low floor, most inline-table and dotted-key draws landed *below* their own crash threshold and did nothing at all. The damage is visible in run 24's occurrence counts: the array shape crashed **120** times while the dotted-key shape crashed **3** and the inline-table shape **11** - the two thinnest pieces of evidence in the whole project, and a weakness already flagged in `comparison/gemini/run_24/ANALYSIS.md`. Rule 16 now carries the four measured per-shape floors, reusing `crash_hunt`'s proven constants rather than inventing new ones, and explicitly says to widen the range by raising `max_value`, never by lowering `min_value` (so the Case 5 anti-anchoring instruction and the new floors don't contradict each other).
+   **The deliberate trade this forces.** A crashing document does not count as "accepted", and with high per-shape floors almost every deep draw now crashes rather than only ~23-65% of them. At the previous "one deep branch per two ordinary" ratio that would have driven acceptance under the 20% validator floor, getting the strategy rejected *before it ever runs* - the exact self-defeating interaction rule 16 already warned about. So the deep-branch share was cut in the same edit: four deep branches against at least sixteen ordinary `document()` branches (~1 in 5), written as a worked `one_of` example rather than a ratio in prose. The goal is explicitly **not** more crashing documents overall - it is the same or fewer, redistributed so each one lands on a shape that clears its own threshold, including the never-yet-hit mixed shape.
+   **Outcome: confirmed working, Run 25.** Acceptance held 29%-58% across all 5 iterations (never threatened the 20% floor), and the mixed-nesting shape fired autonomously - see Case 9 for the full result, including the honest correction that it surfaced as 3 triage signatures (`af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`) for one root cause rather than the single new row originally expected. The per-shape floor fix also had a large secondary effect: bug 2 went from 3 occurrences (Run 24) to 158, bug 3 from 11 to 120 - both were being drawn too shallow to trigger under the old shared floor, exactly as predicted.
+
 ### Latest full run (2026-08-14) — rules 9-12 confirmed working together, plus one new finding
 
 ✅ **Status: passing.** All 5 iterations passed generation on attempt 1 (5 total API calls for the whole loop — the best result seen so far), all 500/500 examples ran every iteration, and acceptance held 31-41% throughout without ever threatening the floor. Real numbers:
@@ -719,3 +726,90 @@ as `939402a0547c` crashing so violently ASan can't unwind a stack (frameless
 bucket, see Case/Bug 3 on frameless collapse); `unparsed_timeout` is the
 O(n²) hang, which still reports `DID NOT REPRODUCE (0/3)` under verify — that
 is expected for a timing-threshold bug, not a failure (see Case 6).
+
+## Case 9: Run 25 — the rule 16 amendment worked, and triage's own count needed correcting by hand
+
+**Date:** 2026-08-20 · **Branch:** `module-7b-crash-hunting-2` · **Model:**
+`gemini-3.6-flash`
+
+This confirms the rule 16 amendment from fix-log entry 8 (four per-shape
+depth floors instead of one shared floor, plus a fourth taught shape —
+alternating array/inline-table nesting). It also produces the clearest case
+yet for why `INDEX.md`'s "N unique bugs after deduplication" line is a
+signature count, not a bug count, and must be read by hand before it goes in
+the report.
+
+### The floor fix worked exactly as predicted
+
+Total crashing/hanging inputs jumped from Run 24's 219 to **1,127** across
+Run 25's five iterations, while acceptance stayed clear of the 20%
+validator floor throughout (29%–58%). This is not "more bugs" — it is the
+*same* bugs firing far more often, because per-shape floors replaced one
+shared low floor. The occurrence counts make the mechanism visible directly:
+bug 2 (dotted-key) went from 3 occurrences in Run 24 to **158** in Run 25;
+bug 3 (inline-table) went from 11 to **120**. Before the fix, most draws for
+these two shapes landed below their own crash threshold and did nothing;
+after it, nearly every draw clears its threshold. Exactly the failure mode
+predicted in fix-log entry 8, now measured.
+
+### `INDEX.md` said 8 unique bugs. It's 5.
+
+Run 25's triage (`triage/reports/run_25/INDEX.md`) reports **8** signatures
+after deduplication: the 4 already-known bugs, plus three that had never
+appeared before — `af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`. Taken at
+face value, that reads as three new bugs. It isn't.
+
+**Checked by reading the actual saved crashing input for each of the three,
+not just the signature name.** All three are byte-for-byte the same
+generated shape: `v = [{a=[{a=[{a=...1...}]}]}]`, the alternating
+array/inline-table construct taught in the rule 16 amendment, each roughly
+69–73 KB. Their captured stack frames confirm why triage split them:
+
+| Signature | Top frames captured |
+|---|---|
+| `af1d0280777e` | `malloc → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)` |
+| `3db1e06f41e9` | `strnlen → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)` |
+| `80953bb88ca2` | `malloc → expand → expand_arritem → create_table_in_array (toml.c:903) → parse_array (toml.c:1072)` |
+
+`parse_keyval` (via `create_keyarray_in_table`, the `key = [` step) and
+`parse_array` (via `create_table_in_array`, the `{...}` step) are the two
+halves of the *same* alternating recursion cycle — the construct calls one,
+which calls the other, which calls the first again, all the way down. Which
+half is executing at the exact instant the stack finally runs out is not
+controlled by anything in the generated input; it is decided by the
+runtime's own stack layout at 60,000+ nested calls. So the same single
+overflow gets fingerprinted three different ways depending on which phase
+of the cycle it happens to be caught in — `af1d0280777e` and `3db1e06f41e9`
+aren't even fully stable between each other (`malloc` vs `strnlen` as the
+literal top frame), which is the same instability already seen and named for
+bug 1 in Bug 2/Bug 3 above, now hitting a bug with *two* alternating phases
+instead of one repeating call, so it has two ways to fragment instead of
+one.
+
+**This is a sharper case of the exact normalization problem the assignment
+explicitly asks to be documented** ("this is what determines whether you
+found one bug or several"). The fix applied for bugs 1/3 (retry a crashing
+input up to 6 times to get a parseable stack before giving up) reduces how
+often a signature comes back *frameless*, but does nothing for a signature
+that is fully parseable and still unstable *between two different real
+call sites* — retrying doesn't converge here, because both captured
+outcomes are equally valid, equally parseable descriptions of where the
+stack happened to be. Automatically merging by "same input shape" isn't a
+general fix either — two genuinely different bugs could coincidentally
+share an input shape. The honest resolution for this project was manual:
+read the actual crashing input, not just the digest, before trusting
+`INDEX.md`'s count.
+
+### The number for the report
+
+**5 distinct root-cause bugs, confirmed across every run to date** — not 8,
+not 4. Bug 5 (alternating array/inline-table recursion) is real, newly
+confirmed in Run 25, predicted correctly in advance by the hand-written
+`crash_hunt` probe before the agentic loop ever reached it, and is a
+genuinely different recursion cycle from bugs 1 and 3 (two functions taking
+turns, not one function repeating) — see the bugs-found summary table above,
+row 5, for the canonical three-signature mapping. State the 8-vs-5 gap
+explicitly in the report rather than quoting `INDEX.md`'s count unexamined:
+it is a real, demonstrated case where the automated triage number needed a
+human check before being trustworthy, which is itself evidence of triage
+instinct, not a flaw to hide.
