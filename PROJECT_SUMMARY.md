@@ -83,15 +83,15 @@ repeat up to 5 iterations or the cost/time cap, whichever hits first.
 ### The proxy signal (no code coverage available)
 Computed entirely externally, by reading generated text with regex —
 never touching `tomlc99`'s internals:
-- **Grammar-shape coverage** — fraction of 30 tracked productions
+- **Grammar breadth** — fraction of 30 tracked productions
   (`pipeline/features.py`'s `PRODUCTIONS`, named 1:1 to the `.g4` rules)
-  seen across all accepted documents so far (`agent/coverage.py`).
+  seen across all accepted documents so far (`agent/breadth.py`).
 - **Acceptance rate**, **novelty rate** (shape not seen before), **max
   nesting depth reached**, **top rejection reasons**.
 
 ### Most recent full run (Run 4/5, 2026-08-16)
 
-| Iter | Accepted | Coverage | Novelty | Max depth | Findings |
+| Iter | Accepted | Breadth | Novelty | Max depth | Findings |
 |---|---|---|---|---|---|
 | 0 | 39% | 55% | 35% | 3 | 0 |
 | 1 | 40% | 68% | 22% | 3 | 0 |
@@ -128,7 +128,7 @@ still limiting depth today.
 
 **Confirmed directly against the data:** all 2,500+ examples across
 `pipeline/logs/iteration_00.jsonl`–`iteration_04.jsonl` are `accept` or
-`reject`. Zero `crash`, zero `timeout`. The loop's own metrics (coverage,
+`reject`. Zero `crash`, zero `timeout`. The loop's own metrics (breadth,
 acceptance, novelty) genuinely improve run over run — the machinery
 works exactly as designed — but it has never found a crash on its own.
 
@@ -182,7 +182,7 @@ Separately, a real bug was found **and fixed** in the tooling: `--resume`
 was opening a new "Run N" section in `logs/RUN_HISTORY.md` instead of
 continuing the interrupted one, because `run_id` and the resumable
 `state.json` were two disconnected systems. Fixed by adding
-`LoopState.run_id` (`agent/coverage.py`) and making `agent/loop.py` reuse
+`LoopState.run_id` (`agent/breadth.py`) and making `agent/loop.py` reuse
 it on `--resume` instead of always minting a new number; `agent/run_history.py`'s
 `regenerate_markdown()` updated to use the latest `run_complete` record
 per run_id, since a resumed run can now log more than one.

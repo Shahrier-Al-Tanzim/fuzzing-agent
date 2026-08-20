@@ -25,7 +25,7 @@ extract metrics from the run log).
 ## What to compare
 
 The common denominator across all three providers is the **metrics** set:
-acceptance, coverage, novelty, max depth, findings, examples, elapsed time,
+acceptance, breadth, novelty, max depth, findings, examples, elapsed time,
 tokens, and attempts. Claude will additionally have full per-run code and
 triage (like Gemini), enabling artifact-level comparison where Groq can only
 offer metrics.

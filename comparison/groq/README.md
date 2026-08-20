@@ -2,7 +2,7 @@
 
 ## What's here
 
-- **`metrics.md`** — per-run, per-iteration metrics (acceptance, coverage,
+- **`metrics.md`** — per-run, per-iteration metrics (acceptance, breadth,
   novelty, max depth, findings, examples, elapsed time) plus a run-level
   summary (model, status, attempts, total tokens), for all 12 Groq runs.
 - **`metrics.csv`** — the same numbers, flat, one row per iteration, for
@@ -34,7 +34,7 @@ are the reliable, run-attributable record for Groq.
 ## Using Groq for the comparison
 
 Compare Groq against Gemini (and later Claude) on the **metrics** axes only:
-acceptance rate, coverage, novelty, max nesting depth reached, findings
+acceptance rate, breadth, novelty, max nesting depth reached, findings
 count, and cost/speed (tokens, attempts, elapsed time). These are complete
 and directly comparable across all three providers. Deeper artifact-level
 comparison (actual generated code, actual crash signatures) is only possible

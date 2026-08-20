@@ -1,4 +1,4 @@
-provider,run,status,iteration,accepted,coverage,novelty,max_depth,findings,examples,elapsed_s
+provider,run,status,iteration,accepted,breadth,novelty,max_depth,findings,examples,elapsed_s
 gemini,15,PASSED (0 iters),0,0.614,0.974,0.272,40574,30,500,154.2
 gemini,15,PASSED (0 iters),1,0.56,1.0,0.29,49985,32,500,180.7
 gemini,15,PASSED (0 iters),2,0.292,1.0,0.346,49985,30,500,250.6

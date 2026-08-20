@@ -30,7 +30,7 @@ Maps each item on the assignment's deliverables checklist to its location.
 - `agent/prompts.py`, `agent/validator.py` — seeding and the six gates
 - `agent/strategies/iter_00..NN_strategy.py` — every generated strategy,
   **including rejected candidates** (`*_rejected_attempt*.py`)
-- `agent/state/loop_state.json` — cumulative coverage/novelty/crash state
+- `agent/state/loop_state.json` — cumulative breadth/novelty/crash state
 - `agent/state/iteration_NN_feedback.md` — exactly what the model was told
 - `agent/state/prompts/` — full prompt/reply transcripts
 

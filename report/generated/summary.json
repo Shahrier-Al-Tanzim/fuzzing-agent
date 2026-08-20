@@ -1,437 +1,400 @@
 {
-  "generated_at": "2026-08-14T09:26:32.438617+00:00",
+  "generated_at": "2026-08-20T16:00:34.321760+00:00",
   "iterations": 5,
-  "total_tokens": 44723,
-  "coverage": {
-    "covered": [
+  "total_tokens": 112463,
+  "breadth": {
+    "reached": [
       "BASIC_STRING",
       "BIN_INT",
+      "BOOLEAN",
       "DEC_INT",
       "FLOAT",
       "FLOAT_EXP",
       "HEX_INT",
       "INF",
       "LITERAL_STRING",
+      "LOCAL_DATE",
+      "LOCAL_DATE_TIME",
+      "LOCAL_TIME",
       "ML_BASIC_STRING",
       "ML_LITERAL_STRING",
       "NAN",
       "OCT_INT",
-      "array_",
-      "comment",
-      "empty_document",
-      "non_ascii",
-      "standard_table",
-      "unquoted_key"
-    ],
-    "missing": [
-      "quoted_key",
-      "dotted_key",
-      "escape_sequence",
-      "unicode_escape",
-      "int_underscore",
-      "int_overflow",
-      "leading_zero_int",
-      "BOOLEAN",
       "OFFSET_DATE_TIME",
-      "LOCAL_DATE_TIME",
-      "LOCAL_DATE",
-      "LOCAL_TIME",
+      "array_",
       "array_nested",
+      "array_table",
+      "comment",
+      "dotted_key",
+      "duplicate_key",
+      "empty_array",
+      "empty_document",
+      "empty_inline_table",
+      "escape_sequence",
       "inline_table",
       "inline_table_nested",
-      "array_table",
-      "empty_array",
-      "empty_inline_table",
+      "int_overflow",
+      "int_underscore",
+      "leading_zero_int",
+      "non_ascii",
+      "quoted_key",
+      "standard_table",
       "trailing_comma",
-      "duplicate_key"
+      "unicode_escape",
+      "unquoted_key"
     ],
-    "fraction": 0.474
+    "missing": [],
+    "fraction": 1.0
   },
-  "max_depth_reached": 1,
+  "max_depth_reached": 5,
   "per_iteration": [
     {
       "iteration": 0,
-      "examples": 38,
-      "acceptance_rate": 0.316,
+      "examples": 500,
+      "acceptance_rate": 0.348,
       "verdicts": {
-        "accept": 12,
-        "reject": 26
+        "accept": 174,
+        "crash": 218,
+        "timeout": 42,
+        "reject": 66
       },
-      "novelty_rate": 0.447,
+      "novelty_rate": 0.22,
       "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
         "DEC_INT",
         "FLOAT",
         "FLOAT_EXP",
-        "array_",
-        "empty_document",
-        "standard_table",
-        "unquoted_key"
-      ],
-      "cumulative_coverage": 0.184,
-      "missing_productions": [
-        "quoted_key",
-        "dotted_key",
-        "BASIC_STRING",
-        "LITERAL_STRING",
-        "ML_BASIC_STRING",
-        "ML_LITERAL_STRING",
-        "escape_sequence",
-        "unicode_escape",
-        "non_ascii",
-        "HEX_INT",
-        "OCT_INT",
-        "BIN_INT",
         "INF",
-        "NAN",
-        "int_underscore",
-        "int_overflow",
-        "leading_zero_int",
-        "BOOLEAN",
-        "OFFSET_DATE_TIME",
+        "LITERAL_STRING",
         "LOCAL_DATE_TIME",
-        "LOCAL_DATE",
-        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
         "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "duplicate_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
         "inline_table",
         "inline_table_nested",
-        "array_table",
-        "empty_array",
-        "empty_inline_table",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "quoted_key",
+        "standard_table",
         "trailing_comma",
-        "duplicate_key",
-        "comment"
+        "unicode_escape",
+        "unquoted_key"
       ],
-      "max_depth_this_iteration": 1,
-      "max_depth_cumulative": 1,
-      "mean_bytes": 10.3,
-      "findings": 0,
+      "missing_productions": [
+        "ML_LITERAL_STRING",
+        "non_ascii",
+        "HEX_INT",
+        "LOCAL_DATE",
+        "LOCAL_TIME"
+      ],
+      "max_depth_this_iteration": 5,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 114534,
+      "mean_bytes": 165067.5,
+      "findings": 260,
       "top_rejects": [
         [
-          "line 1: invalid key",
+          "line 2: key exists",
+          15
+        ],
+        [
+          "line 3: key exists",
+          14
+        ],
+        [
+          "line 4: key exists",
           9
         ],
         [
-          "line 1: invalid or missing key",
-          7
+          "line 6: key exists",
+          6
         ],
         [
-          "line 1: syntax error",
-          5
-        ],
-        [
-          "line 1: missing =",
+          "line 1: key exists",
           3
-        ],
-        [
-          "line 1: extra chars after value",
-          1
         ]
-      ]
+      ],
+      "cumulative_breadth": 0.868
     },
     {
       "iteration": 1,
-      "examples": 43,
-      "acceptance_rate": 0.279,
+      "examples": 500,
+      "acceptance_rate": 0.316,
       "verdicts": {
-        "accept": 12,
-        "reject": 31
+        "accept": 158,
+        "crash": 206,
+        "reject": 93,
+        "timeout": 43
       },
-      "novelty_rate": 0.279,
+      "novelty_rate": 0.256,
       "productions_this_iteration": [
         "BASIC_STRING",
-        "FLOAT",
-        "FLOAT_EXP",
-        "LITERAL_STRING",
-        "array_",
-        "empty_document",
-        "non_ascii",
-        "standard_table",
-        "unquoted_key"
-      ],
-      "cumulative_coverage": 0.263,
-      "missing_productions": [
-        "quoted_key",
-        "dotted_key",
-        "ML_BASIC_STRING",
-        "ML_LITERAL_STRING",
-        "escape_sequence",
-        "unicode_escape",
-        "HEX_INT",
-        "OCT_INT",
         "BIN_INT",
-        "INF",
-        "NAN",
-        "int_underscore",
-        "int_overflow",
-        "leading_zero_int",
         "BOOLEAN",
-        "OFFSET_DATE_TIME",
-        "LOCAL_DATE_TIME",
-        "LOCAL_DATE",
-        "LOCAL_TIME",
-        "array_nested",
-        "inline_table",
-        "inline_table_nested",
-        "array_table",
-        "empty_array",
-        "empty_inline_table",
-        "trailing_comma",
-        "duplicate_key",
-        "comment"
-      ],
-      "max_depth_this_iteration": 1,
-      "max_depth_cumulative": 1,
-      "mean_bytes": 17.9,
-      "findings": 0,
-      "top_rejects": [
-        [
-          "line 1: invalid key",
-          12
-        ],
-        [
-          "line 1: missing =",
-          6
-        ],
-        [
-          "line 1: invalid or missing key",
-          4
-        ],
-        [
-          "line 1: syntax error",
-          2
-        ],
-        [
-          "line 2: invalid key",
-          2
-        ]
-      ]
-    },
-    {
-      "iteration": 2,
-      "examples": 54,
-      "acceptance_rate": 0.278,
-      "verdicts": {
-        "accept": 15,
-        "reject": 39
-      },
-      "novelty_rate": 0.185,
-      "productions_this_iteration": [
-        "BASIC_STRING",
-        "FLOAT",
-        "LITERAL_STRING",
-        "ML_BASIC_STRING",
-        "ML_LITERAL_STRING",
-        "array_",
-        "empty_document",
-        "non_ascii",
-        "standard_table",
-        "unquoted_key"
-      ],
-      "cumulative_coverage": 0.316,
-      "missing_productions": [
-        "quoted_key",
-        "dotted_key",
-        "escape_sequence",
-        "unicode_escape",
-        "HEX_INT",
-        "OCT_INT",
-        "BIN_INT",
-        "INF",
-        "NAN",
-        "int_underscore",
-        "int_overflow",
-        "leading_zero_int",
-        "BOOLEAN",
-        "OFFSET_DATE_TIME",
-        "LOCAL_DATE_TIME",
-        "LOCAL_DATE",
-        "LOCAL_TIME",
-        "array_nested",
-        "inline_table",
-        "inline_table_nested",
-        "array_table",
-        "empty_array",
-        "empty_inline_table",
-        "trailing_comma",
-        "duplicate_key",
-        "comment"
-      ],
-      "max_depth_this_iteration": 1,
-      "max_depth_cumulative": 1,
-      "mean_bytes": 18.2,
-      "findings": 0,
-      "top_rejects": [
-        [
-          "line 1: invalid key",
-          27
-        ],
-        [
-          "line 1: syntax error",
-          6
-        ],
-        [
-          "line 1: invalid or missing key",
-          3
-        ],
-        [
-          "line 1: extra chars after value",
-          2
-        ],
-        [
-          "line 1: invalid char U+001e",
-          1
-        ]
-      ]
-    },
-    {
-      "iteration": 3,
-      "examples": 44,
-      "acceptance_rate": 0.341,
-      "verdicts": {
-        "accept": 15,
-        "reject": 29
-      },
-      "novelty_rate": 0.25,
-      "productions_this_iteration": [
-        "BIN_INT",
+        "DEC_INT",
         "FLOAT",
         "FLOAT_EXP",
         "HEX_INT",
-        "LITERAL_STRING",
-        "ML_LITERAL_STRING",
-        "OCT_INT",
-        "array_",
-        "empty_document",
-        "non_ascii",
-        "standard_table",
-        "unquoted_key"
-      ],
-      "cumulative_coverage": 0.395,
-      "missing_productions": [
-        "quoted_key",
-        "dotted_key",
-        "escape_sequence",
-        "unicode_escape",
         "INF",
-        "NAN",
-        "int_underscore",
-        "int_overflow",
-        "leading_zero_int",
-        "BOOLEAN",
-        "OFFSET_DATE_TIME",
-        "LOCAL_DATE_TIME",
+        "LITERAL_STRING",
         "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
         "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
         "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "duplicate_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
         "inline_table",
         "inline_table_nested",
-        "array_table",
-        "empty_array",
-        "empty_inline_table",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
         "trailing_comma",
-        "duplicate_key",
-        "comment"
+        "unicode_escape",
+        "unquoted_key"
       ],
-      "max_depth_this_iteration": 1,
-      "max_depth_cumulative": 1,
-      "mean_bytes": 11.0,
-      "findings": 0,
+      "missing_productions": [],
+      "max_depth_this_iteration": 5,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 114575,
+      "mean_bytes": 152872.7,
+      "findings": 249,
       "top_rejects": [
         [
-          "line 1: invalid key",
+          "line 2: key exists",
+          21
+        ],
+        [
+          "line 4: key exists",
+          10
+        ],
+        [
+          "line 1: key exists",
           9
         ],
         [
-          "line 1: invalid or missing key",
-          8
-        ],
-        [
-          "line 1: syntax error",
-          6
-        ],
-        [
-          "line 1: missing =",
-          3
-        ],
-        [
-          "line 2: invalid or missing key",
-          1
-        ]
-      ]
-    },
-    {
-      "iteration": 4,
-      "examples": 51,
-      "acceptance_rate": 0.353,
-      "verdicts": {
-        "accept": 18,
-        "reject": 33
-      },
-      "novelty_rate": 0.176,
-      "productions_this_iteration": [
-        "BASIC_STRING",
-        "BIN_INT",
-        "FLOAT",
-        "INF",
-        "LITERAL_STRING",
-        "NAN",
-        "OCT_INT",
-        "array_",
-        "comment",
-        "empty_document",
-        "non_ascii",
-        "standard_table"
-      ],
-      "cumulative_coverage": 0.474,
-      "missing_productions": [
-        "quoted_key",
-        "dotted_key",
-        "escape_sequence",
-        "unicode_escape",
-        "int_underscore",
-        "int_overflow",
-        "leading_zero_int",
-        "BOOLEAN",
-        "OFFSET_DATE_TIME",
-        "LOCAL_DATE_TIME",
-        "LOCAL_DATE",
-        "LOCAL_TIME",
-        "array_nested",
-        "inline_table",
-        "inline_table_nested",
-        "array_table",
-        "empty_array",
-        "empty_inline_table",
-        "trailing_comma",
-        "duplicate_key"
-      ],
-      "max_depth_this_iteration": 1,
-      "max_depth_cumulative": 1,
-      "mean_bytes": 12.8,
-      "findings": 0,
-      "top_rejects": [
-        [
-          "line 1: invalid key",
-          17
-        ],
-        [
-          "line 1: missing =",
+          "line 3: key exists",
           7
         ],
         [
-          "line 1: syntax error",
-          4
+          "line 10: key exists",
+          7
+        ]
+      ],
+      "cumulative_breadth": 1.0
+    },
+    {
+      "iteration": 2,
+      "examples": 500,
+      "acceptance_rate": 0.438,
+      "verdicts": {
+        "accept": 219,
+        "crash": 229,
+        "timeout": 35,
+        "reject": 17
+      },
+      "novelty_rate": 0.224,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "duplicate_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "missing_productions": [],
+      "max_depth_this_iteration": 4,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 113815,
+      "mean_bytes": 165311.6,
+      "findings": 264,
+      "top_rejects": [
+        [
+          "line 11: expect hex char",
+          7
         ],
         [
-          "line 1: invalid or missing key",
-          4
+          "line 1: invalid key",
+          2
         ],
         [
-          "line 1: bad key",
+          "line 1: newline not allowed in inline table",
+          2
+        ],
+        [
+          "line 1: unterminated quote",
+          1
+        ],
+        [
+          "line 1: missing =",
           1
         ]
-      ]
+      ],
+      "cumulative_breadth": 1.0
+    },
+    {
+      "iteration": 3,
+      "examples": 500,
+      "acceptance_rate": 0.464,
+      "verdicts": {
+        "accept": 232,
+        "crash": 221,
+        "timeout": 47
+      },
+      "novelty_rate": 0.244,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "empty_array",
+        "empty_inline_table",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "standard_table",
+        "trailing_comma",
+        "unquoted_key"
+      ],
+      "missing_productions": [],
+      "max_depth_this_iteration": 4,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 114999,
+      "mean_bytes": 171391.4,
+      "findings": 268,
+      "top_rejects": [],
+      "cumulative_breadth": 1.0
+    },
+    {
+      "iteration": 4,
+      "examples": 500,
+      "acceptance_rate": 0.452,
+      "verdicts": {
+        "accept": 226,
+        "crash": 230,
+        "timeout": 44
+      },
+      "novelty_rate": 0.23,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unquoted_key"
+      ],
+      "missing_productions": [],
+      "max_depth_this_iteration": 4,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 115000,
+      "mean_bytes": 174271.3,
+      "findings": 274,
+      "top_rejects": [],
+      "cumulative_breadth": 1.0
     }
   ],
-  "unique_crashes": 1
+  "unique_crashes": 0
 }

@@ -1,7 +1,14 @@
-"""Cumulative coverage and novelty bookkeeping across iterations.
+"""Cumulative grammar breadth and novelty bookkeeping across iterations.
+
+"Breadth" here means: of the ~30 tracked TOML grammar productions
+(pipeline/features.py's PRODUCTIONS), how many have appeared at least once
+in an accepted generated document. It is computed by regex-matching our
+OWN generated text, never by instrumenting tomlc99's binary - the
+assignment forbids real code coverage of the target, and this metric is
+not that; see OBSERVATIONS.md's terminology note.
 
 State lives in agent/state/loop_state.json so a crashed or interrupted run
-can be resumed without losing the coverage history - which, unlike the logs,
+can be resumed without losing the breadth history - which, unlike the logs,
 cannot be reconstructed after the fact.
 """
 from __future__ import annotations
@@ -24,7 +31,7 @@ def _state_path() -> Path:
 class LoopState:
     """Everything the loop must remember between iterations."""
 
-    covered_productions: list[str] = field(default_factory=list)
+    reached_productions: list[str] = field(default_factory=list)
     seen_signatures: list[str] = field(default_factory=list)
     max_depth_reached: int = 0
     crash_signatures: list[str] = field(default_factory=list)
@@ -46,17 +53,17 @@ class LoopState:
     # ---- queries -------------------------------------------------------
     @property
     def missing_productions(self) -> list[str]:
-        return [p for p in PRODUCTIONS if p not in set(self.covered_productions)]
+        return [p for p in PRODUCTIONS if p not in set(self.reached_productions)]
 
     @property
-    def coverage_fraction(self) -> float:
-        return len(set(self.covered_productions)) / len(PRODUCTIONS)
+    def breadth_fraction(self) -> float:
+        return len(set(self.reached_productions)) / len(PRODUCTIONS)
 
     # ---- updates -------------------------------------------------------
     def observe(self, features: dict, *, accepted: bool) -> bool:
         """Fold one record in. Returns True if its shape was novel.
 
-        Only accepted inputs contribute coverage and depth: a rejected input
+        Only accepted inputs contribute breadth and depth: a rejected input
         bounced at the front door executed almost no parser code, so counting
         it would inflate the signal while testing nothing.
         """
@@ -68,10 +75,10 @@ class LoopState:
             self.seen_signatures.append(sig)
 
         if accepted:
-            known = set(self.covered_productions)
+            known = set(self.reached_productions)
             for p in features.get("productions", []):
                 if p not in known:
-                    self.covered_productions.append(p)
+                    self.reached_productions.append(p)
                     known.add(p)
             self.max_depth_reached = max(
                 self.max_depth_reached, features.get("max_depth", 0))

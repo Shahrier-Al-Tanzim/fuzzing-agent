@@ -41,7 +41,7 @@ global success counter with no provider or run_id tag). See `groq/README.md`.
 For an apples-to-apples comparison, the **`metrics.md` / `metrics.csv` files
 are the common denominator** — they exist for every completed run of both
 providers, extracted identically from `logs/RUN_HISTORY.jsonl` (acceptance,
-coverage, novelty, max depth, findings, examples, elapsed time per iteration,
+breadth, novelty, max depth, findings, examples, elapsed time per iteration,
 plus tokens and attempt counts per run). Claude runs will produce the same
 files, so the three become directly comparable on those axes.
 

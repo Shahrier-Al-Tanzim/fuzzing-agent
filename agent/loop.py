@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 
 from hypothesis import HealthCheck, given, settings
 
-from agent.coverage import LoopState
+from agent.breadth import LoopState
 from agent.extract import extract_python
 from agent.gemini_client import GeminiClient
 from agent.groq_client import GroqClient
@@ -290,7 +290,7 @@ def main() -> int:
             iterations_completed += 1
 
             print(f"  accepted    : {summary['acceptance_rate']:.0%}")
-            print(f"  coverage    : {summary['cumulative_coverage']:.0%} "
+            print(f"  breadth     : {summary['cumulative_breadth']:.0%} "
                   f"(+{len(summary['productions_this_iteration'])} this run)")
             print(f"  novelty     : {summary['novelty_rate']:.0%}")
             print(f"  max depth   : {summary['max_depth_cumulative']}")
@@ -304,7 +304,7 @@ def main() -> int:
         for it in state.iterations:
             s = it["summary"]
             print(f"  iter {it['iteration']}: accept {s['acceptance_rate']:.0%}  "
-                  f"cov {s['cumulative_coverage']:.0%}  "
+                  f"breadth {s['cumulative_breadth']:.0%}  "
                   f"depth {s['max_depth_cumulative']:>3}  "
                   f"findings {s['findings']}")
         print(f"\nusage: {json.dumps(client.usage_summary())}")

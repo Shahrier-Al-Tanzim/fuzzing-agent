@@ -56,7 +56,7 @@ def iteration_table(state: dict) -> str:
         rows.append(
             f"| {it['iteration']} "
             f"| {s['acceptance_rate']:.0%} "
-            f"| {s['cumulative_coverage']:.0%} "
+            f"| {s['cumulative_breadth']:.0%} "
             f"| {len(s['productions_this_iteration'])} "
             f"| {s['novelty_rate']:.0%} "
             f"| {s['max_depth_cumulative']} "
@@ -65,24 +65,24 @@ def iteration_table(state: dict) -> str:
             f"| {it.get('elapsed_s', 0):.0f}s |"
         )
     return (
-        "| Iter | Accepted | Grammar coverage | New productions | Novel shapes "
+        "| Iter | Accepted | Grammar breadth | New productions | Novel shapes "
         "| Max depth | Findings | LLM attempts | Time |\n"
         "|---|---|---|---|---|---|---|---|---|\n" + "\n".join(rows)
     )
 
 
-def coverage_table(state: dict) -> str:
-    covered = set(state.get("covered_productions", []))
-    if not covered:
-        return "_No coverage recorded yet._"
+def breadth_table(state: dict) -> str:
+    reached = set(state.get("reached_productions", []))
+    if not reached:
+        return "_No grammar breadth recorded yet._"
 
-    lines = [f"**{len(covered)}/{len(PRODUCTIONS)} productions covered "
-             f"({len(covered) / len(PRODUCTIONS):.0%})**\n",
-             "| Production | Covered |", "|---|---|"]
+    lines = [f"**{len(reached)}/{len(PRODUCTIONS)} productions reached "
+             f"({len(reached) / len(PRODUCTIONS):.0%})**\n",
+             "| Production | Reached |", "|---|---|"]
     for p in PRODUCTIONS:
-        lines.append(f"| `{p}` | {'yes' if p in covered else '**NO**'} |")
+        lines.append(f"| `{p}` | {'yes' if p in reached else '**NO**'} |")
 
-    missing = [p for p in PRODUCTIONS if p not in covered]
+    missing = [p for p in PRODUCTIONS if p not in reached]
     if missing:
         lines.append(
             "\n**Still under-tested (never appeared in an accepted document):** "
@@ -90,13 +90,13 @@ def coverage_table(state: dict) -> str:
     return "\n".join(lines)
 
 
-def coverage_progression(state: dict) -> str:
+def breadth_progression(state: dict) -> str:
     iters = state.get("iterations", [])
     if not iters:
         return ""
-    lines = ["```", "Grammar coverage by iteration", ""]
+    lines = ["```", "Grammar breadth by iteration", ""]
     for it in iters:
-        c = it["summary"]["cumulative_coverage"]
+        c = it["summary"]["cumulative_breadth"]
         lines.append(f"  iter {it['iteration']}  {_bar(c)}  {c:.0%}")
     lines += ["", "Acceptance rate by iteration", ""]
     for it in iters:
@@ -218,8 +218,8 @@ def main() -> int:
 
     artifacts = {
         "iteration_table.md": iteration_table(state),
-        "coverage_table.md": coverage_table(state),
-        "coverage_progression.md": coverage_progression(state),
+        "breadth_table.md": breadth_table(state),
+        "breadth_progression.md": breadth_progression(state),
         "verdict_table.md": verdict_table(),
         "crash_table.md": crash_table(),
         "budget_table.md": budget_table(state),
@@ -228,15 +228,15 @@ def main() -> int:
         (out / name).write_text(content + "\n", encoding="utf-8")
         print(f"  wrote {out.name}/{name}")
 
-    covered = set(state.get("covered_productions", []))
+    reached = set(state.get("reached_productions", []))
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "iterations": len(state.get("iterations", [])),
         "total_tokens": state.get("total_tokens", 0),
-        "coverage": {
-            "covered": sorted(covered),
-            "missing": [p for p in PRODUCTIONS if p not in covered],
-            "fraction": round(len(covered) / len(PRODUCTIONS), 3),
+        "breadth": {
+            "reached": sorted(reached),
+            "missing": [p for p in PRODUCTIONS if p not in reached],
+            "fraction": round(len(reached) / len(PRODUCTIONS), 3),
         },
         "max_depth_reached": state.get("max_depth_reached", 0),
         "per_iteration": [
@@ -251,11 +251,11 @@ def main() -> int:
 
     print("\n=== headline numbers for the report ===")
     print(f"  iterations run     : {summary['iterations']}")
-    print(f"  grammar coverage   : {summary['coverage']['fraction']:.0%}")
+    print(f"  grammar breadth    : {summary['breadth']['fraction']:.0%}")
     print(f"  max nesting depth  : {summary['max_depth_reached']}")
     print(f"  unique bugs        : {summary['unique_crashes']}")
     print(f"  LLM tokens         : {summary['total_tokens']:,}")
-    print(f"  still under-tested : {', '.join(summary['coverage']['missing'][:8]) or 'none'}")
+    print(f"  still under-tested : {', '.join(summary['breadth']['missing'][:8]) or 'none'}")
     return 0
 
 

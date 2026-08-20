@@ -76,8 +76,11 @@ runs seed → validate → run 500 examples → summarize → refine, up to 5
 iterations. Since code coverage of `tomlc99` is off-limits, the proxy
 signal combines several externally-observable things, computed by reading
 the *generated text itself*, never the target's internals:
-**grammar-production coverage** (how many of ~30 tracked TOML constructs
-have appeared in accepted documents), **acceptance rate** (a generator
+**grammar breadth** (how many of ~30 tracked TOML constructs
+have appeared in accepted documents — deliberately not called "coverage":
+it's a regex match against our own generated strings, never an
+instrumentation of the target binary, and the two terms are easy to
+conflate at a glance), **acceptance rate** (a generator
 rejected 99% of the time is testing nothing — a 20% floor rejects the
 whole strategy before it wastes the run's budget), **novelty**
 (structural shape diversity), **max nesting depth**, and — added later,

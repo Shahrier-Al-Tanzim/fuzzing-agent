@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from agent.coverage import LoopState
+from agent.breadth import LoopState
 from pipeline.config import load
 from pipeline.features import PRODUCTIONS
 from pipeline.schema import RunRecord, Verdict
@@ -50,7 +50,7 @@ def summarize_iteration(records: list[RunRecord], state: LoopState,
         "verdicts": dict(verdicts),
         "novelty_rate": round(novel_count / total, 3),
         "productions_this_iteration": sorted(prods_this_iter),
-        "cumulative_coverage": round(state.coverage_fraction, 3),
+        "cumulative_breadth": round(state.breadth_fraction, 3),
         "missing_productions": state.missing_productions,
         "max_depth_this_iteration": max(depths, default=0),
         "max_depth_cumulative": state.max_depth_reached,
@@ -188,7 +188,7 @@ def render_feedback(summary: dict, state: LoopState) -> str:
 Parser outcomes : {summary['verdicts']}
 Accepted        : {summary['acceptance_rate']:.0%}
 Novel shapes    : {summary['novelty_rate']:.0%}
-Grammar coverage: {summary['cumulative_coverage']:.0%} of \
+Grammar breadth : {summary['cumulative_breadth']:.0%} of \
 {len(PRODUCTIONS)} tracked productions
 Max nest depth  : {summary['max_depth_this_iteration']} this run, \
 {summary['max_depth_cumulative']} cumulative (accepted documents only)

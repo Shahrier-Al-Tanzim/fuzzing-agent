@@ -1,4 +1,4 @@
-provider,run,status,iteration,accepted,coverage,novelty,max_depth,findings,examples,elapsed_s
+provider,run,status,iteration,accepted,breadth,novelty,max_depth,findings,examples,elapsed_s
 groq,1,PASSED (5 iters),0,0.342,0.553,0.334,4,0,500,63.6
 groq,1,PASSED (5 iters),1,0.37,0.632,0.248,4,0,500,35.8
 groq,1,PASSED (5 iters),2,0.328,0.737,0.228,5,0,500,41.9

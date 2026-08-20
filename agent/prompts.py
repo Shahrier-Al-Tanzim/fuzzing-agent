@@ -215,7 +215,7 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
       # depth=depth+1 is passed on every recursive call, so the counter
       # genuinely advances and the threshold is reachable.
     Whichever technique you use, keep a SECOND, balanced/shallow variant
-    (as in earlier rules) for grammar coverage. BUT never expose a bare
+    (as in earlier rules) for grammar breadth. BUT never expose a bare
     `array()`/`inline_table()`/`dotted_key()`/raw-number/raw-string
     strategy directly inside the final `toml_strategy`'s own `one_of()` -
     every branch of `toml_strategy` MUST still produce a COMPLETE document
