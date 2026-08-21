@@ -989,6 +989,105 @@ recipe (bug 2, bug 4, the quoted-key variant of 5). The assignment's own
 Challenges section explicitly asks for judgment calls like this one to be
 named, not hidden behind a single combined bug count.
 
+## Case 12: `crash_signatures` was declared in Module 5 and never once written — the loop was blind to its own crashes
+
+While designing what would replace rules 16-17 (Case 11), a check of
+whether `LoopState.crash_signatures` was actually being used turned up
+something bigger than the prompt question it was meant to answer:
+`crash_signatures` is **read in four places in `agent/summarize.py` and
+written in exactly zero.** Confirmed on run 29's saved state — 5 iterations,
+110 logged crashes — `agent/state/loop_state.json` had `"crash_signatures":
+[]`, and the feedback the model actually received in iteration 4
+simultaneously said `'crash': 17` in the outcome counts **and** "No crashes
+found yet by any iteration." in the crash-summary line right below it.
+
+**Why it happened.** The sanitizer's full symbolized backtrace was captured
+correctly the whole time (`pipeline/runner.py` stores it on
+`RunRecord.stderr`) and written to every `iteration_NN.jsonl`. Nothing on
+the `agent.loop` path ever called `triage.signature.parse_signature()` on
+it - that function only ran later, in the separate `triage.run_triage`
+step, which happens after a run is already finished and can no longer
+influence it. The live loop and the after-the-fact triage step were reading
+the same crash data, but only one of them was capable of learning from it.
+
+**Consequence for everything already believed about this project's
+prompts:** the hand-written `CRASH_MECHANISMS` digest-to-English dictionary
+in `agent/summarize.py`, and the directive built from it ("FIND A CRASH
+WITH A DIFFERENT MECHANISM... e.g. quoted keys, dotted keys"), had **never
+fired on any run to date** - `state.crash_signatures` being permanently
+empty meant the `if state.crash_signatures:` guard around that directive
+was always false. So run 29 (Case 11) was a cleaner test of "no hardcoded
+bug knowledge" than first credited: the leaked hint was sitting in the
+code, but structurally could not have reached the model yet.
+
+**The fix, tried on `module-7c-tweaking-prompts`:**
+- `agent/loop.py` called `parse_signature(rec.stderr, rec.signal)` on
+  every finding as it happened, folding the digest and its normalized top
+  frames into a new `LoopState.crash_frames` field (backward-compatible:
+  given a default, so `--resume` against an old `loop_state.json` still
+  loads real state rather than silently falling back to blank - verified
+  directly against run 29's saved file).
+- `render_feedback()` named the actual target **functions** a crash landed
+  in (`state.crashed_functions`, filtered to frames carrying a `file:line`
+  - libc frames like `malloc`/`strnlen` never get one from the sanitizer,
+  so that distinction, not a list of known function names, is what
+  separates target code from noise) instead of the dead digest→mechanism
+  table. The diversity directive lost every hand-written TOML construct
+  name ("quoted keys", "dotted keys") and only ever stated which functions
+  had already been hit and asked for a different one.
+- The depth ladder (`DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`,
+  whose own old comment admitted it was sized to tomlc99's *known* ~48k-105k
+  thresholds) was replaced with a formula: next target = 8x the deepest
+  document actually generated so far, bootstrapped at 12 for the cold
+  start, capped at roughly `harness.max_input_bytes / 8` so it could not
+  ask for an unreachable multi-million-level target.
+- Verified end-to-end offline, no API calls spent: replayed run 29's five
+  `iteration_NN.jsonl` logs through the new code and confirmed the parsed
+  digests matched `triage/reports/run_29/INDEX.md` exactly, the rendered
+  feedback contained real function names and none of "No crashes found
+  yet", "quoted keys", "dotted keys", or "tomlc99 needs", and the existing
+  `loop_state.json` still loaded as populated state rather than a blank
+  fallback.
+
+**Outcome across two live runs, then reverted.** Run 30 (fixed feedback,
+still no rules 16/17) found 3 honest bugs, same as run 29 but including one
+run 29 had missed (`nested_inline_tables`) - concrete evidence the fix
+genuinely worked, and the loop's live `crash_signatures` matched triage's
+own count exactly for the first time ever. Run 31 regressed to 1 bug: it
+crashed on the easiest bug (`nested_arrays`) in iteration 0, and the new
+"stop pushing depth once anything has crashed" gate then suppressed the
+depth directive for the rest of the run - "deepest generated" stayed flat
+at 11,919-28,000 for all 5 remaining iterations, well short of the
+~48,000-80,000 range the other bugs need, because nothing ever asked the
+model to go back there. The gate fixed the runaway-target problem (Run 30
+asked for 200,000, then 1,594,216, then 11,694,760 - each iteration
+multiplying an ask the strategy had already proven unreachable) but was
+too aggressive in the other direction: reaching one easy bug should not
+retire the search for harder ones at greater depth.
+
+**Decision: reverted on `module-7-report`.** Across 3 runs (29, 30, 31)
+without rules 16/17, the ceiling found was 3 of the 5 known bugs, never
+more; rules 16/17 (runs 27, 28) reliably find 5. The fix in this case is
+real and worth keeping as a documented attempt - `crash_signatures` being
+permanently dead was a genuine bug independent of the rules-16/17 question
+- but the net result across the whole experiment did not outperform the
+hardcoded baseline, so the code was reverted rather than merged. The
+attempt lives on `module-7c-tweaking-prompts` (commit `c068b98`) as a
+complete, reproducible record.
+
+**Why this belongs in the report as its own point.** This is not a
+rewording of Case 11; it is a bug in the loop's OWN plumbing that made
+every prior run's crash-related feedback silently inert, discovered only
+because Case 11's question ("can prompts avoid hardcoding?") led to
+checking whether the feedback path was even connected. It also means any
+run before this fix that appeared to respond to "keep generating known
+crashes, find a different mechanism" was doing so by chance, not because
+that directive ever actually reached the model. The subsequent regression
+(Run 31) is itself a useful negative result: a real plumbing fix can still
+make an unrelated design choice (the depth-suppression gate) look worse
+than it would in isolation, which is exactly the kind of confound worth
+naming rather than papering over.
+
 ## Terminology note: "grammar breadth", not "coverage"
 
 The metric formerly called "coverage" throughout this project (in code,

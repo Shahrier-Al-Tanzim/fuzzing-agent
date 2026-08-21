@@ -269,6 +269,127 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     used unquoted as a key - not just `key()`, also any inline ad-hoc key
     building inside `inline_table()`/`dotted_key()` if it doesn't already
     call `key()`.
+16. To reach EXTREME nesting depth (hundreds or thousands of levels, as the
+    feedback may request), do NOT try to get there by recursion at all.
+    MEASURED FACT from previous attempts - recursive generation cannot do
+    it, no matter how heavily biased:
+      * `st.lists(...)` with no size limit averages ~50-90 elements, so a
+        recursive strategy spreads SIDEWAYS into a huge bushy tree and
+        exhausts Hypothesis's data budget at depth 2-3. Measured: max
+        depth 3 over 15 draws.
+      * Even forcing exactly one child per level (`min_size=1,
+        max_size=1`), which is the correct chain shape, only reached
+        depth 13 over 15 draws - Hypothesis's own generation budget
+        inherently resists deep recursion.
+    So for extreme depth, draw the depth as an INTEGER and build the
+    string directly by repetition - no recursion involved:
+      Right:  @composite
+              def deep_array(draw):
+                  n = draw(st.integers(min_value=60_000, max_value=100_000))
+                  return "[" * n + "1" + "]" * n
+      Right:  @composite
+              def deep_inline_table(draw):
+                  n = draw(st.integers(min_value=85_000, max_value=115_000))
+                  return "{a=" * n + "1" + "}" * n
+      Right:  @composite
+              def deep_dotted_key(draw):
+                  n = draw(st.integers(min_value=100_000, max_value=130_000))
+                  return "a." * n + "k"      # use as a KEY, not a value
+      Right:  @composite
+              def deep_mixed_nesting(draw):
+                  n = draw(st.integers(min_value=60_000, max_value=80_000))
+                  return "[{a=" * n + "1" + "}]" * n
+      Right:  @composite
+              def deep_quoted_mixed(draw):
+                  n = draw(st.integers(min_value=20_000, max_value=45_000))
+                  return '[{"k"=' * n + "1" + "}]" * n
+    THE FIVE SHAPES NEED DIFFERENT `min_value`s, and the numbers above are
+    MEASURED crash thresholds - do not flatten them to one shared floor.
+    Each construct overflows the parser's stack at its own depth: arrays at
+    roughly 48,000 levels, inline tables at roughly 80,000, dotted keys at
+    roughly 90,000-100,000. A shared low floor (e.g. 1,000 for all of them)
+    wastes most draws: a dotted key generated at depth 20,000 is five times
+    too shallow to do anything at all, which is a REAL FAILURE from previous
+    runs - the array shape crashed 120 times while the dotted-key shape
+    crashed only 3 times, purely because they shared one floor that suited
+    only the array.
+    `deep_mixed_nesting` is NOT a duplicate of the other three - it
+    alternates an array and an inline table at EVERY level, which drives a
+    different chain of parser functions (array -> inline table -> key/value
+    -> array, cycling) than either construct nested in itself. It therefore
+    crashes with a different stack signature and counts as a separate bug.
+    Generating only the three "pure" shapes misses it entirely.
+    `deep_quoted_mixed` is the same alternating nesting but with a QUOTED
+    key (`"k"`) at every level instead of a bare one. MEASURED FACT: this
+    single change moves the crash into a different parser function - a
+    quoted key has to be unescaped before it can be stored, so the
+    string-normalization code sits on the stack at the moment it overflows,
+    producing a stack signature none of the other four shapes ever produce.
+    WHAT SITS AT EACH LEVEL MATTERS AS MUCH AS HOW DEEP THE NESTING GOES:
+    two documents nested equally deep crash in different functions depending
+    on what each level contains. Note its depth range is deliberately LOWER
+    than the others (20,000-45,000) - a quoted key does more work per level,
+    so the stack runs out sooner; going deeper here just crashes earlier in
+    a way that hides this signature. So vary the CONTENT of each level
+    (bare vs quoted vs dotted keys, values needing escape processing), not
+    only the depth.
+    SET `max_value` FROM THE DEPTH TARGET IN THE FEEDBACK, not from this
+    example. A REAL FAILURE from a previous attempt: the numbers above were
+    copied verbatim as `max_value=5000` and depth then sat at exactly
+    4999-5000 for all five iterations - the generator never went past the
+    example's own ceiling, so it never reached the depth where anything
+    interesting happens. If the feedback asks for 30000+, `max_value` must
+    be at least 30000; if it asks for 90000+, at least 90000. Widen the
+    range by RAISING `max_value`, never by lowering `min_value` below the
+    per-shape floor given above - those floors are what make each draw land
+    above its own crash threshold.
+    Use ALL FIVE shapes, not just one - another REAL FAILURE: a previous
+    attempt defined `deep_inline_table` and `deep_dotted_key` but wired only
+    `deep_array` into `toml_strategy`, so two of the three never ran once.
+    Each shape stresses a different part of the parser, so include a branch
+    for each of the five in the final `st.one_of(...)`.
+    Keep every one of these inside a normal `key = value` line (rule 12/14
+    - a bare `[[[...]]]` alone is not a valid document), e.g.
+    `f"deep = {draw(deep_array())}"`. Two hard limits: keep the whole
+    document under 1 MB, and keep the deep branches a clear MINORITY of
+    `toml_strategy`'s `one_of(...)`. Concretely: list the five deep shapes
+    ONCE each (5 branches total) against AT LEAST 20 ordinary `document()`
+    branches, i.e. deep shapes together must be no more than ~1 in 5 of all
+    branches:
+      Right:  toml_strategy = st.one_of(
+                  *([document()] * 20),
+                  deep_doc(deep_array()), deep_doc(deep_inline_table()),
+                  deep_doc(deep_dotted_key()), deep_doc(deep_mixed_nesting()),
+                  deep_doc(deep_quoted_mixed()))
+      # where deep_doc(s) wraps the deep string in a `key = value` line
+    This ratio matters for a non-obvious reason: a document that crashes the
+    parser does not count as "accepted", and with the high per-shape floors
+    above almost EVERY deep draw now crashes. If deep branches are more than
+    a small minority, the measured acceptance rate falls below the 20% floor
+    and the whole strategy gets rejected before it ever runs - losing the
+    very crashes it was built to find.
+    IMPORTANT: still use `st.recursive`/`@composite` for ordinary nesting
+    (rule 10) - this integer-repetition trick is ONLY for the extreme-depth
+    branch, not a replacement for real recursive structure everywhere.
+17. ALSO generate documents with MANY SIBLING keys in ONE table (not nested
+    - flat, side by side), as a second, DIFFERENT way to break the parser.
+    MEASURED FACT: `tomlc99` looks up every key with a linear scan through
+    all existing keys, so adding N keys to the same table costs O(N^2) time
+    overall. Confirmed directly against the harness: 5,000 sibling keys
+    took 0.74s (fine), but 15,000+ sibling keys took over 5 seconds and hit
+    the per-input timeout - which the assignment counts as a finding, same
+    as a crash. This needs far fewer bytes than deep nesting (a few hundred
+    KB, not tens of thousands of nesting levels) because it comes from
+    COUNT of keys, not DEPTH of nesting:
+      Right:  @composite
+              def many_siblings(draw):
+                  n = draw(st.integers(min_value=10_000, max_value=60_000))
+                  lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
+                  return "\\n".join(lines)
+    Add this as another branch in `toml_strategy`'s `one_of(...)`, alongside
+    the deep-nesting branch from rule 16 - they are two DIFFERENT bug
+    classes (a stack overflow from nesting vs. a timeout from key count),
+    so both are worth generating, not just one.
 """
 
 SEED_TEMPLATE = """\
@@ -348,125 +469,3 @@ def build_refine_prompt(current_code: str, feedback: str,
     )
 
     
-    
-#     16. To reach EXTREME nesting depth (hundreds or thousands of levels, as the
-#     feedback may request), do NOT try to get there by recursion at all.
-#     MEASURED FACT from previous attempts - recursive generation cannot do
-#     it, no matter how heavily biased:
-#       * `st.lists(...)` with no size limit averages ~50-90 elements, so a
-#         recursive strategy spreads SIDEWAYS into a huge bushy tree and
-#         exhausts Hypothesis's data budget at depth 2-3. Measured: max
-#         depth 3 over 15 draws.
-#       * Even forcing exactly one child per level (`min_size=1,
-#         max_size=1`), which is the correct chain shape, only reached
-#         depth 13 over 15 draws - Hypothesis's own generation budget
-#         inherently resists deep recursion.
-#     So for extreme depth, draw the depth as an INTEGER and build the
-#     string directly by repetition - no recursion involved:
-#       Right:  @composite
-#               def deep_array(draw):
-#                   n = draw(st.integers(min_value=60_000, max_value=100_000))
-#                   return "[" * n + "1" + "]" * n
-#       Right:  @composite
-#               def deep_inline_table(draw):
-#                   n = draw(st.integers(min_value=85_000, max_value=115_000))
-#                   return "{a=" * n + "1" + "}" * n
-#       Right:  @composite
-#               def deep_dotted_key(draw):
-#                   n = draw(st.integers(min_value=100_000, max_value=130_000))
-#                   return "a." * n + "k"      # use as a KEY, not a value
-#       Right:  @composite
-#               def deep_mixed_nesting(draw):
-#                   n = draw(st.integers(min_value=60_000, max_value=80_000))
-#                   return "[{a=" * n + "1" + "}]" * n
-#       Right:  @composite
-#               def deep_quoted_mixed(draw):
-#                   n = draw(st.integers(min_value=20_000, max_value=45_000))
-#                   return '[{"k"=' * n + "1" + "}]" * n
-#     THE FIVE SHAPES NEED DIFFERENT `min_value`s, and the numbers above are
-#     MEASURED crash thresholds - do not flatten them to one shared floor.
-#     Each construct overflows the parser's stack at its own depth: arrays at
-#     roughly 48,000 levels, inline tables at roughly 80,000, dotted keys at
-#     roughly 90,000-100,000. A shared low floor (e.g. 1,000 for all of them)
-#     wastes most draws: a dotted key generated at depth 20,000 is five times
-#     too shallow to do anything at all, which is a REAL FAILURE from previous
-#     runs - the array shape crashed 120 times while the dotted-key shape
-#     crashed only 3 times, purely because they shared one floor that suited
-#     only the array.
-#     `deep_mixed_nesting` is NOT a duplicate of the other three - it
-#     alternates an array and an inline table at EVERY level, which drives a
-#     different chain of parser functions (array -> inline table -> key/value
-#     -> array, cycling) than either construct nested in itself. It therefore
-#     crashes with a different stack signature and counts as a separate bug.
-#     Generating only the three "pure" shapes misses it entirely.
-#     `deep_quoted_mixed` is the same alternating nesting but with a QUOTED
-#     key (`"k"`) at every level instead of a bare one. MEASURED FACT: this
-#     single change moves the crash into a different parser function - a
-#     quoted key has to be unescaped before it can be stored, so the
-#     string-normalization code sits on the stack at the moment it overflows,
-#     producing a stack signature none of the other four shapes ever produce.
-#     WHAT SITS AT EACH LEVEL MATTERS AS MUCH AS HOW DEEP THE NESTING GOES:
-#     two documents nested equally deep crash in different functions depending
-#     on what each level contains. Note its depth range is deliberately LOWER
-#     than the others (20,000-45,000) - a quoted key does more work per level,
-#     so the stack runs out sooner; going deeper here just crashes earlier in
-#     a way that hides this signature. So vary the CONTENT of each level
-#     (bare vs quoted vs dotted keys, values needing escape processing), not
-#     only the depth.
-#     SET `max_value` FROM THE DEPTH TARGET IN THE FEEDBACK, not from this
-#     example. A REAL FAILURE from a previous attempt: the numbers above were
-#     copied verbatim as `max_value=5000` and depth then sat at exactly
-#     4999-5000 for all five iterations - the generator never went past the
-#     example's own ceiling, so it never reached the depth where anything
-#     interesting happens. If the feedback asks for 30000+, `max_value` must
-#     be at least 30000; if it asks for 90000+, at least 90000. Widen the
-#     range by RAISING `max_value`, never by lowering `min_value` below the
-#     per-shape floor given above - those floors are what make each draw land
-#     above its own crash threshold.
-#     Use ALL FIVE shapes, not just one - another REAL FAILURE: a previous
-#     attempt defined `deep_inline_table` and `deep_dotted_key` but wired only
-#     `deep_array` into `toml_strategy`, so two of the three never ran once.
-#     Each shape stresses a different part of the parser, so include a branch
-#     for each of the five in the final `st.one_of(...)`.
-#     Keep every one of these inside a normal `key = value` line (rule 12/14
-#     - a bare `[[[...]]]` alone is not a valid document), e.g.
-#     `f"deep = {draw(deep_array())}"`. Two hard limits: keep the whole
-#     document under 1 MB, and keep the deep branches a clear MINORITY of
-#     `toml_strategy`'s `one_of(...)`. Concretely: list the five deep shapes
-#     ONCE each (5 branches total) against AT LEAST 20 ordinary `document()`
-#     branches, i.e. deep shapes together must be no more than ~1 in 5 of all
-#     branches:
-#       Right:  toml_strategy = st.one_of(
-#                   *([document()] * 20),
-#                   deep_doc(deep_array()), deep_doc(deep_inline_table()),
-#                   deep_doc(deep_dotted_key()), deep_doc(deep_mixed_nesting()),
-#                   deep_doc(deep_quoted_mixed()))
-#       # where deep_doc(s) wraps the deep string in a `key = value` line
-#     This ratio matters for a non-obvious reason: a document that crashes the
-#     parser does not count as "accepted", and with the high per-shape floors
-#     above almost EVERY deep draw now crashes. If deep branches are more than
-#     a small minority, the measured acceptance rate falls below the 20% floor
-#     and the whole strategy gets rejected before it ever runs - losing the
-#     very crashes it was built to find.
-#     IMPORTANT: still use `st.recursive`/`@composite` for ordinary nesting
-#     (rule 10) - this integer-repetition trick is ONLY for the extreme-depth
-#     branch, not a replacement for real recursive structure everywhere.
-# 17. ALSO generate documents with MANY SIBLING keys in ONE table (not nested
-#     - flat, side by side), as a second, DIFFERENT way to break the parser.
-#     MEASURED FACT: `tomlc99` looks up every key with a linear scan through
-#     all existing keys, so adding N keys to the same table costs O(N^2) time
-#     overall. Confirmed directly against the harness: 5,000 sibling keys
-#     took 0.74s (fine), but 15,000+ sibling keys took over 5 seconds and hit
-#     the per-input timeout - which the assignment counts as a finding, same
-#     as a crash. This needs far fewer bytes than deep nesting (a few hundred
-#     KB, not tens of thousands of nesting levels) because it comes from
-#     COUNT of keys, not DEPTH of nesting:
-#       Right:  @composite
-#               def many_siblings(draw):
-#                   n = draw(st.integers(min_value=10_000, max_value=60_000))
-#                   lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
-#                   return "\\n".join(lines)
-#     Add this as another branch in `toml_strategy`'s `one_of(...)`, alongside
-#     the deep-nesting branch from rule 16 - they are two DIFFERENT bug
-#     classes (a stack overflow from nesting vs. a timeout from key count),
-#     so both are worth generating, not just one.

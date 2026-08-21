@@ -1053,3 +1053,93 @@ One section per run, in order; within each run, one section per iteration, in or
 **Result:** accepted 24% · breadth 100% · novelty 48% · max depth 10889 · findings 17 · examples 500 · elapsed 169.7s
 
 ---
+## Run 30 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 11:47:48 | 1 | FAIL | exec | gemini/gemini-3.6-flash | 11902 | 67.42 | the module raised on import: TypeError: recursive() got an unexpected keyword argument 'ma… |
+| 2026-08-21 11:48:56 | 2 | PASS | acceptance | gemini/gemini-3.6-flash | 12421 | 67.4 |  |
+
+**Result:** accepted 62% · breadth 95% · novelty 42% · max depth 24127 · findings 5 · examples 500 · elapsed 143.6s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 11:50:44 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16411 | 99.23 |  |
+
+**Result:** accepted 70% · breadth 100% · novelty 41% · max depth 50000 · findings 14 · examples 500 · elapsed 112.4s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 11:51:53 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 17198 | 55.67 |  |
+
+**Result:** accepted 62% · breadth 100% · novelty 39% · max depth 50000 · findings 5 · examples 500 · elapsed 75.7s
+
+### Iteration 3 — 1/3 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 11:59:24 | 1 | FAIL | draw | gemini/gemini-3.6-flash | 17512 | 431.65 | drawing an example raised TypeError: integers() got an unexpected keyword argument 'max_si… |
+| 2026-08-21 12:03:21 | 1 | FAIL | acceptance | gemini/gemini-3.6-flash | 18563 | 63.43 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-08-21 12:04:06 | 2 | PASS | acceptance | gemini/gemini-3.6-flash | 16329 | 43.31 |  |
+
+**Result:** accepted 92% · breadth 100% · novelty 47% · max depth 50000 · findings 2 · examples 500 · elapsed 125.2s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 12:05:00 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15458 | 38.58 |  |
+
+**Result:** accepted 45% · breadth 100% · novelty 42% · max depth 50000 · findings 19 · examples 500 · elapsed 55.1s
+
+---
+
+## Run 31 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 12:21:47 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 11666 | 77.6 |  |
+
+**Result:** accepted 65% · breadth 92% · novelty 44% · max depth 4135 · findings 1 · examples 500 · elapsed 87.5s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 12:22:58 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15369 | 61.26 |  |
+
+**Result:** accepted 62% · breadth 97% · novelty 37% · max depth 11919 · findings 1 · examples 500 · elapsed 72.4s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 12:23:33 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16511 | 23.21 |  |
+
+**Result:** accepted 66% · breadth 100% · novelty 33% · max depth 11919 · findings 4 · examples 500 · elapsed 35.2s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 12:25:34 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 17526 | 108.76 |  |
+
+**Result:** accepted 67% · breadth 100% · novelty 33% · max depth 11919 · findings 1 · examples 500 · elapsed 119.3s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-21 12:26:59 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 18569 | 75.69 |  |
+
+**Result:** accepted 71% · breadth 100% · novelty 32% · max depth 11919 · findings 0 · examples 500 · elapsed 82.8s
+
+---
