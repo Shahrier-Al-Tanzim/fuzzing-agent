@@ -1,267 +1,193 @@
 """Generated strategy - iteration 0, attempt 1.
 accepted: False
-generated: 2026-08-19T11:29:34.146283+00:00
+generated: 2026-08-21T06:26:03.580364+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
-UNQUOTED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-BASIC_STR_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !#$%&'()*+,-./:;<=>?@[]^_`{|}~"
-
-unquoted_key_st = st.text(alphabet=UNQUOTED_CHARS, min_size=1, max_size=15)
-
-escapes = st.one_of(
-    st.just('\\"'), st.just('\\\\'), st.just('\\b'), st.just('\\f'),
-    st.just('\\n'), st.just('\\r'), st.just('\\t'),
-    st.integers(0, 0xFFFF).map(lambda x: f"\\u{x:04x}"),
-    st.integers(0, 0x10FFFF).map(lambda x: f"\\U{x:08x}"),
-    st.just('\\z')
-)
+UNQUOTED_KEY_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+SAFE_QUOTED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ =.,/?:;!@#$%^&*()[]{}<>+|~`"
 
 @composite
-def basic_string_val(draw):
-    parts = draw(st.lists(st.one_of(
-        st.text(alphabet=BASIC_STR_CHARS, min_size=0, max_size=10),
-        escapes
-    ), min_size=0, max_size=5))
-    return f'"{"".join(parts)}"'
+def scalar_value(draw):
+    return draw(st.one_of(
+        # Integers (extreme bounds, normal, leading zero divergence, hex/oct/bin, underscores)
+        st.integers(-1000, 1000).map(str),
+        st.sampled_from([
+            "9223372036854775807", "-9223372036854775808",
+            "9223372036854775808", "-9223372036854775809",
+            "18446744073709551615"
+        ]),
+        st.sampled_from(["007", "0123", "0000", "+01", "-02"]),
+        st.integers(0, 65535).map(lambda x: f"0x{x:x}"),
+        st.integers(0, 511).map(lambda x: f"0o{x:o}"),
+        st.integers(0, 255).map(lambda x: f"0b{x:b}"),
+        st.sampled_from(["1_000", "1_000_000", "0x12_34", "0o7_7", "0b1_0_1"]),
+        # Floats (infs, nans, exponents, special representations)
+        st.floats(allow_nan=True, allow_infinity=True).map(str),
+        st.sampled_from(["0.0", "-0.0", "inf", "-inf", "+inf", "nan", "-nan", "1e10", "1e-10", "1.5e+5", "0.0e0", "1_000.000_1"]),
+        # Booleans
+        st.sampled_from(["true", "false"]),
+        # Strings (basic, literal, multiline, escapes)
+        st.text(alphabet=SAFE_QUOTED_CHARS, min_size=0, max_size=15).map(lambda s: f'"{s}"'),
+        st.sampled_from([
+            '"hello\\nworld"', '"escaped \\" quote"', '"unicode \\u0041"',
+            '"unicode \\U0001F600"', '"invalid \\z escape"', '"bad \\u123 unicode"'
+        ]),
+        st.text(alphabet=SAFE_QUOTED_CHARS, min_size=0, max_size=15).map(lambda s: f"'{s}'"),
+        st.text(alphabet=SAFE_QUOTED_CHARS + "\n", min_size=0, max_size=20).map(lambda s: f'"""{s}"""'),
+        st.text(alphabet=SAFE_QUOTED_CHARS + "\n", min_size=0, max_size=20).map(lambda s: f"'''{s}'''"),
+        # Date & Time (normal + overlong sub-second precision divergence)
+        st.tuples(st.integers(1970, 2030), st.integers(1, 12), st.integers(1, 28), st.integers(0, 23), st.integers(0, 59), st.integers(0, 59)).map(
+            lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}Z"
+        ),
+        st.sampled_from([
+            "1979-05-27T00:32:00.9999999999999999999Z",
+            "2020-01-01T12:00:00.123456789123456789+00:00",
+            "12:00:00.1234567899999999"
+        ]),
+        st.tuples(st.integers(1970, 2030), st.integers(1, 12), st.integers(1, 28)).map(
+            lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"
+        ),
+        st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59)).map(
+            lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"
+        ),
+    ))
 
 @composite
-def literal_string_val(draw):
-    s = draw(st.text(alphabet=BASIC_STR_CHARS, min_size=0, max_size=15))
-    return f"'{s}'"
-
-@composite
-def ml_basic_string_val(draw):
-    s = draw(st.text(alphabet=BASIC_STR_CHARS + "\n\t ", min_size=0, max_size=20))
-    return f'"""{s}"""'
-
-@composite
-def ml_literal_string_val(draw):
-    s = draw(st.text(alphabet=BASIC_STR_CHARS + "\n\t ", min_size=0, max_size=20))
-    return f"'''{s}'''"
-
-string_val = st.one_of(
-    basic_string_val(),
-    literal_string_val(),
-    ml_basic_string_val(),
-    ml_literal_string_val()
-)
-
-quoted_key_st = st.one_of(basic_string_val(), literal_string_val())
-simple_key_st = st.one_of(unquoted_key_st, quoted_key_st)
-
-@composite
-def dotted_key_st(draw):
-    keys = draw(st.lists(simple_key_st, min_size=2, max_size=4))
-    return ".".join(keys)
-
-key_st = st.one_of(simple_key_st, dotted_key_st)
-
-int_val = st.one_of(
-    st.integers().map(str),
-    st.just("9223372036854775808"),
-    st.just("-9223372036854775809"),
-    st.just("007"),
-    st.just("00000"),
-    st.integers(-1000, 1000).map(lambda x: f"{x:_d}"),
-    st.integers(0, 0xFFFFFFFF).map(lambda x: f"0x{x:x}"),
-    st.integers(0, 0o777777).map(lambda x: f"0o{x:o}"),
-    st.integers(0, 0b11111111).map(lambda x: f"0b{x:b}")
-)
-
-float_val = st.one_of(
-    st.floats(allow_nan=True, allow_infinity=True).map(str),
-    st.just("inf"), st.just("-inf"), st.just("nan"), st.just("+nan"),
-    st.just("0.0"), st.just("-0.0"), st.just("1e6"), st.just("1.5e-10")
-)
-
-bool_val = st.one_of(st.just("true"), st.just("false"))
-
-@composite
-def offset_date_time_val(draw):
-    y = draw(st.integers(1970, 2038))
-    m = draw(st.integers(1, 12))
-    d = draw(st.integers(1, 28))
-    h = draw(st.integers(0, 23))
-    mi = draw(st.integers(0, 59))
-    s = draw(st.integers(0, 59))
+def toml_value(draw, depth=0):
+    if depth >= 3:
+        return draw(scalar_value())
     
-    has_frac = draw(st.booleans())
-    frac_str = ""
-    if has_frac:
-        frac_digits = draw(st.one_of(
-            st.integers(1, 6).map(lambda k: f".{k:03d}"),
-            st.just(".9999999999999999999")
+    choice = draw(st.integers(0, 3))
+    if choice == 0:
+        return draw(scalar_value())
+    elif choice == 1:
+        elems = draw(st.lists(toml_value(depth=depth + 1), min_size=0, max_size=4))
+        trailing = draw(st.sampled_from(["", ",", ", "])) if elems else ""
+        return f"[{', '.join(elems)}{trailing}]"
+    elif choice == 2:
+        pairs = draw(st.lists(
+            st.tuples(
+                st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=5),
+                toml_value(depth=depth + 1)
+            ),
+            min_size=0, max_size=4
         ))
-        frac_str = frac_digits
-        
-    delim = draw(st.sampled_from(["T", "t", " "]))
-    offset = draw(st.sampled_from(["Z", "+00:00", "-07:00", "+05:30"]))
-    return f"{y:04d}-{m:02d}-{d:02d}{delim}{h:02d}:{mi:02d}:{s:02d}{frac_str}{offset}"
-
-@composite
-def local_date_val(draw):
-    y = draw(st.integers(1970, 2038))
-    m = draw(st.integers(1, 12))
-    d = draw(st.integers(1, 28))
-    return f"{y:04d}-{m:02d}-{d:02d}"
-
-@composite
-def local_time_val(draw):
-    h = draw(st.integers(0, 23))
-    mi = draw(st.integers(0, 59))
-    s = draw(st.integers(0, 59))
-    return f"{h:02d}:{mi:02d}:{s:02d}"
-
-date_time_val = st.one_of(offset_date_time_val(), local_date_val(), local_time_val())
-
-scalar_val = st.one_of(string_val, int_val, float_val, bool_val, date_time_val)
-
-@composite
-def array_val(draw, depth=0):
-    if depth >= 5:
-        elems = draw(st.lists(scalar_val, min_size=0, max_size=5))
+        formatted_pairs = [f"{k} = {v}" for k, v in pairs]
+        # Includes trailing comma in inline table (Divergence #1)
+        trailing = draw(st.sampled_from(["", ",", ", "])) if formatted_pairs else ""
+        return f"{{{', '.join(formatted_pairs)}{trailing}}}"
     else:
-        child = st.one_of(
-            scalar_val,
-            array_val(depth=depth+1),
-            array_val(depth=depth+1),
-            inline_table_val(depth=depth+1)
-        )
-        elems = draw(st.lists(child, min_size=0, max_size=5))
-    
-    trailing_comma = draw(st.booleans()) and len(elems) > 0
-    comma_str = "," if trailing_comma else ""
-    return f"[{', '.join(elems)}{comma_str}]"
+        val = draw(scalar_value())
+        op = draw(st.sampled_from(["[", "{", "[1, 2", "{a = 1", f"[{val}"]))
+        return op
 
 @composite
-def inline_table_val(draw, depth=0):
-    if depth >= 5:
-        val_st = scalar_val
+def key_name(draw):
+    return draw(st.one_of(
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10),
+        st.text(alphabet=SAFE_QUOTED_CHARS, min_size=0, max_size=10).map(lambda s: f'"{s}"'),
+        st.text(alphabet=SAFE_QUOTED_CHARS, min_size=0, max_size=10).map(lambda s: f"'{s}'"),
+        st.lists(
+            st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=5),
+            min_size=2, max_size=3
+        ).map(lambda parts: ".".join(parts))
+    ))
+
+@composite
+def key_value_pair(draw):
+    k = draw(key_name())
+    v = draw(toml_value())
+    eq = draw(st.sampled_from([" = ", "=", " =  ", "="]))
+    if draw(st.booleans()):
+        return f"{k}{eq}{v}"
     else:
-        val_st = st.one_of(
-            scalar_val,
-            array_val(depth=depth+1),
-            inline_table_val(depth=depth+1)
-        )
-    
-    @composite
-    def kv_pair(draw):
-        k = draw(key_st)
-        v = draw(val_st)
-        return f"{k} = {v}"
-        
-    pairs = draw(st.lists(kv_pair(), min_size=0, max_size=4))
-    trailing = draw(st.booleans()) and len(pairs) > 0
-    trail_str = "," if trailing else ""
-    return f"{{{', '.join(pairs)}{trail_str}}}"
-
-value_st = st.one_of(
-    scalar_val,
-    array_val(),
-    inline_table_val()
-)
-
-@composite
-def key_value_line(draw):
-    k = draw(key_st)
-    v = draw(value_st)
-    comment = f" # {draw(st.text(alphabet=BASIC_STR_CHARS, max_size=10))}" if draw(st.booleans()) else ""
-    return f"{k} = {v}{comment}"
+        variant = draw(st.sampled_from([
+            f"{k}{eq}{v}",
+            f"{k}{eq}{v}\n{k}{eq}{v}",  # duplicate key
+            f"{k} {v}",                 # missing equals
+            f"#{k} = {v}"               # commented out
+        ]))
+        return variant
 
 @composite
 def table_header(draw):
-    k = draw(key_st)
-    comment = f" # {draw(st.text(alphabet=BASIC_STR_CHARS, max_size=10))}" if draw(st.booleans()) else ""
-    return f"[{k}]{comment}"
-
-@composite
-def array_table_header(draw):
-    k = draw(key_st)
-    comment = f" # {draw(st.text(alphabet=BASIC_STR_CHARS, max_size=10))}" if draw(st.booleans()) else ""
-    return f"[[{k}]]{comment}"
-
-@composite
-def comment_line(draw):
-    text = draw(st.text(alphabet=BASIC_STR_CHARS, max_size=20))
-    return f"#{text}"
-
-@composite
-def malformed_line(draw):
-    k = draw(key_st)
-    v = draw(scalar_val)
-    choice = draw(st.integers(0, 4))
-    if choice == 0:
-        return f"{k} {v}"
-    elif choice == 1:
-        return f"[{k}"
-    elif choice == 2:
-        return f'{k} = "{v}'
-    elif choice == 3:
-        return f"{k} = {v},"
+    k = draw(key_name())
+    is_array_table = draw(st.booleans())
+    if is_array_table:
+        return f"[[{k}]]"
     else:
-        return f"{k} = \\"
+        return f"[{k}]"
 
 @composite
-def ordinary_document(draw):
-    if draw(st.booleans()) and draw(st.booleans()):
-        return ""
-        
-    line_st = st.one_of(
-        key_value_line(),
-        table_header(),
-        array_table_header(),
-        comment_line(),
-        malformed_line()
-    )
-    lines = draw(st.lists(line_st, min_size=0, max_size=15))
+def document(draw):
+    n = draw(st.integers(0, 10))
+    if n == 0:
+        return draw(st.sampled_from(["", "\n", "# Empty document\n"]))
+    
+    items = []
+    for _ in range(n):
+        item_type = draw(st.integers(0, 3))
+        if item_type == 0:
+            items.append(draw(key_value_pair()))
+        elif item_type == 1:
+            items.append(draw(table_header()))
+        elif item_type == 2:
+            comment_str = draw(st.text(alphabet=SAFE_QUOTED_CHARS, min_size=0, max_size=20))
+            items.append(f"# {comment_str}")
+        else:
+            tbl = draw(table_header())
+            pair1 = draw(key_value_pair())
+            pair2 = draw(key_value_pair())
+            items.append(f"{tbl}\n{pair1}\n{pair2}")
+            
+    return "\n".join(items)
+
+# High-depth integer repetition triggers for C stack overflow
+@composite
+def deep_array_doc(draw):
+    n = draw(st.integers(min_value=60_000, max_value=100_000))
+    val = "[" * n + "1" + "]" * n
+    return f"k = {val}"
+
+@composite
+def deep_inline_table_doc(draw):
+    n = draw(st.integers(min_value=85_000, max_value=115_000))
+    val = "{a=" * n + "1" + "}" * n
+    return f"k = {val}"
+
+@composite
+def deep_dotted_key_doc(draw):
+    n = draw(st.integers(min_value=100_000, max_value=130_000))
+    key = "a." * n + "k"
+    return f"{key} = 1"
+
+@composite
+def deep_mixed_nesting_doc(draw):
+    n = draw(st.integers(min_value=60_000, max_value=80_000))
+    val = "[{a=" * n + "1" + "}]" * n
+    return f"k = {val}"
+
+@composite
+def deep_quoted_mixed_doc(draw):
+    n = draw(st.integers(min_value=20_000, max_value=45_000))
+    val = '[{"k"=' * n + "1" + "}]" * n
+    return f"k = {val}"
+
+# Sibling key count trigger for linear key lookup timeout
+@composite
+def many_siblings_doc(draw):
+    n = draw(st.integers(min_value=10_000, max_value=60_000))
+    lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
     return "\n".join(lines)
 
-@composite
-def scale_deep_nesting(draw):
-    n = draw(st.integers(min_value=1000, max_value=48000))
-    open_brackets = "[" * n
-    close_brackets = "]" * n
-    val = draw(scalar_val)
-    k = draw(unquoted_key_st)
-    return f"{k} = {open_brackets}{val}{close_brackets}"
-
-@composite
-def scale_large_array(draw):
-    n = draw(st.integers(min_value=1000, max_value=25000))
-    val = draw(st.one_of(st.just("1"), st.just("true"), st.just('"x"')))
-    elems = f"{val}," * (n - 1) + val
-    k = draw(unquoted_key_st)
-    return f"{k} = [{elems}]"
-
-@composite
-def scale_huge_namespace(draw):
-    n = draw(st.integers(min_value=500, max_value=5000))
-    prefix = draw(st.text(alphabet="abcdefghijklmnopqrstuvwxyz", min_size=3, max_size=5))
-    lines = [f"{prefix}_{i} = {i}" for i in range(n)]
-    header = draw(table_header())
-    return header + "\n" + "\n".join(lines)
-
-@composite
-def scale_long_tokens(draw):
-    length = draw(st.integers(min_value=10000, max_value=100000))
-    key_part = "a" * length
-    val_part = "x" * length
-    choice = draw(st.integers(0, 1))
-    if choice == 0:
-        return f'{key_part} = "{val_part}"'
-    else:
-        return f'["{key_part}"]\n{key_part} = 1'
-
 toml_strategy = st.one_of(
-    ordinary_document(),
-    ordinary_document(),
-    ordinary_document(),
-    ordinary_document(),
-    ordinary_document(),
-    scale_deep_nesting(),
-    scale_large_array(),
-    scale_huge_namespace(),
-    scale_long_tokens()
+    *([document()] * 25),
+    deep_array_doc(),
+    deep_inline_table_doc(),
+    deep_dotted_key_doc(),
+    deep_mixed_nesting_doc(),
+    deep_quoted_mixed_doc(),
+    many_siblings_doc(),
 )
