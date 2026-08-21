@@ -3,7 +3,7 @@
 **Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
 One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total runs: 26**
+**Total runs: 27**
 
 ---
 
@@ -916,5 +916,49 @@ One section per run, in order; within each run, one section per iteration, in or
 | 2026-08-20 08:57:49 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 15985 | 50.06 |  |
 
 **Result:** accepted 45% · breadth 100% · novelty 23% · max depth 5 · findings 274 · examples 500 · elapsed 435.4s
+
+---
+
+## Run 27 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-20 17:18:28 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 13158 | 50.14 |  |
+
+**Result:** accepted 28% · breadth 92% · novelty 22% · max depth 4 · findings 283 · examples 500 · elapsed 448.8s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-20 17:26:03 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16927 | 65.03 |  |
+
+**Result:** accepted 49% · breadth 100% · novelty 27% · max depth 7 · findings 210 · examples 500 · elapsed 382.5s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-20 17:32:06 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 18347 | 37.72 |  |
+
+**Result:** accepted 52% · breadth 100% · novelty 26% · max depth 7 · findings 209 · examples 500 · elapsed 324.0s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-20 17:37:41 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 18966 | 64.31 |  |
+
+**Result:** accepted 51% · breadth 100% · novelty 23% · max depth 7 · findings 244 · examples 500 · elapsed 392.4s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-08-20 17:45:11 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 19170 | 120.82 |  |
+
+**Result:** accepted 46% · breadth 100% · novelty 20% · max depth 8 · findings 259 · examples 500 · elapsed 485.1s
 
 ---

@@ -35,13 +35,15 @@ Maps each item on the assignment's deliverables checklist to its location.
 - `agent/state/prompts/` — full prompt/reply transcripts
 
 ## 5. Deduplicated, minimized crash reports
-- `triage/reports/INDEX.md` — one row per unique bug
-- `triage/reports/<signature>/report.md` — per-bug report
-- `triage/reports/<signature>/minimized.toml` — verified reproducer
-- `grammar/early_findings/` — the pre-loop stack overflow
+- `triage/reports/run_N/INDEX.md` — one row per triaged signature, per run
+  (latest: `run_27`; see `report.md` §2 for why 9 signatures there are 5 real bugs)
+- `triage/reports/run_N/<bug-name>-<signature>/report.md` — per-signature report
+- `triage/reports/run_N/<bug-name>-<signature>/minimized.toml` — verified reproducer
+- `grammar/early_findings/` — the pre-loop stack overflow, found by hand
+- `OBSERVATIONS.md` Case 9 — the full reasoning for the 9-signatures-to-5-bugs count
 
 ## 6. Written report
-- `report/REPORT.md` — the two-page report
+- `report/report.md` — the two-page report
 - `report/generated/` — every table, regenerated from data
 - `report/generated/summary.json` — all numbers, machine-readable
 

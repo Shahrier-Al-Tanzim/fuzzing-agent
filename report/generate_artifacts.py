@@ -27,6 +27,17 @@ def _out_dir() -> Path:
     return d
 
 
+def _archive_dir(run_id: int) -> Path:
+    """Permanent, per-run copy - same pattern as triage/reports/run_N/ and
+    agent/strategies/accepted/run_N/: `_out_dir()` above is the "current"
+    spot, overwritten every invocation; this one is never overwritten, so
+    re-running the generator for a later run doesn't erase an earlier run's
+    tables."""
+    d = PROJECT_ROOT / "report" / "generated" / f"run_{run_id}"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 def _load_state() -> dict:
     p = load().path("paths.state") / "loop_state.json"
     if not p.exists():
@@ -131,9 +142,29 @@ def verdict_table() -> str:
     )
 
 
+def _latest_crash_run_dir(crash_dir: Path) -> Path | None:
+    """Most recent `run_N` under paths.crashes.
+
+    Crash reports are triaged per-run into `triage/reports/run_N/`, not
+    directly under `paths.crashes` - a bare `crash_dir.glob("*/metadata.json")`
+    predates that layout and silently matches nothing against it (it would
+    need `run_N/metadata.json`, which never exists; the real files are one
+    level deeper, under `run_N/<bug-name>-<digest>/`). Scoped to the latest
+    run rather than every run ever triaged, so re-confirmations across runs
+    17-27 don't get counted as if they were that many distinct bugs.
+    """
+    run_dirs = [d for d in crash_dir.glob("run_*") if d.is_dir()]
+    if not run_dirs:
+        return None
+    return max(run_dirs, key=lambda d: int(d.name.removeprefix("run_")))
+
+
 def crash_table() -> str:
+    from agent.summarize import CRASH_MECHANISMS
+
     crash_dir = load().path("paths.crashes")
-    metas = sorted(crash_dir.glob("*/metadata.json"))
+    latest = _latest_crash_run_dir(crash_dir)
+    metas = sorted(latest.glob("*/metadata.json")) if latest else []
     if not metas:
         return ("_No crash reports found. If the loop genuinely found nothing, "
                 "say so explicitly in the report and explain why — the "
@@ -162,15 +193,17 @@ def crash_table() -> str:
             else:
                 raise AssertionError(
                     f"unrecognized verification state in {m}: {v}")
+        mechanism = CRASH_MECHANISMS.get(sig["digest"], "unclassified")
         rows.append(
-            f"| `{sig['digest']}` | {sig.get('bug_type', '?')} "
-            f"| `{sig.get('short', '?')}` "
+            f"| `{sig['digest']}` | {mechanism} "
+            f"| {sig.get('bug_type', '?')} "
             f"| {d['occurrences']} "
             f"| {d['original_bytes']} → {d['minimized_bytes']} B "
             f"| {status} |"
         )
     return (
-        "| Signature | Type | Label | Occurrences | Size (orig → min) | Verified |\n"
+        f"_Latest triaged run: `{latest.name}`_\n\n"
+        "| Signature | Mechanism | Type | Occurrences | Size (orig → min) | Verified |\n"
         "|---|---|---|---|---|---|\n" + "\n".join(rows)
     )
 
@@ -186,12 +219,14 @@ def budget_table(state: dict) -> str:
     # first: config.yaml can be changed after a run, and the report must
     # describe the run that happened, not the config as it stands now.
     provider = state.get("provider") or cfg.get("llm.provider", "ollama")
-    model = state.get("model") or (
-        cfg.get("llm.groq_model") if provider == "groq"
-        else cfg.get("llm.model"))
-    spend_note = (
-        f"$0.00 (Groq free tier, {model})" if provider == "groq"
-        else f"$0.00 (local {model})")
+    model = state.get("model") or {
+        "groq": cfg.get("llm.groq_model"),
+        "gemini": cfg.get("llm.gemini_model"),
+    }.get(provider, cfg.get("llm.model"))
+    spend_note = {
+        "groq": f"$0.00 (Groq free tier, {model})",
+        "gemini": f"$0.00 (Gemini free tier, {model})",
+    }.get(provider, f"$0.00 (local {model})")
 
     return (
         "| Constraint | Limit | Actual | Within budget |\n"
@@ -224,11 +259,18 @@ def main() -> int:
         "crash_table.md": crash_table(),
         "budget_table.md": budget_table(state),
     }
+    run_id = state.get("run_id")
+    archive = _archive_dir(run_id) if run_id else None
+
     for name, content in artifacts.items():
         (out / name).write_text(content + "\n", encoding="utf-8")
         print(f"  wrote {out.name}/{name}")
+        if archive:
+            (archive / name).write_text(content + "\n", encoding="utf-8")
 
     reached = set(state.get("reached_productions", []))
+    latest_run = _latest_crash_run_dir(load().path("paths.crashes"))
+    unique_crashes = len(list(latest_run.glob("*/metadata.json"))) if latest_run else 0
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "iterations": len(state.get("iterations", [])),
@@ -243,11 +285,15 @@ def main() -> int:
             {"iteration": it["iteration"], **it["summary"]}
             for it in state.get("iterations", [])
         ],
-        "unique_crashes": len(list(load().path("paths.crashes").glob("*/metadata.json"))),
+        "unique_crashes": unique_crashes,
     }
-    (out / "summary.json").write_text(json.dumps(summary, indent=2),
-                                      encoding="utf-8")
+    summary_text = json.dumps(summary, indent=2)
+    (out / "summary.json").write_text(summary_text, encoding="utf-8")
     print(f"  wrote {out.name}/summary.json")
+    if archive:
+        (archive / "summary.json").write_text(summary_text, encoding="utf-8")
+        print(f"  archived to {archive.relative_to(PROJECT_ROOT)}/ "
+             f"(run {run_id} - permanent, never overwritten)")
 
     print("\n=== headline numbers for the report ===")
     print(f"  iterations run     : {summary['iterations']}")

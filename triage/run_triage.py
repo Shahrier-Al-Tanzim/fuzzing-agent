@@ -19,6 +19,7 @@ from pipeline.config import load, PROJECT_ROOT
 from pipeline.runner import HarnessRunner, run_for_parseable_crash
 from pipeline.schema import read_log
 from triage.minimize import minimize_concrete
+from triage.rename_signature_folders import bug_slug
 from triage.signature import parse_signature
 from triage.verify import verify
 
@@ -124,7 +125,12 @@ def main() -> int:
         vr = verify(mini, sig.digest if sig else None)
         print(f"  {key}: {vr.describe()}")
 
-        d = out_dir / key
+        # Folder name is "<bug-name>-<key>", not the bare key, so triage
+        # output is readable without cross-referencing CRASH_MECHANISMS by
+        # hand - see triage/rename_signature_folders.py, which applies the
+        # same naming to output from before this was built in.
+        folder_name = f"{bug_slug(key)}-{key}"
+        d = out_dir / folder_name
         d.mkdir(parents=True, exist_ok=True)
         (d / "original.toml").write_text(original, encoding="utf-8")
         (d / "minimized.toml").write_text(mini, encoding="utf-8")
@@ -151,7 +157,8 @@ def main() -> int:
         (d / "metadata.json").write_text(json.dumps(meta, indent=2),
                                          encoding="utf-8")
         (d / "report.md").write_text(
-            _render_report(key, sig, meta, mini, run_id), encoding="utf-8")
+            _render_report(key, folder_name, sig, meta, mini, run_id),
+            encoding="utf-8")
         summary.append(meta)
 
     idx = out_dir / "INDEX.md"
@@ -160,7 +167,8 @@ def main() -> int:
     return 0
 
 
-def _render_report(key: str, sig, meta: dict, minimized: str, run_id: int) -> str:
+def _render_report(key: str, folder_name: str, sig, meta: dict, minimized: str,
+                   run_id: int) -> str:
     frames = "\n".join(f"  #{i}  {f}" for i, f in
                        enumerate(sig.frames if sig else [])) or "  (none parsed)"
     v = meta["verification"]
@@ -195,7 +203,7 @@ in {meta['minimize_steps']} steps.
 
 ```bash
 source harness/sanitizer_env.sh
-harness/build/toml_harness triage/reports/run_{run_id}/{key}/minimized.toml
+harness/build/toml_harness triage/reports/run_{run_id}/{folder_name}/minimized.toml
 echo $?   # expect 86 (sanitizer) or a signal
 ```
 
