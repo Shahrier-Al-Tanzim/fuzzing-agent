@@ -902,6 +902,93 @@ directive now stops firing once generated depth clears the target, the
 diversity directive fires with readable mechanism names, and an unknown
 digest survives the mapping. Not yet observed on a live run.
 
+## Case 11: Run 29 — deleting rules 16/17 entirely (not just abstracting them)
+
+Case 7 tested *rewording* rules 16-17 from concrete to abstract, keeping
+them in the prompt. This is a stronger test: **delete rules 16 and 17
+outright** (commented out, not just softened) and see what a completely
+unguided prompt produces on its own, five bugs deep into the project.
+
+**What survived without the rules.** `agent/strategies/iter_02_strategy.py`
+(Run 29, iteration 2) shows the model independently reinvented the same
+*technique* rule 16 used to spell out — a `deep_toml_value()` composite
+that draws a random integer depth and builds the string by repetition
+(`"[" * depth + val + "]" * depth`) rather than real recursion. Nobody
+told it to do this in Run 29's prompt; it follows from rule 14's general
+"recursion can't reach extreme scale, use a counter" guidance, which was
+*not* removed. Triage still surfaced 5 of the 9 known signatures
+(`e857b4530c96`, `3db1e06f41e9`, `939402a0547c`, `80953bb88ca2`,
+`af1d0280777e` — `triage/reports/run_29/INDEX.md`), so the core
+overflow-by-deep-nesting idea is robust to losing the worked example.
+
+**What did NOT survive.** Three things dropped out entirely:
+- The dotted-key overflow (`55628614cd6c`) and the quoted-key alternating
+  variant (`c04d038a7956`) never appeared. `deep_toml_value()` only builds
+  `array`/`inline`/`mixed` shapes with a bare key — nothing dotted, nothing
+  quoted — because rule 16 was the only place those two specific shapes
+  were ever named.
+- The sibling-key O(n²) hang (`unparsed_timeout`) never appeared either.
+  With rule 17 gone, nothing in the prompt asks for many flat sibling keys
+  in one table at all; that bug class needs its own distinct instruction,
+  it doesn't fall out of the depth-escalation guidance.
+
+**Why the numbers looked strange at first glance (both explained by
+reading the actual code, not guessed):**
+- *"findings: 0" in iterations 0, 1, and 3.* `DEPTH_TARGETS = [12, 200,
+  4_000, 30_000, 90_000]` (`agent/summarize.py`) ramps the requested depth
+  up gradually by iteration index — iterations 0-1 aren't even asking for
+  dangerous depth yet (measured max depth 7 and 19 that run), so nothing
+  crosses a real crash threshold. Iteration 3's zero is different: the
+  model was asking for real depth by then, but `deep_toml_value()` draws
+  its depth from **one shared range (100-50,000) for every shape**, unlike
+  rule 16's five *measured, per-shape* floors (arrays ~48k, inline tables
+  ~80k, dotted keys ~90k-100k, ...). Without differentiated floors, whether
+  a given draw actually clears the real threshold for whatever shape it
+  happened to pick is down to chance, not design — so a whole iteration can
+  legitimately land under threshold on every draw.
+- *"max depth" jumping to 10,889 and then staying there.* This field
+  (`max_depth_cumulative` in `agent/summarize.py`) is a **running maximum
+  across the entire run**, never reset per iteration — it only reports the
+  single deepest *accepted* (non-crashing) document seen so far. Iteration
+  2 happened to draw a depth (comfortably under the real ~48k array
+  threshold) that parsed successfully; that value then persists through
+  iterations 3-4 unchanged because nothing later beat it. It does not mean
+  iterations 3-4 stopped generating deep documents.
+
+**Why this belongs in the report, alongside Case 7.** Case 7 showed
+*rewording* the rules abstractly hurt speed and results. Case 11 shows a
+sharper distinction: the general *technique* (rule 14's counter-based
+repetition idea) is robust and gets reinvented on its own — but the
+*specific, measured parameters* (per-shape thresholds) and the
+*deliberately distinct bug classes* (dotted keys, quoted keys, sibling-key
+count) do not emerge without being named. This draws an honest line for
+the report between "the LLM discovered this" (bugs 1-4's core mechanism,
+robust across Case 11) and "the LLM reproduces this because it was told
+the recipe" (bugs 1-4's exact thresholds, and bug 5's specific shape,
+Case 9) — the same distinction Case 7's revert already implied but this
+run makes concrete with signature-level evidence.
+
+**Recommendation: keep both versions, and disclose which bug came from
+which.** Neither "rules in" nor "rules out" is simply the better choice —
+they answer different questions the assignment cares about:
+- **Rules in** (runs 27-28): 9 signatures, all 5 bug types, every run.
+  Reliable, but can't honestly be presented as pure LLM discovery for
+  bugs 2 (dotted-key), 4 (sibling-key hang), and the quoted-key variant
+  of bug 5 - the prompt names the exact shape and measured threshold for
+  each.
+- **Rules out** (Run 29): only 3 of the 5 bug types (array overflow,
+  inline-table overflow, the bare-key alternating variant) - fewer bugs,
+  but every one of them is genuinely LLM-driven: the model reinvented the
+  underlying repetition technique from rule 14's general guidance alone,
+  without being shown the specific shape.
+The strongest, most honest thing to put in the report is not "the LLM
+found 9 bugs" - it is a one-line attribution per bug: which came from the
+loop's own exploration (bugs 1, 3, and the bare-key variant of 5) and
+which only appeared after the prompt was deliberately given the exact
+recipe (bug 2, bug 4, the quoted-key variant of 5). The assignment's own
+Challenges section explicitly asks for judgment calls like this one to be
+named, not hidden behind a single combined bug count.
+
 ## Terminology note: "grammar breadth", not "coverage"
 
 The metric formerly called "coverage" throughout this project (in code,
