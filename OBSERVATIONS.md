@@ -1088,6 +1088,123 @@ make an unrelated design choice (the depth-suppression gate) look worse
 than it would in isolation, which is exactly the kind of confound worth
 naming rather than papering over.
 
+## Case 13: the proxy signal was one-dimensional, which capped what the loop could ever find ⭐
+
+Cases 11 and 12 both asked "can the prompt avoid hardcoding the answer?" and
+both stalled at the same ceiling: 3 of the 5 known bugs, across three
+separate runs (29, 30, 31). This case found the reason, and it is not about
+prompting at all.
+
+**The measurement.** Feeding the project's *own* dotted-key crash
+reproducer — `triage/reports/run_27/dotted_keys-55628614cd6c/minimized.toml`,
+180,505 bytes, a chain of 90,252 dots that reliably overflows the parser's
+stack — through `pipeline/features.py`'s `extract_features()` returned:
+
+```
+actual dots       : 90252
+max_depth reported: 0
+```
+
+`_max_depth()` counts `[`/`]` and `{`/`}` and nothing else. A dot chain is
+not brackets, so the deepest input this project has ever produced measured
+as **zero depth**. The sibling-key hang measures the same way: 15,000 flat
+keys in one table reports `max_depth: 1`.
+
+**Why that caps discovery.** The loop steers by this signal. Had the model
+generated either reproducer by chance, the feedback would have reported
+"max depth 0" and the next directive — `PUSH DEPTH MUCH FURTHER` — would
+have steered it *away* from the shape that had just worked. There was never
+a reward gradient toward bugs 2 and 4; they were not hard to find, they were
+**invisible to the search**. Rules 16-17 "worked" precisely because they
+bypassed the broken signal, writing the shapes and thresholds directly into
+the prompt. That reframes the whole Case 11 result: the honest conclusion is
+not "the LLM cannot discover these" but "this loop could not, because its
+own instrument could not see them."
+
+**The fix, and why it is not hardcoding.** The axes were read off
+`grammar/TomlParser.g4` mechanically — every rule that recurses or carries a
+`*`/`+` quantifier is an axis along which a document can grow without bound:
+
+| Grammar rule | Axis | Measured before? |
+|---|---|---|
+| `array_`/`inline_table` (recursive) | nesting depth | yes |
+| `dotted_key : simple_key (DOT simple_key)+` | dot-chain length | **no** |
+| `document : expression (NL expression)*` | entries in one scope | **no** |
+
+That procedure is target-agnostic: applied to any other format's grammar it
+yields that format's axes, and it names no bug, no threshold, and no crash
+shape. `extract_features()` now returns `dotted_key_depth` and
+`max_siblings` alongside `max_depth`; `LoopState.scale_axes_reached` tracks
+the best value on each (over *generated* documents, not accepted ones — the
+Case 10 lesson); and a new directive reports all three and calls out any
+axis an order of magnitude behind the leader.
+
+**Calibration, from data rather than taste.** The lagging-axis threshold was
+first set at 100x and did not fire on real run-31 state (nesting 28,014 vs
+dot-chain 299 vs entries 723 — 93x and 39x behind). Both of those axes were
+nowhere near the scale at which anything breaks, so both *should* be
+flagged; the threshold was lowered to 10x, which fires on both and still
+means "an order of magnitude behind" rather than ordinary variation.
+
+**Two implementation notes worth keeping.** (1) The axis dict deliberately
+records an axis whose best is still `0`; an `if value > existing` guard left
+never-exercised axes absent from the dict entirely, which is exactly the
+case the imbalance check most needs to see. (2) `_key_part()` must count a
+key-like line with **no `=` at all**: delta-debugging minimizes the
+dotted-key reproducer down to a bare `a.a.a...a`, because the crash happens
+while the key is still being read and the value is never reached — the first
+version of the helper required an `=` and reported that input as depth 0,
+reproducing the very blindness this case is about.
+
+**Also fixed here, found while testing:** `LoopState.load_or_new()` splatted
+saved JSON straight into the constructor, so a state file written while an
+extra field existed (e.g. `crash_frames`, from the Case 12 branch) raised
+`TypeError`, which the bare `except` swallowed — silently returning blank
+state and discarding the entire breadth history on the next `--resume`, the
+one thing the module docstring says cannot be reconstructed afterwards.
+Unknown fields are now dropped with a printed warning instead of taking the
+whole file down.
+
+**Status:** verified offline against real logged data — both reproducers now
+measure correctly (90,252 and 15,000), float arrays and quoted dots do not
+produce false positives, the directive fires as priority 1 on replayed run
+31 state, feedback stays inside its ~2,200-character budget (1,853), and the
+existing `loop_state.json` loads as populated state rather than a blank
+fallback. Not yet run live.
+
+**Why this belongs in the report.** The assignment asks what proxy signal
+was chosen to steer refinement "since there's no coverage instrumentation"
+and why it was expected to work. This is the honest answer to the follow-up
+question: the signal chosen was *structurally incomplete* — it measured one
+of the grammar's three unbounded axes — and that incompleteness, not the
+model and not the prompt, set the ceiling on what the loop could discover.
+It also gives the "which parts of the grammar are still under-tested"
+section a precise, measured answer instead of a guess.
+
+**Outcome across two live runs, then kept as a documented experiment, not
+merged.** Run 32 (rules 16/17 still active - a confound) found all 9
+signatures / 5 bugs, but that cannot be credited to the axis fix alone since
+the prompt was still handing over the answer. Run 33 (rules 16/17 removed,
+axes alone) is the clean test: the dot-chain axis climbed from 3 to 999
+across five iterations - genuine, unprompted progress on an axis the loop
+had never been able to see before - but 999 fell short of the ~90,000
+needed to actually crash the dotted-key bug, so only 1 distinct bug was
+found that run. In the SAME run, nesting depth reached 109,406, because
+rule 14 demonstrates that axis with a concrete code example while the new
+scale-axis directive was prose-only - a second, independent confirmation of
+Case 5 (prompt anchoring): a number embedded in a worked example moves the
+model; the same instruction in prose does not, even when the underlying
+measurement is accurate.
+
+**Decision: kept here as a documented, reproducible experiment - not merged
+into `module-7-report`.** The blindness this case found and fixed is real,
+and worth keeping as evidence of a properly-diagnosed root cause. But
+across all attempts to date, the hardcoded rules 16/17 baseline (runs 27,
+28, 32) is still the only configuration that reliably finds all 5 known
+bugs, so it remains what `module-7-report` runs. The natural next step - an
+anchored numeric target instead of a prose one - was scoped but not run;
+see the branch for the reasoning.
+
 ## Terminology note: "grammar breadth", not "coverage"
 
 The metric formerly called "coverage" throughout this project (in code,
