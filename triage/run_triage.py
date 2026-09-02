@@ -234,18 +234,31 @@ def _verify_label(v: dict) -> str:
 
 
 def _render_index(summary: list[dict], run_id: int) -> str:
+    from agent.summarize import bug_family, count_distinct_bugs
+
+    digests = [s["signature"]["digest"] for s in summary]
+    n_bugs = count_distinct_bugs(digests)
     rows = "\n".join(
-        f"| `{s['signature']['digest']}` | {s['signature'].get('bug_type','?')} "
+        f"| `{s['signature']['digest']}` | {bug_family(s['signature']['digest'])} "
+        f"| {s['signature'].get('bug_type','?')} "
         f"| {s['occurrences']} | {s['minimized_bytes']} B "
         f"| {_verify_label(s['verification'])} |"
         for s in summary)
+    # This dedup pass only collapses distinct *symptoms* (differing stack
+    # traces, mid-overflow captures) into signatures; it can't know that two
+    # differently-shaped signatures share one root cause - that requires the
+    # hand-verified mapping in agent/summarize.py's BUG_FAMILIES (see
+    # OBSERVATIONS.md Case 9). A signature this project hasn't seen before
+    # is reported as its own "unclassified (<digest>)" bug, never silently
+    # folded into an existing one.
     return f"""\
 # Crash triage index — run {run_id}
 
-{len(summary)} unique bug(s) after deduplication.
+{len(summary)} unique signature(s) after deduplication, \
+{n_bugs} distinct bug(s) after grouping by root cause (see the Bug column).
 
-| Signature | Type | Occurrences | Minimized | Deterministic |
-|---|---|---|---|---|
+| Signature | Bug | Type | Occurrences | Minimized | Deterministic |
+|---|---|---|---|---|---|
 {rows}
 
 Generated {datetime.now(timezone.utc).isoformat()}

@@ -160,7 +160,7 @@ def _latest_crash_run_dir(crash_dir: Path) -> Path | None:
 
 
 def crash_table() -> str:
-    from agent.summarize import CRASH_MECHANISMS
+    from agent.summarize import CRASH_MECHANISMS, bug_family, count_distinct_bugs
 
     crash_dir = load().path("paths.crashes")
     latest = _latest_crash_run_dir(crash_dir)
@@ -170,11 +170,13 @@ def crash_table() -> str:
                 "say so explicitly in the report and explain why — the "
                 "assignment allows a documented 'none found'._")
 
+    digests = []
     rows = []
     for m in metas:
         d = json.loads(m.read_text(encoding="utf-8"))
         sig = d["signature"]
         v = d["verification"]
+        digests.append(sig["digest"])
         # Single source of truth: triage/verify.py already computed this
         # string and metadata.json stores it. Re-deriving it here is what
         # produced a false "did not reproduce" for a 3/3-reproducing crash -
@@ -196,15 +198,25 @@ def crash_table() -> str:
         mechanism = CRASH_MECHANISMS.get(sig["digest"], "unclassified")
         rows.append(
             f"| `{sig['digest']}` | {mechanism} "
+            f"| {bug_family(sig['digest'])} "
             f"| {sig.get('bug_type', '?')} "
             f"| {d['occurrences']} "
             f"| {d['original_bytes']} → {d['minimized_bytes']} B "
             f"| {status} |"
         )
+    n_bugs = count_distinct_bugs(digests)
+    header = (
+        f"_Latest triaged run: `{latest.name}`_ — "
+        f"**{len(metas)} raw signature(s) → {n_bugs} distinct bug(s)** "
+        "after grouping by root cause (see the Bug column; multiple "
+        "signatures can share one root cause, e.g. the same stack overflow "
+        "captured mid-unwind at different points — see `agent/summarize.py`'s "
+        "`BUG_FAMILIES` and `OBSERVATIONS.md` Case 9)."
+    )
     return (
-        f"_Latest triaged run: `{latest.name}`_\n\n"
-        "| Signature | Mechanism | Type | Occurrences | Size (orig → min) | Verified |\n"
-        "|---|---|---|---|---|---|\n" + "\n".join(rows)
+        f"{header}\n\n"
+        "| Signature | Mechanism | Bug | Type | Occurrences | Size (orig → min) | Verified |\n"
+        "|---|---|---|---|---|---|---|\n" + "\n".join(rows)
     )
 
 
@@ -268,9 +280,20 @@ def main() -> int:
         if archive:
             (archive / name).write_text(content + "\n", encoding="utf-8")
 
+    from agent.summarize import bug_family, count_distinct_bugs
+
     reached = set(state.get("reached_productions", []))
     latest_run = _latest_crash_run_dir(load().path("paths.crashes"))
-    unique_crashes = len(list(latest_run.glob("*/metadata.json"))) if latest_run else 0
+    metas = list(latest_run.glob("*/metadata.json")) if latest_run else []
+    raw_signatures = len(metas)
+    digests = [json.loads(m.read_text(encoding="utf-8"))["signature"]["digest"]
+               for m in metas]
+    # unique_crashes is the honest, root-cause-grouped count (e.g. 9 raw
+    # signatures -> 5 distinct bugs) - see agent/summarize.py's
+    # BUG_FAMILIES and OBSERVATIONS.md Case 9. raw_signatures is kept
+    # alongside it so the collapse itself stays visible, not just the
+    # collapsed number.
+    unique_crashes = count_distinct_bugs(digests) if digests else 0
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "iterations": len(state.get("iterations", [])),
@@ -286,6 +309,7 @@ def main() -> int:
             for it in state.get("iterations", [])
         ],
         "unique_crashes": unique_crashes,
+        "raw_signatures": raw_signatures,
     }
     summary_text = json.dumps(summary, indent=2)
     (out / "summary.json").write_text(summary_text, encoding="utf-8")
@@ -299,7 +323,8 @@ def main() -> int:
     print(f"  iterations run     : {summary['iterations']}")
     print(f"  grammar breadth    : {summary['breadth']['fraction']:.0%}")
     print(f"  max nesting depth  : {summary['max_depth_reached']}")
-    print(f"  unique bugs        : {summary['unique_crashes']}")
+    print(f"  unique bugs        : {summary['unique_crashes']} "
+          f"(from {summary['raw_signatures']} raw signature(s))")
     print(f"  LLM tokens         : {summary['total_tokens']:,}")
     print(f"  still under-tested : {', '.join(summary['breadth']['missing'][:8]) or 'none'}")
     return 0

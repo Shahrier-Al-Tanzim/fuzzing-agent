@@ -1,0 +1,63 @@
+{
+  "iteration": 4,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 18: unterminated quote', 'line 3: unterminated quote', 'line 16: triple-s-quote inside string lit']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 17305,
+      "seconds": 75.75,
+      "stats": {
+        "samples": 25,
+        "mean_len": 216170.2,
+        "max_len": 591385,
+        "sample_max_depth": 99262,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.1,
+        "top_rejects": [
+          "line 18: unterminated quote",
+          "line 3: unterminated quote",
+          "line 16: triple-s-quote inside string lit"
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 17486,
+      "seconds": 67.33,
+      "stats": {
+        "samples": 25,
+        "mean_len": 203424.8,
+        "max_len": 440933,
+        "sample_max_depth": 86997,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.2,
+        "top_rejects": [
+          "line 26: key exists",
+          "line 25: expect hex char",
+          "line 2: expect hex char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 203424.8,
+    "max_len": 440933,
+    "sample_max_depth": 86997,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.2,
+    "top_rejects": [
+      "line 26: key exists",
+      "line 25: expect hex char",
+      "line 2: expect hex char"
+    ]
+  }
+}

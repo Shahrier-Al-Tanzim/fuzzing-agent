@@ -98,6 +98,45 @@ def crash_mechanisms(signatures) -> list[str]:
     return sorted({CRASH_MECHANISMS.get(s, s) for s in signatures})
 
 
+# Root-cause grouping for reporting "how many distinct bugs" honestly.
+# CRASH_MECHANISMS above is deliberately finer-grained than this - it names
+# the specific *shape* (bare-key vs. quoted-key alternating nesting) because
+# the feedback loop cares about shape diversity, not root cause. This dict
+# answers a different question: which raw signatures are actually the SAME
+# underlying crash, just captured mid-overflow at a different point or with
+# a different key style. See report/report.md's "5 confirmed root-cause
+# bugs, 9 signatures" and OBSERVATIONS.md Case 9 for the reasoning - three
+# of the nine known digests (af1d0280777e, 3db1e06f41e9, 80953bb88ca2) were
+# confirmed byte-for-byte identical in shape before being collapsed here,
+# not merged on suspicion alone.
+BUG_FAMILIES = {
+    "939402a0547c": "Bug 1: array-nesting stack overflow",
+    "e857b4530c96": "Bug 1: array-nesting stack overflow",
+    "55628614cd6c": "Bug 2: dotted-key stack overflow",
+    "26e809dd9d85": "Bug 3: inline-table stack overflow",
+    "unparsed_timeout": "Bug 4: many-siblings O(n^2) hang",
+    "af1d0280777e": "Bug 5: alternating array/inline-table overflow",
+    "3db1e06f41e9": "Bug 5: alternating array/inline-table overflow",
+    "80953bb88ca2": "Bug 5: alternating array/inline-table overflow",
+    "c04d038a7956": "Bug 5: alternating array/inline-table overflow",
+}
+
+
+def bug_family(digest: str) -> str:
+    """Root-cause bug name for a signature digest. An unrecognized digest
+    (a genuinely new crash never seen before) is never silently folded into
+    an existing bug or dropped - it's reported as its own unclassified
+    family, visible as a new row rather than hidden inside someone else's
+    count."""
+    return BUG_FAMILIES.get(digest, f"unclassified ({digest})")
+
+
+def count_distinct_bugs(digests) -> int:
+    """Honest bug count: raw signatures collapsed onto their root cause,
+    e.g. 9 known signatures -> 5 distinct bugs."""
+    return len({bug_family(d) for d in digests})
+
+
 def render_feedback(summary: dict, state: LoopState) -> str:
     """The text actually pasted into the refine prompt."""
     cfg = load()

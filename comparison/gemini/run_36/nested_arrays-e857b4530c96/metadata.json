@@ -1,0 +1,49 @@
+{
+  "signature": {
+    "digest": "e857b4530c96",
+    "short": "stack-overflow@unknown",
+    "bug_type": "stack-overflow",
+    "frames": [],
+    "signal": null,
+    "raw_frame_count": 0,
+    "recursion_collapsed": false
+  },
+  "occurrences": 265,
+  "sources": [
+    "iteration_00.jsonl#6",
+    "iteration_00.jsonl#9",
+    "iteration_00.jsonl#19",
+    "iteration_00.jsonl#30",
+    "iteration_00.jsonl#32",
+    "iteration_00.jsonl#66",
+    "iteration_00.jsonl#85",
+    "iteration_00.jsonl#92",
+    "iteration_00.jsonl#109",
+    "iteration_00.jsonl#118",
+    "iteration_00.jsonl#121",
+    "iteration_00.jsonl#132",
+    "iteration_00.jsonl#134",
+    "iteration_00.jsonl#135",
+    "iteration_00.jsonl#150",
+    "iteration_00.jsonl#191",
+    "iteration_00.jsonl#193",
+    "iteration_00.jsonl#202",
+    "iteration_00.jsonl#211",
+    "iteration_00.jsonl#225"
+  ],
+  "original_bytes": 120008,
+  "minimized_bytes": 120008,
+  "reduction": 0.0,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 7,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 0,
+    "deterministic": false,
+    "flaky": false,
+    "unstable_signature": true,
+    "description": "crashed every run (3/3) but signature unstable (0/3 matched)"
+  },
+  "triaged_at": "2026-09-01T20:59:20.884462+00:00"
+}
