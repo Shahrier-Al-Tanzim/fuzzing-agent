@@ -1,0 +1,520 @@
+{
+  "generated_at": "2026-09-03T16:38:32.131252+00:00",
+  "iterations": 5,
+  "total_tokens": 149880,
+  "breadth": {
+    "reached": [
+      "BASIC_STRING",
+      "BIN_INT",
+      "BOOLEAN",
+      "DEC_INT",
+      "FLOAT",
+      "FLOAT_EXP",
+      "HEX_INT",
+      "INF",
+      "LITERAL_STRING",
+      "LOCAL_DATE",
+      "LOCAL_DATE_TIME",
+      "LOCAL_TIME",
+      "ML_BASIC_STRING",
+      "ML_LITERAL_STRING",
+      "NAN",
+      "OCT_INT",
+      "OFFSET_DATE_TIME",
+      "array_",
+      "array_nested",
+      "array_table",
+      "comment",
+      "dotted_key",
+      "empty_array",
+      "empty_document",
+      "empty_inline_table",
+      "escape_sequence",
+      "inline_table",
+      "inline_table_nested",
+      "int_overflow",
+      "int_underscore",
+      "leading_zero_int",
+      "non_ascii",
+      "quoted_key",
+      "standard_table",
+      "trailing_comma",
+      "unicode_escape",
+      "unquoted_key"
+    ],
+    "missing": [
+      "duplicate_key"
+    ],
+    "fraction": 0.974
+  },
+  "max_depth_reached": 51999,
+  "per_iteration": [
+    {
+      "iteration": 0,
+      "examples": 500,
+      "acceptance_rate": 0.252,
+      "verdicts": {
+        "accept": 126,
+        "reject": 321,
+        "timeout": 21,
+        "crash": 32
+      },
+      "novelty_rate": 0.41,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "LITERAL_STRING",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "OCT_INT",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_document",
+        "inline_table",
+        "inline_table_nested",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.553,
+      "missing_productions": [
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "escape_sequence",
+        "unicode_escape",
+        "HEX_INT",
+        "BIN_INT",
+        "FLOAT_EXP",
+        "INF",
+        "NAN",
+        "int_underscore",
+        "int_overflow",
+        "leading_zero_int",
+        "OFFSET_DATE_TIME",
+        "LOCAL_DATE",
+        "empty_array",
+        "empty_inline_table",
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 39691,
+      "max_depth_cumulative": 39691,
+      "max_depth_generated": 51961,
+      "max_dotted_key_this_iteration": 59972,
+      "max_dotted_key_generated": 59972,
+      "max_dotted_key_cumulative": 59972,
+      "max_siblings_this_iteration": 0,
+      "max_siblings_generated": 3,
+      "max_siblings_cumulative": 3,
+      "crash_function_breakdown": {
+        "malloc": 18,
+        "__sanitizer::BufferedStackTrace::UnwindImpl": 6,
+        "__asan::GetCurrentThread": 3
+      },
+      "mean_bytes": 80858.4,
+      "findings": 53,
+      "top_rejects": [
+        [
+          "line 1: key exists",
+          175
+        ],
+        [
+          "line 2: key exists",
+          49
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          18
+        ],
+        [
+          "line 1: bad escape char",
+          13
+        ],
+        [
+          "line 5: key exists",
+          11
+        ]
+      ]
+    },
+    {
+      "iteration": 1,
+      "examples": 500,
+      "acceptance_rate": 0.57,
+      "verdicts": {
+        "accept": 285,
+        "timeout": 25,
+        "crash": 56,
+        "reject": 134
+      },
+      "novelty_rate": 0.316,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.974,
+      "missing_productions": [
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 42000,
+      "max_depth_cumulative": 42000,
+      "max_depth_generated": 55925,
+      "max_dotted_key_this_iteration": 62903,
+      "max_dotted_key_generated": 62903,
+      "max_dotted_key_cumulative": 62903,
+      "max_siblings_this_iteration": 2,
+      "max_siblings_generated": 2,
+      "max_siblings_cumulative": 3,
+      "crash_function_breakdown": {
+        "malloc": 37,
+        "__sanitizer::BufferedStackTrace::UnwindImpl": 6,
+        "__sanitizer::StackDepotBase<__sanitizer::StackDepotNode": 3,
+        "__asan::GetCurrentThread": 3,
+        "__sanitizer::SizeClassAllocator64LocalCache<__sanitizer::SizeClassAllocator64<__asan::AP64<__sanitizer::LocalAddressSpaceView>>>::Refill": 1,
+        "__sanitizer::SizeClassAllocator64<__asan::AP64<__sanitizer::LocalAddressSpaceView>>::GetFromAllocator": 1
+      },
+      "mean_bytes": 98497.6,
+      "findings": 81,
+      "top_rejects": [
+        [
+          "line 4: expect hex char",
+          25
+        ],
+        [
+          "line 2: expect hex char",
+          21
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          14
+        ],
+        [
+          "line 3: expect hex char",
+          11
+        ],
+        [
+          "line 1: expect hex char",
+          9
+        ]
+      ]
+    },
+    {
+      "iteration": 2,
+      "examples": 500,
+      "acceptance_rate": 0.364,
+      "verdicts": {
+        "accept": 182,
+        "crash": 118,
+        "reject": 169,
+        "timeout": 31
+      },
+      "novelty_rate": 0.196,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE_TIME",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.974,
+      "missing_productions": [
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 46001,
+      "max_depth_cumulative": 46001,
+      "max_depth_generated": 62000,
+      "max_dotted_key_this_iteration": 65402,
+      "max_dotted_key_generated": 65402,
+      "max_dotted_key_cumulative": 65402,
+      "max_siblings_this_iteration": 1,
+      "max_siblings_generated": 4,
+      "max_siblings_cumulative": 4,
+      "crash_function_breakdown": {
+        "malloc": 73,
+        "__sanitizer::BufferedStackTrace::UnwindImpl": 19,
+        "__sanitizer::StackDepotBase<__sanitizer::StackDepotNode": 10,
+        "__asan::GetCurrentThread": 6,
+        "__sanitizer::SizeClassAllocator64<__asan::AP64<__sanitizer::LocalAddressSpaceView>>::GetFromAllocator": 1
+      },
+      "mean_bytes": 99100.3,
+      "findings": 149,
+      "top_rejects": [
+        [
+          "line 2: key exists",
+          81
+        ],
+        [
+          "line 1: key exists",
+          20
+        ],
+        [
+          "line 4: key exists",
+          17
+        ],
+        [
+          "line 5: key exists",
+          13
+        ],
+        [
+          "line 7: key exists",
+          9
+        ]
+      ]
+    },
+    {
+      "iteration": 3,
+      "examples": 500,
+      "acceptance_rate": 0.334,
+      "verdicts": {
+        "accept": 167,
+        "timeout": 78,
+        "reject": 203,
+        "crash": 50,
+        "harness_error": 2
+      },
+      "novelty_rate": 0.292,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.974,
+      "missing_productions": [
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 51999,
+      "max_depth_cumulative": 51999,
+      "max_depth_generated": 88841,
+      "max_dotted_key_this_iteration": 60208,
+      "max_dotted_key_generated": 91841,
+      "max_dotted_key_cumulative": 91841,
+      "max_siblings_this_iteration": 12000,
+      "max_siblings_generated": 29947,
+      "max_siblings_cumulative": 29947,
+      "crash_function_breakdown": {
+        "malloc": 32,
+        "__sanitizer::BufferedStackTrace::UnwindImpl": 10,
+        "__sanitizer::CombinedAllocator<__sanitizer::SizeClassAllocator64<__asan::AP64<__sanitizer::LocalAddressSpaceView>>": 3,
+        "__sanitizer::StackDepotBase<__sanitizer::StackDepotNode": 1,
+        "__asan::GetCurrentThread": 1
+      },
+      "mean_bytes": 212962.6,
+      "findings": 128,
+      "top_rejects": [
+        [
+          "line 2: key exists",
+          84
+        ],
+        [
+          "line 3: key exists",
+          11
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          11
+        ],
+        [
+          "line 5: key exists",
+          10
+        ],
+        [
+          "line 7: key exists",
+          9
+        ]
+      ]
+    },
+    {
+      "iteration": 4,
+      "examples": 500,
+      "acceptance_rate": 0.182,
+      "verdicts": {
+        "accept": 91,
+        "timeout": 46,
+        "crash": 137,
+        "reject": 215,
+        "harness_error": 11
+      },
+      "novelty_rate": 0.282,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.974,
+      "missing_productions": [
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 8,
+      "max_depth_cumulative": 51999,
+      "max_depth_generated": 119951,
+      "max_dotted_key_this_iteration": 6,
+      "max_dotted_key_generated": 115298,
+      "max_dotted_key_cumulative": 115298,
+      "max_siblings_this_iteration": 1,
+      "max_siblings_generated": 43365,
+      "max_siblings_cumulative": 43365,
+      "crash_function_breakdown": {
+        "malloc": 29,
+        "__sanitizer::CombinedAllocator<__sanitizer::SizeClassAllocator64<__asan::AP64<__sanitizer::LocalAddressSpaceView>>": 21,
+        "__asan::Allocator::Allocate": 18,
+        "__sanitizer::BufferedStackTrace::UnwindImpl": 16,
+        "__asan::GetCurrentThread": 10,
+        "__sanitizer::StackDepotBase<__sanitizer::StackDepotNode": 4,
+        "__sanitizer::SizeClassAllocator64LocalCache<__sanitizer::SizeClassAllocator64<__asan::AP64<__sanitizer::LocalAddressSpaceView>>>::Refill": 2
+      },
+      "mean_bytes": 219096.1,
+      "findings": 183,
+      "top_rejects": [
+        [
+          "line 2: key exists",
+          64
+        ],
+        [
+          "line 3: key exists",
+          27
+        ],
+        [
+          "line 1: key exists",
+          16
+        ],
+        [
+          "line 4: key exists",
+          14
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+          13
+        ]
+      ]
+    }
+  ],
+  "unique_crashes": 5,
+  "raw_signatures": 6
+}

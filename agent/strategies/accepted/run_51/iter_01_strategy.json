@@ -1,0 +1,81 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: ListStrategy(sampled_from(['0', 'true', '\"x\"', '0xFF', '1.5']), min_size=25_573, max_size=25_573) can never generate an example, because min_size is larger than Hypothesis supports.  Including it is at best slowing down your tests for no benefit; at worst m",
+      "tokens": 18265,
+      "seconds": 53.23,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised TypeError: 'RecursiveStrategy' object is not callable",
+      "tokens": 17002,
+      "seconds": 38.53,
+      "stats": {}
+    },
+    {
+      "attempt": 3,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 3/40 (8%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: key exists', 'line 2: key exists', 'line 4: key exists']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 16732,
+      "seconds": 38.99,
+      "stats": {
+        "samples": 25,
+        "mean_len": 101803.3,
+        "max_len": 519853,
+        "sample_max_depth": 30996,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.075,
+        "top_rejects": [
+          "line 1: key exists",
+          "line 2: key exists",
+          "line 4: key exists"
+        ]
+      }
+    },
+    {
+      "attempt": 4,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 16111,
+      "seconds": 40.73,
+      "stats": {
+        "samples": 25,
+        "mean_len": 78440.0,
+        "max_len": 331656,
+        "sample_max_depth": 54382,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.425,
+        "top_rejects": [
+          "line 2: unterminated quote",
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          "line 1: expect hex char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 78440.0,
+    "max_len": 331656,
+    "sample_max_depth": 54382,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.425,
+    "top_rejects": [
+      "line 2: unterminated quote",
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+      "line 1: expect hex char"
+    ]
+  }
+}

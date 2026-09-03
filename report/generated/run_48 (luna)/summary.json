@@ -1,0 +1,452 @@
+{
+  "generated_at": "2026-09-03T13:29:17.541448+00:00",
+  "iterations": 5,
+  "total_tokens": 126071,
+  "breadth": {
+    "reached": [
+      "BASIC_STRING",
+      "BIN_INT",
+      "BOOLEAN",
+      "DEC_INT",
+      "FLOAT",
+      "FLOAT_EXP",
+      "HEX_INT",
+      "INF",
+      "LITERAL_STRING",
+      "LOCAL_DATE",
+      "LOCAL_DATE_TIME",
+      "LOCAL_TIME",
+      "ML_BASIC_STRING",
+      "ML_LITERAL_STRING",
+      "NAN",
+      "OCT_INT",
+      "OFFSET_DATE_TIME",
+      "array_",
+      "array_nested",
+      "array_table",
+      "comment",
+      "dotted_key",
+      "duplicate_key",
+      "empty_array",
+      "empty_document",
+      "empty_inline_table",
+      "escape_sequence",
+      "inline_table",
+      "inline_table_nested",
+      "int_overflow",
+      "int_underscore",
+      "leading_zero_int",
+      "non_ascii",
+      "quoted_key",
+      "standard_table",
+      "trailing_comma",
+      "unicode_escape",
+      "unquoted_key"
+    ],
+    "missing": [],
+    "fraction": 1.0
+  },
+  "max_depth_reached": 49154,
+  "per_iteration": [
+    {
+      "iteration": 0,
+      "examples": 500,
+      "acceptance_rate": 0.372,
+      "verdicts": {
+        "accept": 186,
+        "reject": 253,
+        "crash": 61
+      },
+      "novelty_rate": 0.318,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "OCT_INT",
+        "array_",
+        "array_nested",
+        "array_table",
+        "dotted_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "inline_table",
+        "inline_table_nested",
+        "int_underscore",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.737,
+      "missing_productions": [
+        "ML_LITERAL_STRING",
+        "escape_sequence",
+        "unicode_escape",
+        "FLOAT",
+        "NAN",
+        "int_overflow",
+        "leading_zero_int",
+        "OFFSET_DATE_TIME",
+        "duplicate_key",
+        "comment"
+      ],
+      "max_depth_this_iteration": 23999,
+      "max_depth_cumulative": 23999,
+      "max_depth_generated": 52000,
+      "mean_bytes": 51422.8,
+      "findings": 61,
+      "top_rejects": [
+        [
+          "line 1: key exists",
+          132
+        ],
+        [
+          "line 2: key exists",
+          27
+        ],
+        [
+          "line 2: bad escape char",
+          14
+        ],
+        [
+          "line 1: bad escape char",
+          12
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+          8
+        ]
+      ]
+    },
+    {
+      "iteration": 1,
+      "examples": 500,
+      "acceptance_rate": 0.258,
+      "verdicts": {
+        "accept": 129,
+        "reject": 275,
+        "timeout": 47,
+        "crash": 49
+      },
+      "novelty_rate": 0.274,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "dotted_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_underscore",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.842,
+      "missing_productions": [
+        "unicode_escape",
+        "NAN",
+        "int_overflow",
+        "leading_zero_int",
+        "duplicate_key",
+        "comment"
+      ],
+      "max_depth_this_iteration": 39999,
+      "max_depth_cumulative": 39999,
+      "max_depth_generated": 67429,
+      "mean_bytes": 85018.1,
+      "findings": 96,
+      "top_rejects": [
+        [
+          "line 1: key exists",
+          100
+        ],
+        [
+          "line 2: key exists",
+          50
+        ],
+        [
+          "line 1: bad escape char",
+          31
+        ],
+        [
+          "line 3: key exists",
+          14
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+          13
+        ]
+      ]
+    },
+    {
+      "iteration": 2,
+      "examples": 500,
+      "acceptance_rate": 0.512,
+      "verdicts": {
+        "accept": 256,
+        "reject": 212,
+        "timeout": 11,
+        "crash": 21
+      },
+      "novelty_rate": 0.412,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "dotted_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.947,
+      "missing_productions": [
+        "duplicate_key",
+        "comment"
+      ],
+      "max_depth_this_iteration": 40397,
+      "max_depth_cumulative": 40397,
+      "max_depth_generated": 61933,
+      "mean_bytes": 29970.1,
+      "findings": 32,
+      "top_rejects": [
+        [
+          "line 1: key exists",
+          59
+        ],
+        [
+          "line 2: key exists",
+          41
+        ],
+        [
+          "line 1: expect hex char",
+          27
+        ],
+        [
+          "line 3: expect hex char",
+          22
+        ],
+        [
+          "line 2: expect hex char",
+          19
+        ]
+      ]
+    },
+    {
+      "iteration": 3,
+      "examples": 500,
+      "acceptance_rate": 0.588,
+      "verdicts": {
+        "accept": 294,
+        "crash": 39,
+        "reject": 154,
+        "timeout": 13
+      },
+      "novelty_rate": 0.45,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "duplicate_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 1.0,
+      "missing_productions": [],
+      "max_depth_this_iteration": 49154,
+      "max_depth_cumulative": 49154,
+      "max_depth_generated": 69118,
+      "mean_bytes": 45825.7,
+      "findings": 52,
+      "top_rejects": [
+        [
+          "line 1: key exists",
+          34
+        ],
+        [
+          "line 1: expect hex char",
+          27
+        ],
+        [
+          "line 3: expect hex char",
+          23
+        ],
+        [
+          "line 2: key exists",
+          22
+        ],
+        [
+          "line 1: bad escape char",
+          19
+        ]
+      ]
+    },
+    {
+      "iteration": 4,
+      "examples": 500,
+      "acceptance_rate": 0.126,
+      "verdicts": {
+        "accept": 63,
+        "reject": 258,
+        "crash": 118,
+        "harness_error": 20,
+        "timeout": 41
+      },
+      "novelty_rate": 0.308,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "LITERAL_STRING",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "duplicate_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 1.0,
+      "missing_productions": [],
+      "max_depth_this_iteration": 5,
+      "max_depth_cumulative": 49154,
+      "max_depth_generated": 115000,
+      "mean_bytes": 205228.0,
+      "findings": 159,
+      "top_rejects": [
+        [
+          "line 2: key exists",
+          103
+        ],
+        [
+          "line 1: key exists",
+          71
+        ],
+        [
+          "line 1: expect hex char",
+          23
+        ],
+        [
+          "line 3: expect hex char",
+          15
+        ],
+        [
+          "line 1: bad escape char",
+          13
+        ]
+      ]
+    }
+  ],
+  "unique_crashes": 6,
+  "raw_signatures": 7
+}
