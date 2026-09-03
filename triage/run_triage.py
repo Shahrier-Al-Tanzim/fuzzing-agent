@@ -14,10 +14,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agent.run_history import get_next_run_id
 from pipeline.config import load, PROJECT_ROOT
-from pipeline.runner import HarnessRunner
+from pipeline.runner import HarnessRunner, run_for_parseable_crash
 from pipeline.schema import read_log
 from triage.minimize import minimize_concrete
+from triage.rename_signature_folders import bug_slug
 from triage.signature import parse_signature
 from triage.verify import verify
 
@@ -39,7 +41,7 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
                     "sha256": rec.input_sha256,
                 })
 
-    # Extras have no stored stderr - run them once to get it.
+    # Extras have no stored stderr - run them to get it.
     runner = HarnessRunner(iteration=-4)
     for f in extra_files:
         p = Path(f)
@@ -47,8 +49,8 @@ def collect_findings(extra_files: list[str]) -> list[dict]:
             print(f"  !! missing: {f}")
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
-        rec = runner.run(text)
-        if not rec.is_finding:
+        rec = run_for_parseable_crash(runner, text)
+        if rec is None or not rec.is_finding:
             print(f"  !! {p.name} did not crash - skipping")
             continue
         found.append({
@@ -64,10 +66,16 @@ def main() -> int:
         "grammar/early_findings/01_array_nesting_stackoverflow.toml"],
         help="crashing files found outside the pipeline")
     ap.add_argument("--no-minimize", action="store_true")
+    ap.add_argument("--run", type=int, default=None,
+                    help="tag reports under reports/run_N/ (default: the "
+                         "most recent agent.loop/seed.py run, auto-detected "
+                         "from logs/RUN_HISTORY.jsonl)")
     args = ap.parse_args()
 
-    out_dir = load().path("paths.crashes")
+    run_id = args.run if args.run is not None else get_next_run_id() - 1
+    out_dir = load().path("paths.crashes") / f"run_{run_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Tagging reports as run_{run_id}")
 
     print("=== collecting ===")
     findings = collect_findings(args.extra)
@@ -117,7 +125,12 @@ def main() -> int:
         vr = verify(mini, sig.digest if sig else None)
         print(f"  {key}: {vr.describe()}")
 
-        d = out_dir / key
+        # Folder name is "<bug-name>-<key>", not the bare key, so triage
+        # output is readable without cross-referencing CRASH_MECHANISMS by
+        # hand - see triage/rename_signature_folders.py, which applies the
+        # same naming to output from before this was built in.
+        folder_name = f"{bug_slug(key)}-{key}"
+        d = out_dir / folder_name
         d.mkdir(parents=True, exist_ok=True)
         (d / "original.toml").write_text(original, encoding="utf-8")
         (d / "minimized.toml").write_text(mini, encoding="utf-8")
@@ -143,17 +156,19 @@ def main() -> int:
         }
         (d / "metadata.json").write_text(json.dumps(meta, indent=2),
                                          encoding="utf-8")
-        (d / "report.md").write_text(_render_report(key, sig, meta, mini),
-                                     encoding="utf-8")
+        (d / "report.md").write_text(
+            _render_report(key, folder_name, sig, meta, mini, run_id),
+            encoding="utf-8")
         summary.append(meta)
 
     idx = out_dir / "INDEX.md"
-    idx.write_text(_render_index(summary), encoding="utf-8")
+    idx.write_text(_render_index(summary, run_id), encoding="utf-8")
     print(f"\n=== done ===\n  {len(buckets)} report(s) in {out_dir}\n  index: {idx}")
     return 0
 
 
-def _render_report(key: str, sig, meta: dict, minimized: str) -> str:
+def _render_report(key: str, folder_name: str, sig, meta: dict, minimized: str,
+                   run_id: int) -> str:
     frames = "\n".join(f"  #{i}  {f}" for i, f in
                        enumerate(sig.frames if sig else [])) or "  (none parsed)"
     v = meta["verification"]
@@ -188,7 +203,7 @@ in {meta['minimize_steps']} steps.
 
 ```bash
 source harness/sanitizer_env.sh
-harness/build/toml_harness triage/reports/{key}/minimized.toml
+harness/build/toml_harness triage/reports/run_{run_id}/{folder_name}/minimized.toml
 echo $?   # expect 86 (sanitizer) or a signal
 ```
 
@@ -218,19 +233,32 @@ def _verify_label(v: dict) -> str:
     raise AssertionError(f"unrecognized verification state: {v}")
 
 
-def _render_index(summary: list[dict]) -> str:
+def _render_index(summary: list[dict], run_id: int) -> str:
+    from agent.summarize import bug_family, count_distinct_bugs
+
+    digests = [s["signature"]["digest"] for s in summary]
+    n_bugs = count_distinct_bugs(digests)
     rows = "\n".join(
-        f"| `{s['signature']['digest']}` | {s['signature'].get('bug_type','?')} "
+        f"| `{s['signature']['digest']}` | {bug_family(s['signature']['digest'])} "
+        f"| {s['signature'].get('bug_type','?')} "
         f"| {s['occurrences']} | {s['minimized_bytes']} B "
         f"| {_verify_label(s['verification'])} |"
         for s in summary)
+    # This dedup pass only collapses distinct *symptoms* (differing stack
+    # traces, mid-overflow captures) into signatures; it can't know that two
+    # differently-shaped signatures share one root cause - that requires the
+    # hand-verified mapping in agent/summarize.py's BUG_FAMILIES (see
+    # OBSERVATIONS.md Case 9). A signature this project hasn't seen before
+    # is reported as its own "unclassified (<digest>)" bug, never silently
+    # folded into an existing one.
     return f"""\
-# Crash triage index
+# Crash triage index — run {run_id}
 
-{len(summary)} unique bug(s) after deduplication.
+{len(summary)} unique signature(s) after deduplication, \
+{n_bugs} distinct bug(s) after grouping by root cause (see the Bug column).
 
-| Signature | Type | Occurrences | Minimized | Deterministic |
-|---|---|---|---|---|
+| Signature | Bug | Type | Occurrences | Minimized | Deterministic |
+|---|---|---|---|---|---|
 {rows}
 
 Generated {datetime.now(timezone.utc).isoformat()}

@@ -1,0 +1,41 @@
+{
+  "iteration": 2,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 13925,
+      "seconds": 43.33,
+      "stats": {
+        "samples": 25,
+        "mean_len": 693087.3,
+        "max_len": 3192211,
+        "sample_max_depth": 50000,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.3,
+        "top_rejects": [
+          "line 3: extra chars after value",
+          "line 3: expect hex char",
+          "line 6: bad escape char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 693087.3,
+    "max_len": 3192211,
+    "sample_max_depth": 50000,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.3,
+    "top_rejects": [
+      "line 3: extra chars after value",
+      "line 3: expect hex char",
+      "line 6: bad escape char"
+    ]
+  }
+}

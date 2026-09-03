@@ -1,0 +1,4 @@
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==32491==ERROR: AddressSanitizer: stack-overflow on address 0x7ffdea04bff0 (pc 0x64aaeb8a1378 bp 0x000000000000 sp 0x7ffdea04bfe0 T0)
+==32491==ABORTING

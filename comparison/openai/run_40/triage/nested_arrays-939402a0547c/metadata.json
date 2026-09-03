@@ -1,0 +1,36 @@
+{
+  "signature": {
+    "digest": "939402a0547c",
+    "short": "stack-overflow@malloc",
+    "bug_type": "stack-overflow",
+    "frames": [
+      "malloc",
+      "expand toml.c:411",
+      "expand_arritem toml.c:436",
+      "create_array_in_array toml.c:882",
+      "parse_array toml.c:1057"
+    ],
+    "signal": null,
+    "raw_frame_count": 191,
+    "recursion_collapsed": true
+  },
+  "occurrences": 1,
+  "sources": [
+    "grammar/early_findings/01_array_nesting_stackoverflow.toml"
+  ],
+  "original_bytes": 120006,
+  "minimized_bytes": 15408,
+  "reduction": 0.872,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 22,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 3,
+    "deterministic": true,
+    "flaky": false,
+    "unstable_signature": false,
+    "description": "deterministic (3/3 runs crashed)"
+  },
+  "triaged_at": "2026-09-02T21:02:31.311350+00:00"
+}

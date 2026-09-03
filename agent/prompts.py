@@ -177,6 +177,199 @@ OUTPUT CONTRACT - your reply is rejected automatically if it breaks these:
     an unquoted `table()` silently invalidates a large share of every
     generated document - this is a common, easy-to-miss cause of low
     acceptance rate that isn't a crash or an API mistake at all.
+14. IF the feedback below asks you to push depth into the thousands, a
+    balanced `st.one_of(value(), array(), inline_table())` CANNOT get there -
+    each level only has roughly a 1-in-3 chance of recursing again, so the
+    probability of reaching depth 1000+ is astronomically small even across
+    500 examples. This was a REAL FAILURE from a previous attempt: depth
+    stayed stuck at 3 for 5 straight iterations despite repeated requests to
+    increase it, because nothing in the strategy actually favored recursion
+    over stopping. Two correct techniques, use at least one:
+    (a) Bias the choice by repeating the recursive option in `one_of()`:
+      Right:  @composite
+              def array(draw):
+                  elements = draw(st.lists(
+                      st.one_of(array(), array(), array(), array(), value())))
+                  return f"[{', '.join(elements)}]"
+      # array() listed 4x vs value() once -> recursion is drawn ~4x more
+      # often than stopping, so depth grows instead of collapsing early.
+    (b) Thread an explicit counter through `draw`, and ONLY stop recursing
+        once it passes a high threshold - the counter MUST actually be
+        incremented on the recursive call itself, not just declared:
+      Wrong:  @composite
+              def array(draw, depth=0):
+                  # depth is never passed forward - every recursive call
+                  # silently resets to depth=0, so the check below can
+                  # never fire. A REAL FAILURE from a previous attempt.
+                  if depth >= 12:
+                      return draw(value())
+                  return draw(st.one_of(value(), array()))
+      Right:  @composite
+              def array(draw, depth=0):
+                  if depth >= 20000:
+                      return draw(value())
+                  return draw(st.one_of(
+                      value(),
+                      array(depth=depth + 1), array(depth=depth + 1),
+                      array(depth=depth + 1), array(depth=depth + 1)))
+      # depth=depth+1 is passed on every recursive call, so the counter
+      # genuinely advances and the threshold is reachable.
+    Whichever technique you use, keep a SECOND, balanced/shallow variant
+    (as in earlier rules) for grammar breadth. BUT never expose a bare
+    `array()`/`inline_table()`/`dotted_key()`/raw-number/raw-string
+    strategy directly inside the final `toml_strategy`'s own `one_of()` -
+    every branch of `toml_strategy` MUST still produce a COMPLETE document
+    (one or more `key = value` / `[table]` / `[[array_table]]` lines), the
+    same rule 12 already requires inside `document()`. This is a REAL
+    FAILURE from a previous attempt - acceptance collapsed from 42% to 7%
+    in one iteration because `toml_strategy` was built like this:
+      Wrong:  toml_strategy = st.one_of(
+                  document(), document(),
+                  array(), dotted_key(), ml_basic_string(),        # bare
+                  st.integers(...).map(lambda x: f"0x{x:x}"))      # bare
+      # a raw array()/dotted_key()/hex-number AS THE ENTIRE FILE is not
+      # valid TOML at any depth - TOML requires key=value/table lines,
+      # never a bare value alone. 12 of 17 branches here produced instant
+      # "missing =" rejects.
+    The depth-seeking recursive strategy still only ever belongs inside
+    `pair()`'s value position (via `value()`, exactly as rule 12 already
+    routes `array()`/`inline_table()`) - never as a second, separate
+    top-level option next to `document()`:
+      Right:  toml_strategy = st.one_of(document(), document_depth_biased())
+      # where document_depth_biased() is document()'s own shape (pair()/
+      # table() lines) but pair() draws from the depth-biased array()/
+      # inline_table() instead of the shallow one - still a full document,
+      # every line still has its own `key =`.
+15. `key()` MUST restrict its unquoted branch to a fixed alphabet, and any
+    quoted key/string branch MUST exclude the quote character and control
+    characters (including newline) from what it wraps in quotes. Two REAL
+    FAILURES from previous attempts, both from unrestricted `st.text()`:
+      Wrong:  st.text(min_size=1, max_size=10).map(lambda x: x)  # unquoted
+      # produced literal keys like `[»\x1aî(\U0008e78b!v9×]` - unquoted
+      # TOML keys may ONLY contain ASCII letters/digits/_/-, nothing else.
+      Wrong:  st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"')
+      # produced `"\\nDJ" = 0` - st.text() with no alphabet restriction can
+      # generate a literal, unescaped newline character. A raw newline
+      # inside a basic string breaks TOML's single-line string syntax
+      # outright (only a triple-quoted \"\"\"...\"\"\" string may span
+      # lines) - this doesn't just reject that one value, it corrupts line
+      # counting for everything after it in the document.
+    Fix by restricting the alphabet directly (never `.filter()` - rule 9
+    already bans filtering for shape):
+      Right:  import string
+              UNQUOTED_KEY_CHARS = string.ascii_letters + string.digits + "-_"
+              st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10)
+                  # unquoted branch - safe by construction
+              st.text(alphabet=string.printable.replace('"', '').replace("\\\\", "")
+                       .replace("\\n", "").replace("\\r", ""),
+                       min_size=1, max_size=10).map(lambda x: f'"{x}"')
+                  # quoted branch - excludes the quote char, backslash, and
+                  # newline/carriage-return from what's wrapped in quotes
+    Apply this to every place raw `st.text()` gets wrapped in quotes or
+    used unquoted as a key - not just `key()`, also any inline ad-hoc key
+    building inside `inline_table()`/`dotted_key()` if it doesn't already
+    call `key()`.
+16. Many of the bugs in `tomlc99` are caused by pushing a SPECIFIC grammar
+    production past the parser's depth limit. Identify the axes yourself
+    by reading grammar/TomlParser.g4 directly - any production with
+    recursion or with `*` / `+` quantifiers is a candidate stress axis,
+    not because this prompt names them, but because the grammar does:
+      * recursive productions: array : '[' array* ']' (deep array
+                               nesting), inline_table : '{' pair* '}'
+                               (deep inline-table nesting),
+      * `+` quantifiers:      dotted_key : simple_key ('.' simple_key)+
+                              (deep dotted-key chains), document :
+                              expression (NL expression)+ (long flat
+                              documents).
+    Each axis has its OWN parser code path AND its OWN crash threshold -
+    array nesting, inline-table nesting, dotted-key chains, and document-
+    line counts each stress different parts of the parser. Push EVERY
+    axis to its limit; missing any one means missing a bug class. A REAL
+    FAILURE from a previous attempt: only some axes were wired into
+    `toml_strategy`, so the missing ones never ran once.
+
+    To reach EXTREME depth on any axis (hundreds or thousands of levels,
+    as the feedback may request), recursive generation CANNOT do it.
+    MEASURED FACT from previous attempts - no matter how heavily biased:
+      * `st.lists(...)` with no size limit spreads SIDEWAYS into a bushy
+        tree and exhausts Hypothesis's data budget at depth 2-3.
+        Measured: max depth 3 over 15 draws.
+      * Even forcing exactly one child per level (`min_size=1,
+        max_size=1`), which is the correct chain shape, only reached
+        depth ~13 over 15 draws - Hypothesis's own generation budget
+        inherently resists deep recursion.
+
+    So for extreme depth, build the structure DIRECTLY, not recursively.
+    Draw a depth INTEGER, then construct the document so it actually has
+    N levels of nesting on the chosen axis - repetition of opening /
+    closing characters, iterative assembly, anything that produces a
+    document the parser must walk depth N levels. The exact form is up
+    to you; the CONSTRAINT is what matters: the generated string must
+    really have N levels of nesting. The depth is the variable you
+    control; how you reach it is your choice.
+
+    SET `max_value` FROM THE DEPTH TARGET IN THE FEEDBACK, not from any
+    worked example this prompt might have shown in earlier versions. A
+    REAL FAILURE from a previous attempt: when this prompt used to show
+    concrete example bounds, every iteration copied those numbers
+    verbatim - depth then sat at exactly that ceiling for all five
+    iterations, never reaching the depth where crashes actually fire.
+    The feedback tells you what depth the parser crashes at on each
+    axis; your job is to clear that bar. RAISE `max_value` to follow
+    the feedback - never lower `min_value` below whatever keeps the
+    draw above its own crash threshold.
+
+    WHAT SITS AT EACH LEVEL MATTERS AS MUCH AS HOW DEEP THE NESTING
+    GOES: two documents nested equally deep crash in different parser
+    functions depending on what each level contains (bare vs quoted vs
+    dotted keys, escaped strings, different value types). For at least
+    one variant per axis, vary the CONTENT of each level so the parser
+    takes a different code path than the bare-keys version. MEASURED
+    FACT: the same alternating-nesting strategy with bare keys at every
+    level vs QUOTED keys at every level crashes in DIFFERENT parser
+    functions (the quoted version puts string-normalization on the stack
+    at the moment it overflows), so each is a genuinely separate bug
+    class, not just a variant.
+
+    Keep deep branches inside a normal `key = value` line (rule 12/14 -
+    a bare `[[[...]]]` alone is not a valid document), e.g.
+    `f"deep = {draw(deep_strategy())}"`. Two hard limits: keep the
+    whole document under 1 MB, and keep the deep branches a clear
+    MINORITY of `toml_strategy`'s `one_of(...)` - deep branches together
+    must be no more than ~1 in 5 of all branches, so the measured
+    acceptance rate stays above the 20% floor. A higher fraction means
+    most draws crash before the harness accepts them, so the strategy
+    gets rejected before it ever runs - losing the very crashes it was
+    built to find:
+      Right:  toml_strategy = st.one_of(
+                  *([document()] * 20),
+                  deep_doc(strategy_a()), deep_doc(strategy_b()),
+                  ...)
+    IMPORTANT: still use `st.recursive` / `@composite` for ordinary
+    nesting (rule 10). Direct construction is ONLY for the extreme-depth
+    branch, not a replacement for real recursive structure everywhere.
+17. ALSO generate documents with MANY SIBLING keys in ONE table (not
+    nested - flat, side by side), as a second, DIFFERENT way to break
+    the parser. MEASURED FACT: many TOML libraries (including `tomlc99`)
+    look up every key with a linear scan through all existing keys, so
+    adding N keys to the same table costs O(N^2) time overall. A few
+    hundred KB of flat key=value lines is enough because the bug comes
+    from COUNT of keys, not DEPTH of nesting.
+
+    SET THE SIBLING COUNT FROM THE FEEDBACK, not from this prompt. If
+    the feedback shows `many sibling keys (a hang, not a crash)` already
+    triggering in the crash line, that axis is done - move on. If it is
+    NOT triggering yet, push the count higher next iteration. Same
+    logic as rule 16: don't pin to a number from this prompt, let the
+    feedback steer it. A REAL FAILURE from a previous attempt: the
+    worked-example bounds in this rule were copied verbatim and the
+    count then sat at exactly that ceiling, never reaching the level
+    where the timeout fires.
+
+    Add this as another branch in `toml_strategy`'s `one_of(...)`,
+    alongside the deep-nesting branch from rule 16 - they are two
+    DIFFERENT bug classes (a stack overflow from nesting vs. a timeout
+    from key count), so both are worth generating, not just one.
 """
 
 SEED_TEMPLATE = """\

@@ -1,0 +1,41 @@
+{
+  "iteration": 4,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 18078,
+      "seconds": 58.06,
+      "stats": {
+        "samples": 25,
+        "mean_len": 146956.8,
+        "max_len": 437201,
+        "sample_max_depth": 100946,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.525,
+        "top_rejects": [
+          "line 8: array mismatch",
+          "line 48: key exists",
+          "line 25: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 146956.8,
+    "max_len": 437201,
+    "sample_max_depth": 100946,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.525,
+    "top_rejects": [
+      "line 8: array mismatch",
+      "line 48: key exists",
+      "line 25: key exists"
+    ]
+  }
+}

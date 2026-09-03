@@ -1,0 +1,41 @@
+{
+  "iteration": 2,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 17017,
+      "seconds": 143.22,
+      "stats": {
+        "samples": 25,
+        "mean_len": 101251.7,
+        "max_len": 455580,
+        "sample_max_depth": 75928,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.4,
+        "top_rejects": [
+          "line 5: bad key",
+          "line 6: bad key",
+          "line 3: bad key"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 101251.7,
+    "max_len": 455580,
+    "sample_max_depth": 75928,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.4,
+    "top_rejects": [
+      "line 5: bad key",
+      "line 6: bad key",
+      "line 3: bad key"
+    ]
+  }
+}

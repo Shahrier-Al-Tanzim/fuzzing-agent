@@ -22,14 +22,19 @@ records logged live, going forward.
 
 Three kinds of record, one JSONL line each, all sharing a "run_id":
   * "attempt"          - one LLM generation try (as before)
-  * "iteration_result" - the measured accept/coverage/novelty/depth/findings
+  * "iteration_result" - the measured accept/breadth/novelty/depth/findings
                          once an iteration's strategy actually passed and ran
-  * "run_complete"     - written once, at the very end of a run, ok=True if
-                         all iterations finished, ok=False if it stopped
+  * "run_complete"     - written at the end of a process invocation, ok=True
+                         if all iterations finished, ok=False if it stopped
                          early (ran out of attempts, or the process itself
                          died - e.g. an API key hitting its rate limit
-                         mid-run). If a run_id never gets this record at
-                         all, rendering treats it as failed/incomplete too -
+                         mid-run). Usually once per run_id, but a --resume
+                         that continues the same run_id (see LoopState.run_id
+                         in agent/breadth.py) appends another one when it
+                         eventually finishes - rendering always uses the
+                         LATEST record for a run_id's final status. If a
+                         run_id never gets this record at all, rendering
+                         treats it as failed/incomplete too -
                          a run that crashes hard enough to kill the process
                          doesn't get a chance to write one.
 
@@ -109,7 +114,7 @@ def log_iteration_result(*, run_id: int, iteration: int,
         "run_id": run_id,
         "iteration": iteration,
         "accepted": summary.get("acceptance_rate"),
-        "coverage": summary.get("cumulative_coverage"),
+        "breadth": summary.get("cumulative_breadth"),
         "novelty": summary.get("novelty_rate"),
         "max_depth": summary.get("max_depth_cumulative"),
         "findings": summary.get("findings"),
@@ -181,7 +186,14 @@ def regenerate_markdown() -> None:
         attempts = [e for e in entries if e.get("kind") == "attempt"]
         iter_results = {e["iteration"]: e for e in entries
                         if e.get("kind") == "iteration_result"}
-        complete = next((e for e in entries if e.get("kind") == "run_complete"), None)
+        # A resumed run can log more than one "run_complete" record for the
+        # same run_id - once when an earlier attempt died mid-way (e.g. an
+        # uncaught exception on iteration 3), again when --resume later
+        # actually finishes it. The LAST one reflects the true final
+        # outcome; picking the first would keep showing the old crash
+        # status forever even after the run genuinely completed.
+        complete = next((e for e in reversed(entries)
+                         if e.get("kind") == "run_complete"), None)
         reason = (complete or {}).get("reason", "unknown")
 
         if complete and complete.get("ok"):
@@ -231,7 +243,7 @@ def regenerate_markdown() -> None:
                 def pct(x): return f"{x:.0%}" if isinstance(x, (int, float)) else "?"
                 lines.append(
                     f"**Result:** accepted {pct(ir.get('accepted'))} · "
-                    f"coverage {pct(ir.get('coverage'))} · "
+                    f"breadth {pct(ir.get('breadth'))} · "
                     f"novelty {pct(ir.get('novelty'))} · "
                     f"max depth {ir.get('max_depth', '?')} · "
                     f"findings {ir.get('findings', '?')} · "

@@ -1,0 +1,85 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 1/40 (2%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 2: bad key', 'line 1: bad escape char', 'line 2: key exists']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 12322,
+      "seconds": 23.0,
+      "stats": {
+        "samples": 25,
+        "mean_len": 29105.8,
+        "max_len": 258191,
+        "sample_max_depth": 90000,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.025,
+        "top_rejects": [
+          "line 2: bad key",
+          "line 1: bad escape char",
+          "line 2: key exists"
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: table path is too deep; max allowed is 10.', 'line 6: key exists', 'line 1: expect hex char']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 12263,
+      "seconds": 20.79,
+      "stats": {
+        "samples": 25,
+        "mean_len": 58319.7,
+        "max_len": 398353,
+        "sample_max_depth": 89733,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.125,
+        "top_rejects": [
+          "line 1: table path is too deep; max allowed is 10.",
+          "line 6: key exists",
+          "line 1: expect hex char"
+        ]
+      }
+    },
+    {
+      "attempt": 3,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 12335,
+      "seconds": 21.15,
+      "stats": {
+        "samples": 25,
+        "mean_len": 2210.3,
+        "max_len": 15626,
+        "sample_max_depth": 703,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.45,
+        "top_rejects": [
+          "line 1: newline not allowed in inline table",
+          "line 1: missing =",
+          "line 2: invalid key"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 2210.3,
+    "max_len": 15626,
+    "sample_max_depth": 703,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.45,
+    "top_rejects": [
+      "line 1: newline not allowed in inline table",
+      "line 1: missing =",
+      "line 2: invalid key"
+    ]
+  }
+}

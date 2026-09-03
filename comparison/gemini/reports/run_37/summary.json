@@ -1,0 +1,449 @@
+{
+  "generated_at": "2026-09-01T21:45:47.040185+00:00",
+  "iterations": 5,
+  "total_tokens": 183839,
+  "breadth": {
+    "reached": [
+      "BASIC_STRING",
+      "BIN_INT",
+      "BOOLEAN",
+      "DEC_INT",
+      "FLOAT",
+      "FLOAT_EXP",
+      "HEX_INT",
+      "INF",
+      "LITERAL_STRING",
+      "LOCAL_DATE",
+      "LOCAL_DATE_TIME",
+      "LOCAL_TIME",
+      "ML_BASIC_STRING",
+      "ML_LITERAL_STRING",
+      "NAN",
+      "OCT_INT",
+      "OFFSET_DATE_TIME",
+      "array_",
+      "array_nested",
+      "array_table",
+      "comment",
+      "dotted_key",
+      "duplicate_key",
+      "empty_array",
+      "empty_document",
+      "empty_inline_table",
+      "escape_sequence",
+      "inline_table",
+      "inline_table_nested",
+      "int_overflow",
+      "int_underscore",
+      "leading_zero_int",
+      "non_ascii",
+      "quoted_key",
+      "standard_table",
+      "trailing_comma",
+      "unicode_escape",
+      "unquoted_key"
+    ],
+    "missing": [],
+    "fraction": 1.0
+  },
+  "max_depth_reached": 5,
+  "per_iteration": [
+    {
+      "iteration": 0,
+      "examples": 500,
+      "acceptance_rate": 0.218,
+      "verdicts": {
+        "accept": 109,
+        "crash": 210,
+        "timeout": 35,
+        "reject": 146
+      },
+      "novelty_rate": 0.22,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_document",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.921,
+      "missing_productions": [
+        "non_ascii",
+        "leading_zero_int",
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 3,
+      "max_depth_cumulative": 3,
+      "max_depth_generated": 114999,
+      "mean_bytes": 151679.3,
+      "findings": 245,
+      "top_rejects": [
+        [
+          "line 1: missing =",
+          40
+        ],
+        [
+          "line 2: key exists",
+          14
+        ],
+        [
+          "line 3: missing =",
+          14
+        ],
+        [
+          "line 1: syntax error",
+          13
+        ],
+        [
+          "line 4: key exists",
+          8
+        ]
+      ]
+    },
+    {
+      "iteration": 1,
+      "examples": 500,
+      "acceptance_rate": 0.238,
+      "verdicts": {
+        "accept": 119,
+        "crash": 211,
+        "reject": 132,
+        "timeout": 38
+      },
+      "novelty_rate": 0.194,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.974,
+      "missing_productions": [
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 4,
+      "max_depth_cumulative": 4,
+      "max_depth_generated": 115000,
+      "mean_bytes": 156750.7,
+      "findings": 249,
+      "top_rejects": [
+        [
+          "line 1: invalid key",
+          36
+        ],
+        [
+          "line 2: invalid key",
+          20
+        ],
+        [
+          "line 5: invalid key",
+          19
+        ],
+        [
+          "line 3: invalid key",
+          16
+        ],
+        [
+          "line 10: invalid key",
+          7
+        ]
+      ]
+    },
+    {
+      "iteration": 2,
+      "examples": 500,
+      "acceptance_rate": 0.472,
+      "verdicts": {
+        "accept": 236,
+        "crash": 211,
+        "reject": 20,
+        "timeout": 33
+      },
+      "novelty_rate": 0.224,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 0.974,
+      "missing_productions": [
+        "duplicate_key"
+      ],
+      "max_depth_this_iteration": 5,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 114999,
+      "mean_bytes": 151934.3,
+      "findings": 244,
+      "top_rejects": [
+        [
+          "line 2: key exists",
+          12
+        ],
+        [
+          "line 6: key exists",
+          7
+        ],
+        [
+          "line 7: key exists",
+          1
+        ]
+      ]
+    },
+    {
+      "iteration": 3,
+      "examples": 500,
+      "acceptance_rate": 0.46,
+      "verdicts": {
+        "accept": 230,
+        "crash": 207,
+        "timeout": 33,
+        "reject": 30
+      },
+      "novelty_rate": 0.2,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "duplicate_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 1.0,
+      "missing_productions": [],
+      "max_depth_this_iteration": 5,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 114888,
+      "mean_bytes": 152332.5,
+      "findings": 240,
+      "top_rejects": [
+        [
+          "line 6: expect hex char",
+          7
+        ],
+        [
+          "line 14: key exists",
+          6
+        ],
+        [
+          "line 4: key exists",
+          5
+        ],
+        [
+          "line 6: key exists",
+          4
+        ],
+        [
+          "line 11: expect hex char",
+          3
+        ]
+      ]
+    },
+    {
+      "iteration": 4,
+      "examples": 500,
+      "acceptance_rate": 0.378,
+      "verdicts": {
+        "reject": 35,
+        "crash": 244,
+        "accept": 189,
+        "timeout": 32
+      },
+      "novelty_rate": 0.18,
+      "productions_this_iteration": [
+        "BASIC_STRING",
+        "BIN_INT",
+        "BOOLEAN",
+        "DEC_INT",
+        "FLOAT",
+        "FLOAT_EXP",
+        "HEX_INT",
+        "INF",
+        "LITERAL_STRING",
+        "LOCAL_DATE",
+        "LOCAL_DATE_TIME",
+        "LOCAL_TIME",
+        "ML_BASIC_STRING",
+        "ML_LITERAL_STRING",
+        "NAN",
+        "OCT_INT",
+        "OFFSET_DATE_TIME",
+        "array_",
+        "array_nested",
+        "array_table",
+        "comment",
+        "dotted_key",
+        "duplicate_key",
+        "empty_array",
+        "empty_inline_table",
+        "escape_sequence",
+        "inline_table",
+        "inline_table_nested",
+        "int_overflow",
+        "int_underscore",
+        "leading_zero_int",
+        "non_ascii",
+        "quoted_key",
+        "standard_table",
+        "trailing_comma",
+        "unicode_escape",
+        "unquoted_key"
+      ],
+      "cumulative_breadth": 1.0,
+      "missing_productions": [],
+      "max_depth_this_iteration": 5,
+      "max_depth_cumulative": 5,
+      "max_depth_generated": 114972,
+      "mean_bytes": 173612.3,
+      "findings": 276,
+      "top_rejects": [
+        [
+          "line 3: expect hex char",
+          7
+        ],
+        [
+          "line 6: key exists",
+          6
+        ],
+        [
+          "line 4: key exists",
+          6
+        ],
+        [
+          "line 2: key exists",
+          5
+        ],
+        [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1268)",
+          3
+        ]
+      ]
+    }
+  ],
+  "unique_crashes": 5,
+  "raw_signatures": 9
+}

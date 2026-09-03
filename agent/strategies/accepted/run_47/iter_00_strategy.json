@@ -1,0 +1,112 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised ValueError: unsupported format character 'b' (0x62) at index 3",
+      "tokens": 13857,
+      "seconds": 34.74,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: key exists', 'line 4: key exists', 'line 1: missing =']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 13106,
+      "seconds": 27.76,
+      "stats": {
+        "samples": 25,
+        "mean_len": 76275.0,
+        "max_len": 417101,
+        "sample_max_depth": 83858,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.175,
+        "top_rejects": [
+          "line 1: key exists",
+          "line 4: key exists",
+          "line 1: missing ="
+        ]
+      }
+    },
+    {
+      "attempt": 3,
+      "ok": false,
+      "stage": "exec",
+      "error": "the module raised on import: TypeError: accept.<locals>.deep_key_document() takes 0 positional arguments but 1 was given",
+      "tokens": 13143,
+      "seconds": 29.05,
+      "stats": {}
+    },
+    {
+      "attempt": 4,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: Expected a SearchStrategy but got '10.000_001' (type=str)",
+      "tokens": 12821,
+      "seconds": 26.87,
+      "stats": {}
+    },
+    {
+      "attempt": 5,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 2: key exists', 'line 1: key exists', 'line 9: key exists']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 13322,
+      "seconds": 29.59,
+      "stats": {
+        "samples": 25,
+        "mean_len": 75830.7,
+        "max_len": 431174,
+        "sample_max_depth": 71861,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.1,
+        "top_rejects": [
+          "line 2: key exists",
+          "line 1: key exists",
+          "line 9: key exists"
+        ]
+      }
+    },
+    {
+      "attempt": 6,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 13565,
+      "seconds": 33.49,
+      "stats": {
+        "samples": 25,
+        "mean_len": 54560.6,
+        "max_len": 370970,
+        "sample_max_depth": 61827,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.425,
+        "top_rejects": [
+          "line 3: expect hex char",
+          "line 4: expect hex char",
+          "line 1: newline not allowed in inline table"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 54560.6,
+    "max_len": 370970,
+    "sample_max_depth": 61827,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.425,
+    "top_rejects": [
+      "line 3: expect hex char",
+      "line 4: expect hex char",
+      "line 1: newline not allowed in inline table"
+    ]
+  }
+}

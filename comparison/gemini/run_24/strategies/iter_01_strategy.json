@@ -1,0 +1,41 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 15479,
+      "seconds": 60.47,
+      "stats": {
+        "samples": 25,
+        "mean_len": 6417.2,
+        "max_len": 90890,
+        "sample_max_depth": 45441,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.5,
+        "top_rejects": [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+          "line 9: syntax error",
+          "line 2: bad escape char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 6417.2,
+    "max_len": 90890,
+    "sample_max_depth": 45441,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.5,
+    "top_rejects": [
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+      "line 9: syntax error",
+      "line 2: bad escape char"
+    ]
+  }
+}

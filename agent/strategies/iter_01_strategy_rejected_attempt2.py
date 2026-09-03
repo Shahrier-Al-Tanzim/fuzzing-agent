@@ -1,6 +1,6 @@
 """Generated strategy - iteration 1, attempt 2.
 accepted: False
-generated: 2026-08-15T10:23:25.986060+00:00
+generated: 2026-09-02T20:29:33.573546+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
@@ -8,94 +8,83 @@ from hypothesis.strategies import composite
 @composite
 def key(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.text(min_size=1, max_size=10).filter(lambda x: all(c.isalnum() or c in '-_' for c in x))
+        st.text(alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_", min_size=1).map(lambda x: x),
+        st.text(alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_", min_size=1).map(lambda x: f'"{x}"'),
+        st.text(alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_", min_size=1).map(lambda x: f"'{x}'"),
     ))
-
-@composite
-def dotted_key(draw):
-    keys = draw(st.lists(key(), min_size=1, max_size=5))
-    return '.'.join(keys)
 
 @composite
 def value(draw):
     return draw(st.one_of(
-        st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-        st.floats(min_value=-1e10, max_value=1e10).map(str),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.booleans().map(lambda x: 'true' if x else 'false'),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T00:00:00Z"),
-        st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28), st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}Z"),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28), st.integers(0, 23), st.integers(0, 59), st.integers(0, 59), st.integers(0, 999999))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}.{t[6]:06d}Z"),
-        array(),
+        st.integers(min_value=0, max_value=9223372036854775807).map(str),
+        st.integers(min_value=-9223372036854775808, max_value=-1).map(str),
+        st.floats().map(str),
+        st.just('true'),
+        st.just('false'),
+        st.text(min_size=1).map(lambda x: f'"{x}"'),
+        st.text(min_size=1).map(lambda x: f"'{x}'"),
+        st.lists(value()).map(lambda lst: f"[{', '.join(lst)}]"),
         inline_table(),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\u' + st.text(min_size=4, max_size=4, alphabet='0123456789ABCDEF').example()),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\U' + st.text(min_size=8, max_size=8, alphabet='0123456789ABCDEF').example()),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\x' + st.text(min_size=2, max_size=2, alphabet='0123456789ABCDEF').example()),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\n'),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\t'),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\r'),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\b'),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\f'),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '\\'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\u' + st.text(min_size=4, max_size=4, alphabet='0123456789ABCDEF').example()),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\U' + st.text(min_size=8, max_size=8, alphabet='0123456789ABCDEF').example()),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\x' + st.text(min_size=2, max_size=2, alphabet='0123456789ABCDEF').example()),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\n'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\t'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\r'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\b'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\f'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'" + '\\'),
-        st.integers(min_value=-2**63, max_value=2**63-1).map(lambda x: f"{x:08x}"),
-        st.integers(min_value=-2**63, max_value=2**63-1).map(lambda x: f"{x:016x}"),
-        st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"0o{x:012o}"),
-        st.integers(min_value=0, max_value=2**63-1).map(lambda x: f"0b{x:064b}"),
-        st.integers(min_value=-2**63, max_value=2**63-1).map(lambda x: f"{x}"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"{x}"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"{x}e10"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"{x}e-10"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"{x}e+10"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"{x}e+100"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"{x}e-100"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"inf"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"-inf"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"nan"),
-        st.floats(min_value=-1e10, max_value=1e10).map(lambda x: f"-nan"),
     ))
 
 @composite
+def inline_table(draw):
+    keyvals = draw(st.lists(st.tuples(key(), value()), min_size=1, max_size=5))
+    return "{" + ", ".join(f"{k}={v}" for k, v in keyvals) + "}"
+
+@composite
 def pair(draw):
-    k = draw(st.one_of(key(), dotted_key()))
+    k = draw(key())
     v = draw(value())
     return f"{k} = {v}"
 
 @composite
-def array(draw):
-    elements = draw(st.lists(st.one_of(value(), array(), inline_table()), min_size=0, max_size=10))
-    return f"[{', '.join(elements)}]"
-
-@composite
-def inline_table(draw):
-    pairs = draw(st.lists(pair(), min_size=0, max_size=10))
-    return f"{{{', '.join(pairs)}}}"
-
-@composite
 def table(draw):
-    header = draw(st.one_of(key().map(lambda k: f"[{k}]"), key().map(lambda k: f"[[{k}]]")))
-    return header
+    k = draw(key())
+    return f"[{k}]"
 
 @composite
 def document(draw):
-    elements = draw(st.lists(st.one_of(pair(), table()), min_size=0, max_size=10))
+    elements = draw(st.lists(st.one_of(pair(), table()), min_size=1))
     return "\n".join(elements)
 
-toml_strategy = document()
+@composite
+def deep_array(draw):
+    n = draw(st.integers(min_value=60_000, max_value=100_000))
+    return "[" * n + "1" + "]" * n
+
+@composite
+def deep_inline_table(draw):
+    n = draw(st.integers(min_value=85_000, max_value=115_000))
+    return "{a=" * n + "1" + "}" * n
+
+@composite
+def deep_dotted_key(draw):
+    n = draw(st.integers(min_value=90_000, max_value=100_000))
+    return "a." * n + "k"
+
+@composite
+def deep_mixed_nesting(draw):
+    n = draw(st.integers(min_value=60_000, max_value=80_000))
+    return "[{a=" * n + "1" + "}]" * n
+
+@composite
+def deep_quoted_mixed(draw):
+    n = draw(st.integers(min_value=20_000, max_value=45_000))
+    return '[{"k"=' * n + "1" + "}]" * n
+
+@composite
+def many_siblings(draw):
+    n = draw(st.integers(min_value=10_000, max_value=60_000))
+    lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
+    return "\n".join(lines)
+
+toml_strategy = st.one_of(
+    *([document()] * 20),
+    deep_array(),
+    deep_inline_table(),
+    deep_dotted_key(),
+    deep_mixed_nesting(),
+    deep_quoted_mixed(),
+    many_siblings()
+)

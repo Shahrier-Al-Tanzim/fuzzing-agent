@@ -1,0 +1,83 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: missing =', 'line 4: missing =', 'line 3: missing =']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 13617,
+      "seconds": 45.24,
+      "stats": {
+        "samples": 25,
+        "mean_len": 515.4,
+        "max_len": 1479,
+        "sample_max_depth": 12,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.125,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 4: missing =",
+          "line 3: missing ="
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: missing =', 'line 2: missing =', 'line 3: missing =']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 13617,
+      "seconds": 155.79,
+      "stats": {
+        "samples": 25,
+        "mean_len": 164.2,
+        "max_len": 400,
+        "sample_max_depth": 11,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.125,
+        "top_rejects": [
+          "line 1: missing =",
+          "line 2: missing =",
+          "line 3: missing ="
+        ]
+      }
+    },
+    {
+      "attempt": 3,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 13686,
+      "seconds": 77.38,
+      "stats": {
+        "samples": 25,
+        "mean_len": 380.4,
+        "max_len": 1235,
+        "sample_max_depth": 14,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.925,
+        "top_rejects": [
+          "line 5: expect hex char",
+          "line 9: bad escape char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 380.4,
+    "max_len": 1235,
+    "sample_max_depth": 14,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.925,
+    "top_rejects": [
+      "line 5: expect hex char",
+      "line 9: bad escape char"
+    ]
+  }
+}

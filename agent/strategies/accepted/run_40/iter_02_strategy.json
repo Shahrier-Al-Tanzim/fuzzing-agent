@@ -1,0 +1,41 @@
+{
+  "iteration": 2,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 11057,
+      "seconds": 9.61,
+      "stats": {
+        "samples": 25,
+        "mean_len": 192401.3,
+        "max_len": 593508,
+        "sample_max_depth": 111851,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.25,
+        "top_rejects": [
+          "line 1: invalid or missing key",
+          "line 1: syntax error",
+          "line 3: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 192401.3,
+    "max_len": 593508,
+    "sample_max_depth": 111851,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.25,
+    "top_rejects": [
+      "line 1: invalid or missing key",
+      "line 1: syntax error",
+      "line 3: key exists"
+    ]
+  }
+}

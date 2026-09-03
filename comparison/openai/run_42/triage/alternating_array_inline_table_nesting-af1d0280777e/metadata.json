@@ -1,0 +1,50 @@
+{
+  "signature": {
+    "digest": "af1d0280777e",
+    "short": "stack-overflow@malloc",
+    "bug_type": "stack-overflow",
+    "frames": [
+      "malloc",
+      "STRNDUP toml.c:85",
+      "normalize_key toml.c:681",
+      "create_keyarray_in_table toml.c:830",
+      "parse_keyval toml.c:1168"
+    ],
+    "signal": null,
+    "raw_frame_count": 182,
+    "recursion_collapsed": false
+  },
+  "occurrences": 15,
+  "sources": [
+    "iteration_02.jsonl#12",
+    "iteration_02.jsonl#155",
+    "iteration_02.jsonl#164",
+    "iteration_02.jsonl#176",
+    "iteration_02.jsonl#265",
+    "iteration_02.jsonl#279",
+    "iteration_02.jsonl#333",
+    "iteration_02.jsonl#336",
+    "iteration_02.jsonl#374",
+    "iteration_02.jsonl#399",
+    "iteration_02.jsonl#445",
+    "iteration_02.jsonl#448",
+    "iteration_03.jsonl#22",
+    "iteration_03.jsonl#122",
+    "iteration_04.jsonl#151"
+  ],
+  "original_bytes": 361316,
+  "minimized_bytes": 361316,
+  "reduction": 0.0,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 3,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 2,
+    "deterministic": false,
+    "flaky": false,
+    "unstable_signature": true,
+    "description": "crashed every run (3/3) but signature unstable (2/3 matched)"
+  },
+  "triaged_at": "2026-09-02T21:55:32.925490+00:00"
+}

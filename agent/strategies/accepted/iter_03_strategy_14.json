@@ -1,0 +1,41 @@
+{
+  "iteration": 3,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 10683,
+      "seconds": 4.2,
+      "stats": {
+        "samples": 25,
+        "mean_len": 22395.5,
+        "max_len": 177760,
+        "sample_max_depth": 44436,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.2,
+        "top_rejects": [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+          "line 2: extra chars after value"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 22395.5,
+    "max_len": 177760,
+    "sample_max_depth": 44436,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.2,
+    "top_rejects": [
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:977)",
+      "line 2: extra chars after value"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 3/40 (8%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 2: missing =', 'line 1: missing =', 'line 4: missing =']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 14735,
+      "seconds": 59.45,
+      "stats": {
+        "samples": 25,
+        "mean_len": 251964.8,
+        "max_len": 508962,
+        "sample_max_depth": 107511,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.075,
+        "top_rejects": [
+          "line 2: missing =",
+          "line 1: missing =",
+          "line 4: missing ="
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 14393,
+      "seconds": 58.44,
+      "stats": {
+        "samples": 25,
+        "mean_len": 284792.2,
+        "max_len": 620062,
+        "sample_max_depth": 115000,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.25,
+        "top_rejects": []
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 284792.2,
+    "max_len": 620062,
+    "sample_max_depth": 115000,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.25,
+    "top_rejects": []
+  }
+}

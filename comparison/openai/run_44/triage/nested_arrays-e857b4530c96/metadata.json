@@ -1,0 +1,49 @@
+{
+  "signature": {
+    "digest": "e857b4530c96",
+    "short": "stack-overflow@unknown",
+    "bug_type": "stack-overflow",
+    "frames": [],
+    "signal": null,
+    "raw_frame_count": 0,
+    "recursion_collapsed": false
+  },
+  "occurrences": 51,
+  "sources": [
+    "iteration_03.jsonl#4",
+    "iteration_03.jsonl#7",
+    "iteration_03.jsonl#43",
+    "iteration_03.jsonl#56",
+    "iteration_03.jsonl#77",
+    "iteration_03.jsonl#103",
+    "iteration_03.jsonl#105",
+    "iteration_03.jsonl#106",
+    "iteration_03.jsonl#123",
+    "iteration_03.jsonl#132",
+    "iteration_03.jsonl#140",
+    "iteration_03.jsonl#158",
+    "iteration_03.jsonl#195",
+    "iteration_03.jsonl#218",
+    "iteration_03.jsonl#283",
+    "iteration_03.jsonl#285",
+    "iteration_03.jsonl#300",
+    "iteration_03.jsonl#329",
+    "iteration_03.jsonl#331",
+    "iteration_03.jsonl#345"
+  ],
+  "original_bytes": 120005,
+  "minimized_bytes": 120005,
+  "reduction": 0.0,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 6,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 0,
+    "deterministic": false,
+    "flaky": false,
+    "unstable_signature": true,
+    "description": "crashed every run (3/3) but signature unstable (0/3 matched)"
+  },
+  "triaged_at": "2026-09-02T22:20:36.792035+00:00"
+}

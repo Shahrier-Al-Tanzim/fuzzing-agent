@@ -1,0 +1,81 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "imports",
+      "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+      "tokens": 11102,
+      "seconds": 7.99,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'line 4: unterminated quote', 'line 2: key exists']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 11020,
+      "seconds": 7.02,
+      "stats": {
+        "samples": 25,
+        "mean_len": 199476.2,
+        "max_len": 493595,
+        "sample_max_depth": 101320,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.1,
+        "top_rejects": [
+          "line 1: invalid or missing key",
+          "line 4: unterminated quote",
+          "line 2: key exists"
+        ]
+      }
+    },
+    {
+      "attempt": 3,
+      "ok": false,
+      "stage": "imports",
+      "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+      "tokens": 11175,
+      "seconds": 8.05,
+      "stats": {}
+    },
+    {
+      "attempt": 4,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 11020,
+      "seconds": 9.33,
+      "stats": {
+        "samples": 25,
+        "mean_len": 140055.6,
+        "max_len": 441979,
+        "sample_max_depth": 99419,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.2,
+        "top_rejects": [
+          "line 1: invalid or missing key",
+          "line 1: syntax error",
+          "line 4: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 140055.6,
+    "max_len": 441979,
+    "sample_max_depth": 99419,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.2,
+    "top_rejects": [
+      "line 1: invalid or missing key",
+      "line 1: syntax error",
+      "line 4: key exists"
+    ]
+  }
+}

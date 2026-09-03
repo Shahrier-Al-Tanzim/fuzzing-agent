@@ -4,11 +4,15 @@ Lexical, not semantic: bracket counting and regex. See the planning doc for
 why a real parser is the wrong tool here (most inputs are malformed by
 design). Features feed two things:
 
-  * production coverage - the loop's steering signal (Module 5)
+  * grammar breadth - the loop's steering signal (Module 5): of the
+    productions tracked below, how many have appeared at least once in an
+    accepted generated document. Computed by regex on our own generated
+    text, never by instrumenting tomlc99's binary - this is not the code
+    coverage the assignment forbids; see OBSERVATIONS.md's terminology note.
   * the report's "which parts of the grammar are still under-tested" section
 
 PRODUCTIONS is intentionally named after the ANTLR rules in
-grammar/TomlParser.g4 and grammar/TomlLexer.g4, so a coverage gap can be
+grammar/TomlParser.g4 and grammar/TomlLexer.g4, so a breadth gap can be
 quoted straight back to the model in grammar vocabulary it has already seen.
 """
 from __future__ import annotations

@@ -11,6 +11,7 @@ measured. If a number is wrong, fix it upstream, not here.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -23,6 +24,17 @@ from pipeline.schema import read_log
 
 def _out_dir() -> Path:
     d = PROJECT_ROOT / "report" / "generated"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _archive_dir(run_id: int) -> Path:
+    """Permanent, per-run copy - same pattern as triage/reports/run_N/ and
+    agent/strategies/accepted/run_N/: `_out_dir()` above is the "current"
+    spot, overwritten every invocation; this one is never overwritten, so
+    re-running the generator for a later run doesn't erase an earlier run's
+    tables."""
+    d = PROJECT_ROOT / "report" / "generated" / f"run_{run_id}"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -56,7 +68,7 @@ def iteration_table(state: dict) -> str:
         rows.append(
             f"| {it['iteration']} "
             f"| {s['acceptance_rate']:.0%} "
-            f"| {s['cumulative_coverage']:.0%} "
+            f"| {s['cumulative_breadth']:.0%} "
             f"| {len(s['productions_this_iteration'])} "
             f"| {s['novelty_rate']:.0%} "
             f"| {s['max_depth_cumulative']} "
@@ -65,24 +77,24 @@ def iteration_table(state: dict) -> str:
             f"| {it.get('elapsed_s', 0):.0f}s |"
         )
     return (
-        "| Iter | Accepted | Grammar coverage | New productions | Novel shapes "
+        "| Iter | Accepted | Grammar breadth | New productions | Novel shapes "
         "| Max depth | Findings | LLM attempts | Time |\n"
         "|---|---|---|---|---|---|---|---|---|\n" + "\n".join(rows)
     )
 
 
-def coverage_table(state: dict) -> str:
-    covered = set(state.get("covered_productions", []))
-    if not covered:
-        return "_No coverage recorded yet._"
+def breadth_table(state: dict) -> str:
+    reached = set(state.get("reached_productions", []))
+    if not reached:
+        return "_No grammar breadth recorded yet._"
 
-    lines = [f"**{len(covered)}/{len(PRODUCTIONS)} productions covered "
-             f"({len(covered) / len(PRODUCTIONS):.0%})**\n",
-             "| Production | Covered |", "|---|---|"]
+    lines = [f"**{len(reached)}/{len(PRODUCTIONS)} productions reached "
+             f"({len(reached) / len(PRODUCTIONS):.0%})**\n",
+             "| Production | Reached |", "|---|---|"]
     for p in PRODUCTIONS:
-        lines.append(f"| `{p}` | {'yes' if p in covered else '**NO**'} |")
+        lines.append(f"| `{p}` | {'yes' if p in reached else '**NO**'} |")
 
-    missing = [p for p in PRODUCTIONS if p not in covered]
+    missing = [p for p in PRODUCTIONS if p not in reached]
     if missing:
         lines.append(
             "\n**Still under-tested (never appeared in an accepted document):** "
@@ -90,13 +102,13 @@ def coverage_table(state: dict) -> str:
     return "\n".join(lines)
 
 
-def coverage_progression(state: dict) -> str:
+def breadth_progression(state: dict) -> str:
     iters = state.get("iterations", [])
     if not iters:
         return ""
-    lines = ["```", "Grammar coverage by iteration", ""]
+    lines = ["```", "Grammar breadth by iteration", ""]
     for it in iters:
-        c = it["summary"]["cumulative_coverage"]
+        c = it["summary"]["cumulative_breadth"]
         lines.append(f"  iter {it['iteration']}  {_bar(c)}  {c:.0%}")
     lines += ["", "Acceptance rate by iteration", ""]
     for it in iters:
@@ -131,19 +143,47 @@ def verdict_table() -> str:
     )
 
 
+def _latest_crash_run_dir(crash_dir: Path) -> Path | None:
+    """Most recent `run_N` under paths.crashes.
+
+    Crash reports are triaged per-run into `triage/reports/run_N/`, not
+    directly under `paths.crashes` - a bare `crash_dir.glob("*/metadata.json")`
+    predates that layout and silently matches nothing against it (it would
+    need `run_N/metadata.json`, which never exists; the real files are one
+    level deeper, under `run_N/<bug-name>-<digest>/`). Scoped to the latest
+    run rather than every run ever triaged, so re-confirmations across runs
+    17-27 don't get counted as if they were that many distinct bugs.
+    """
+    run_dirs = [d for d in crash_dir.glob("run_*") if d.is_dir()]
+    if not run_dirs:
+        return None
+    # Some comparison-snapshot directories are named "run_48 (luna)" etc.
+    # with a space-and-tag suffix; match just the leading digits so those
+    # don't crash int() and so the latest numeric run still wins.
+    def _run_num(d: Path) -> int:
+        m = re.match(r"run_(\d+)", d.name)
+        return int(m.group(1)) if m else -1
+    return max(run_dirs, key=_run_num)
+
+
 def crash_table() -> str:
+    from agent.summarize import CRASH_MECHANISMS, bug_family, count_distinct_bugs
+
     crash_dir = load().path("paths.crashes")
-    metas = sorted(crash_dir.glob("*/metadata.json"))
+    latest = _latest_crash_run_dir(crash_dir)
+    metas = sorted(latest.glob("*/metadata.json")) if latest else []
     if not metas:
         return ("_No crash reports found. If the loop genuinely found nothing, "
                 "say so explicitly in the report and explain why — the "
                 "assignment allows a documented 'none found'._")
 
+    digests = []
     rows = []
     for m in metas:
         d = json.loads(m.read_text(encoding="utf-8"))
         sig = d["signature"]
         v = d["verification"]
+        digests.append(sig["digest"])
         # Single source of truth: triage/verify.py already computed this
         # string and metadata.json stores it. Re-deriving it here is what
         # produced a false "did not reproduce" for a 3/3-reproducing crash -
@@ -162,16 +202,28 @@ def crash_table() -> str:
             else:
                 raise AssertionError(
                     f"unrecognized verification state in {m}: {v}")
+        mechanism = CRASH_MECHANISMS.get(sig["digest"], "unclassified")
         rows.append(
-            f"| `{sig['digest']}` | {sig.get('bug_type', '?')} "
-            f"| `{sig.get('short', '?')}` "
+            f"| `{sig['digest']}` | {mechanism} "
+            f"| {bug_family(sig['digest'])} "
+            f"| {sig.get('bug_type', '?')} "
             f"| {d['occurrences']} "
             f"| {d['original_bytes']} → {d['minimized_bytes']} B "
             f"| {status} |"
         )
+    n_bugs = count_distinct_bugs(digests)
+    header = (
+        f"_Latest triaged run: `{latest.name}`_ — "
+        f"**{len(metas)} raw signature(s) → {n_bugs} distinct bug(s)** "
+        "after grouping by root cause (see the Bug column; multiple "
+        "signatures can share one root cause, e.g. the same stack overflow "
+        "captured mid-unwind at different points — see `agent/summarize.py`'s "
+        "`BUG_FAMILIES` and `OBSERVATIONS.md` Case 9)."
+    )
     return (
-        "| Signature | Type | Label | Occurrences | Size (orig → min) | Verified |\n"
-        "|---|---|---|---|---|---|\n" + "\n".join(rows)
+        f"{header}\n\n"
+        "| Signature | Mechanism | Bug | Type | Occurrences | Size (orig → min) | Verified |\n"
+        "|---|---|---|---|---|---|---|\n" + "\n".join(rows)
     )
 
 
@@ -186,12 +238,27 @@ def budget_table(state: dict) -> str:
     # first: config.yaml can be changed after a run, and the report must
     # describe the run that happened, not the config as it stands now.
     provider = state.get("provider") or cfg.get("llm.provider", "ollama")
-    model = state.get("model") or (
-        cfg.get("llm.groq_model") if provider == "groq"
-        else cfg.get("llm.model"))
-    spend_note = (
-        f"$0.00 (Groq free tier, {model})" if provider == "groq"
-        else f"$0.00 (local {model})")
+    model = state.get("model") or {
+        "groq": cfg.get("llm.groq_model"),
+        "gemini": cfg.get("llm.gemini_model"),
+        "openai": cfg.get("llm.openai_model"),
+    }.get(provider, cfg.get("llm.model"))
+
+    total_tok = state.get("total_tokens", 0)
+    if provider == "openai":
+        if "mini" in str(model):
+            # $0.15/1M input, $0.60/1M output (~88% input / 12% output)
+            cost = total_tok * (0.88 * 0.15 + 0.12 * 0.60) / 1_000_000
+        else:
+            # $2.50/1M input, $10.00/1M output (~88% input / 12% output)
+            cost = total_tok * (0.88 * 2.50 + 0.12 * 10.00) / 1_000_000
+        spend_note = f"${cost:.3f} (OpenAI API, {model})"
+    elif provider == "groq":
+        spend_note = f"$0.00 (Groq free tier, {model})"
+    elif provider == "gemini":
+        spend_note = f"$0.00 (Gemini free tier, {model})"
+    else:
+        spend_note = f"$0.00 (local {model})"
 
     return (
         "| Constraint | Limit | Actual | Within budget |\n"
@@ -218,44 +285,68 @@ def main() -> int:
 
     artifacts = {
         "iteration_table.md": iteration_table(state),
-        "coverage_table.md": coverage_table(state),
-        "coverage_progression.md": coverage_progression(state),
+        "breadth_table.md": breadth_table(state),
+        "breadth_progression.md": breadth_progression(state),
         "verdict_table.md": verdict_table(),
         "crash_table.md": crash_table(),
         "budget_table.md": budget_table(state),
     }
+    run_id = state.get("run_id")
+    archive = _archive_dir(run_id) if run_id else None
+
     for name, content in artifacts.items():
         (out / name).write_text(content + "\n", encoding="utf-8")
         print(f"  wrote {out.name}/{name}")
+        if archive:
+            (archive / name).write_text(content + "\n", encoding="utf-8")
 
-    covered = set(state.get("covered_productions", []))
+    from agent.summarize import bug_family, count_distinct_bugs
+
+    reached = set(state.get("reached_productions", []))
+    latest_run = _latest_crash_run_dir(load().path("paths.crashes"))
+    metas = list(latest_run.glob("*/metadata.json")) if latest_run else []
+    raw_signatures = len(metas)
+    digests = [json.loads(m.read_text(encoding="utf-8"))["signature"]["digest"]
+               for m in metas]
+    # unique_crashes is the honest, root-cause-grouped count (e.g. 9 raw
+    # signatures -> 5 distinct bugs) - see agent/summarize.py's
+    # BUG_FAMILIES and OBSERVATIONS.md Case 9. raw_signatures is kept
+    # alongside it so the collapse itself stays visible, not just the
+    # collapsed number.
+    unique_crashes = count_distinct_bugs(digests) if digests else 0
     summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "iterations": len(state.get("iterations", [])),
         "total_tokens": state.get("total_tokens", 0),
-        "coverage": {
-            "covered": sorted(covered),
-            "missing": [p for p in PRODUCTIONS if p not in covered],
-            "fraction": round(len(covered) / len(PRODUCTIONS), 3),
+        "breadth": {
+            "reached": sorted(reached),
+            "missing": [p for p in PRODUCTIONS if p not in reached],
+            "fraction": round(len(reached) / len(PRODUCTIONS), 3),
         },
         "max_depth_reached": state.get("max_depth_reached", 0),
         "per_iteration": [
             {"iteration": it["iteration"], **it["summary"]}
             for it in state.get("iterations", [])
         ],
-        "unique_crashes": len(list(load().path("paths.crashes").glob("*/metadata.json"))),
+        "unique_crashes": unique_crashes,
+        "raw_signatures": raw_signatures,
     }
-    (out / "summary.json").write_text(json.dumps(summary, indent=2),
-                                      encoding="utf-8")
+    summary_text = json.dumps(summary, indent=2)
+    (out / "summary.json").write_text(summary_text, encoding="utf-8")
     print(f"  wrote {out.name}/summary.json")
+    if archive:
+        (archive / "summary.json").write_text(summary_text, encoding="utf-8")
+        print(f"  archived to {archive.relative_to(PROJECT_ROOT)}/ "
+             f"(run {run_id} - permanent, never overwritten)")
 
     print("\n=== headline numbers for the report ===")
     print(f"  iterations run     : {summary['iterations']}")
-    print(f"  grammar coverage   : {summary['coverage']['fraction']:.0%}")
+    print(f"  grammar breadth    : {summary['breadth']['fraction']:.0%}")
     print(f"  max nesting depth  : {summary['max_depth_reached']}")
-    print(f"  unique bugs        : {summary['unique_crashes']}")
+    print(f"  unique bugs        : {summary['unique_crashes']} "
+          f"(from {summary['raw_signatures']} raw signature(s))")
     print(f"  LLM tokens         : {summary['total_tokens']:,}")
-    print(f"  still under-tested : {', '.join(summary['coverage']['missing'][:8]) or 'none'}")
+    print(f"  still under-tested : {', '.join(summary['breadth']['missing'][:8]) or 'none'}")
     return 0
 
 

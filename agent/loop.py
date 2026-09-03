@@ -26,10 +26,12 @@ from datetime import datetime, timezone
 
 from hypothesis import HealthCheck, given, settings
 
-from agent.coverage import LoopState
+from agent.breadth import LoopState
 from agent.extract import extract_python
+from agent.gemini_client import GeminiClient
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
+from agent.openai_client import OpenAIClient
 from agent.prompts import SYSTEM_PROMPT, build_refine_prompt, build_seed_prompt
 from agent.run_history import (get_next_run_id, log_attempt,
                                log_iteration_result, log_run_complete)
@@ -77,7 +79,7 @@ def _generate(client: OllamaClient | GroqClient, prompt: str, iteration: int,
         if result.ok:
             save_strategy(iteration, code, accepted=True, attempt=attempt,
                           meta={"iteration": iteration, "attempts": attempts,
-                                "stats": result.stats})
+                                "stats": result.stats}, run_id=run_id)
             return code, {"attempts": attempts, "stats": result.stats}
         if code:
             save_strategy(iteration, code, accepted=False, attempt=attempt)
@@ -142,7 +144,7 @@ def main() -> int:
                     help="override loop.max_iterations")
     ap.add_argument("--resume", action="store_true",
                     help="continue from saved state instead of starting fresh")
-    ap.add_argument("--provider", choices=["ollama", "groq"], default=None,
+    ap.add_argument("--provider", choices=["ollama", "groq", "gemini", "openai"], default=None,
                     help="which LLM backend to use "
                          "(default: llm.provider in config.yaml)")
     args = ap.parse_args()
@@ -155,9 +157,15 @@ def main() -> int:
     # Same provider switch as agent/seed.py (Module 4) - a 5-iteration loop
     # is exactly where a provider choice matters most, so this must not
     # silently default back to Ollama regardless of config.yaml.
-    if provider == "groq":
+    if provider == "gemini":
+        print("Provider: Gemini (remote)")
+        client = GeminiClient()
+    elif provider == "groq":
         print("Provider: Groq (remote)")
         client = GroqClient()
+    elif provider == "openai":
+        print("Provider: OpenAI (remote)")
+        client = OpenAIClient()
     else:
         print(f"Ollama: {resolve_base_url()}")
         client = OllamaClient()
@@ -169,16 +177,49 @@ def main() -> int:
     current_code: str | None = (
         load_strategy_code(start_at - 1) if start_at else None)
 
-    # run_id auto-increments from logs/RUN_HISTORY.jsonl - "run N+1" picks
-    # up wherever the last logged run left off, so a rate-limit/API-key
-    # swap mid-project never causes two runs to collide under one number.
+    # run_id identifies which "Run N" section of logs/RUN_HISTORY.md this
+    # invocation belongs to. A --resume continues the SAME run_id (carried
+    # in state.run_id, saved/loaded with the rest of LoopState) so a
+    # rate-limit death + --resume appends to the run already in progress
+    # instead of opening a new "Run N+1" for what is really iteration 3 of
+    # an existing run. Only a fresh (non-resumed) invocation mints a new
+    # run_id via get_next_run_id() - see OBSERVATIONS.md, "resume opens a
+    # new Run number instead of continuing the last one".
     # log_run_complete() fires from the finally block below no matter how
     # this function exits (normal completion, an early `return 1`, or an
     # uncaught exception from e.g. the API key finally running out) - a run
     # that dies mid-way always gets an explicit FAILED record instead of
     # just trailing off with no explanation in logs/RUN_HISTORY.md.
-    run_id = get_next_run_id()
+    if args.resume and state.run_id:
+        run_id = state.run_id
+    else:
+        run_id = get_next_run_id()
+        state.run_id = run_id
+        # Claim the run on disk BEFORE any work happens. state.save() used
+        # to fire only after an iteration *completed* (see below), so a run
+        # that died during iteration 0 - an API timeout, a Ctrl+C - never
+        # persisted its own run_id at all: loop_state.json still held the
+        # PREVIOUS run's state. A following --resume then silently continued
+        # that older, already-finished run (printing "Run: 21" after run 22
+        # had just died) while the next plain invocation minted run_id + 1,
+        # leaving the dead run number empty forever. Saving here means a run
+        # is resumable from its very first iteration, which is what "once an
+        # iteration is started, --resume points at that run until it
+        # finishes" requires.
+        state.save()
     print(f"Run: {run_id}")
+
+    # A --resume whose saved state is already complete has nothing to
+    # continue: range(start_at, n_iters) is empty, so the loop would fall
+    # straight through to "=== loop complete" and reprint the finished run's
+    # summary as though this invocation had just produced it. Say so plainly
+    # instead, and return before the try/finally so no second completion
+    # record is logged for a run that already finished.
+    if args.resume and start_at >= n_iters:
+        print(f"\nNothing to resume - run {run_id} already completed all "
+              f"{len(state.iterations)}/{n_iters} iterations.\n"
+              f"Start a new run with:  python -m agent.loop")
+        return 0
     iterations_completed = 0
     completed_ok = False
     # Only "exhausted_attempts" and "keyboard_interrupt" render as FAILED
@@ -213,7 +254,8 @@ def main() -> int:
                     stop_reason = "exhausted_attempts"
                     return 1
                 save_strategy(iteration, current_code, accepted=True,
-                              meta={"note": "reused: generation failed"})
+                              meta={"note": "reused: generation failed"},
+                              run_id=run_id)
             else:
                 current_code = code
 
@@ -252,7 +294,7 @@ def main() -> int:
             iterations_completed += 1
 
             print(f"  accepted    : {summary['acceptance_rate']:.0%}")
-            print(f"  coverage    : {summary['cumulative_coverage']:.0%} "
+            print(f"  breadth     : {summary['cumulative_breadth']:.0%} "
                   f"(+{len(summary['productions_this_iteration'])} this run)")
             print(f"  novelty     : {summary['novelty_rate']:.0%}")
             print(f"  max depth   : {summary['max_depth_cumulative']}")
@@ -266,7 +308,7 @@ def main() -> int:
         for it in state.iterations:
             s = it["summary"]
             print(f"  iter {it['iteration']}: accept {s['acceptance_rate']:.0%}  "
-                  f"cov {s['cumulative_coverage']:.0%}  "
+                  f"breadth {s['cumulative_breadth']:.0%}  "
                   f"depth {s['max_depth_cumulative']:>3}  "
                   f"findings {s['findings']}")
         print(f"\nusage: {json.dumps(client.usage_summary())}")

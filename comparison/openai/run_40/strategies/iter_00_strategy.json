@@ -1,0 +1,108 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "syntax",
+      "error": "the code does not parse: line 13: unmatched ')'",
+      "tokens": 9854,
+      "seconds": 8.17,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": false,
+      "stage": "imports",
+      "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+      "tokens": 9794,
+      "seconds": 4.88,
+      "stats": {}
+    },
+    {
+      "attempt": 3,
+      "ok": false,
+      "stage": "syntax",
+      "error": "the code does not parse: line 21: unmatched ')'",
+      "tokens": 9909,
+      "seconds": 5.88,
+      "stats": {}
+    },
+    {
+      "attempt": 4,
+      "ok": false,
+      "stage": "imports",
+      "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+      "tokens": 10139,
+      "seconds": 11.98,
+      "stats": {}
+    },
+    {
+      "attempt": 5,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 2/40 (5%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1113)', 'line 1: bad escape char']. Fix the syntax causing these before a",
+      "tokens": 9822,
+      "seconds": 6.83,
+      "stats": {
+        "samples": 25,
+        "mean_len": 132336.0,
+        "max_len": 634351,
+        "sample_max_depth": 99180,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.05,
+        "top_rejects": [
+          "line 1: invalid or missing key",
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1113)",
+          "line 1: bad escape char"
+        ]
+      }
+    },
+    {
+      "attempt": 6,
+      "ok": false,
+      "stage": "imports",
+      "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+      "tokens": 9914,
+      "seconds": 6.59,
+      "stats": {}
+    },
+    {
+      "attempt": 7,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 10073,
+      "seconds": 9.53,
+      "stats": {
+        "samples": 25,
+        "mean_len": 189191.2,
+        "max_len": 475049,
+        "sample_max_depth": 110566,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.275,
+        "top_rejects": [
+          "line 1: invalid or missing key",
+          "line 1: syntax error",
+          "line 6: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 189191.2,
+    "max_len": 475049,
+    "sample_max_depth": 110566,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.275,
+    "top_rejects": [
+      "line 1: invalid or missing key",
+      "line 1: syntax error",
+      "line 6: key exists"
+    ]
+  }
+}

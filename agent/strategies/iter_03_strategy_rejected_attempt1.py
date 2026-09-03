@@ -1,76 +1,125 @@
 """Generated strategy - iteration 3, attempt 1.
 accepted: False
-generated: 2026-08-15T10:55:18.112393+00:00
+generated: 2026-09-02T20:46:18.175963+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
+UNQUOTED_KEY_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+ESCAPE_SEQUENCES = ['\\', '\b', '\f', '\n', '\r', '\t', '\v', '"', "'"]
+UNICODE_ESCAPE = lambda x: f'\\u{x:04x}'
+HEX_INT = lambda x: f"0x{x:x}"
+OCT_INT = lambda x: f"0o{x:o}"
+BIN_INT = lambda x: f"0b{x:b}"
+
 @composite
 def key(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=10).filter(lambda x: x.isidentifier()),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'")
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: x),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f'"{x}"'),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f"'{x}'"),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f"{x}.{x}"),  # Dotted key
     ))
 
 @composite
-def dotted_key(draw):
-    return draw(st.lists(key(), min_size=2, max_size=5)).map(lambda parts: ".".join(parts))
+def escape_sequence(draw):
+    return draw(st.sampled_from(ESCAPE_SEQUENCES))
+
+@composite
+def unicode_escape(draw):
+    return draw(st.integers(min_value=0, max_value=0xFFFF)).map(UNICODE_ESCAPE)
+
+@composite
+def hex_int(draw):
+    return draw(st.integers(min_value=0)).map(HEX_INT)
+
+@composite
+def oct_int(draw):
+    return draw(st.integers(min_value=0)).map(OCT_INT)
+
+@composite
+def bin_int(draw):
+    return draw(st.integers(min_value=0)).map(BIN_INT)
 
 @composite
 def value(draw):
     return draw(st.one_of(
-        st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-        st.floats(min_value=-1e100, max_value=1e100, allow_nan=False).map(str),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.booleans().map(lambda x: "true" if x else "false"),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28),
-                  st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}"),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"),
-        st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
-        st.text(min_size=2, max_size=10).map(lambda x: f'"{x}"' + '"'),
-        st.text(min_size=2, max_size=10).map(lambda x: f"'" + x + "'"),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\u0000"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\u0000'"),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}\\n"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}\\n'"),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"' + '"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'" + x + "'"),
-        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0x{x:x}"),
-        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0o{x:o}"),
-        st.integers(min_value=0, max_value=2**64-1).map(lambda x: f"0b{x:b}"),
-        st.floats(min_value=-1e100, max_value=1e100, allow_nan=True).map(str),
-        st.floats(min_value=-1e100, max_value=1e100, allow_nan=True).map(lambda x: f"{x:.20f}")
+        st.integers(min_value=0, max_value=9223372036854775807).map(str),
+        st.integers(min_value=-9223372036854775808, max_value=-1).map(str),
+        st.floats().map(str),
+        st.just('true'),
+        st.just('false'),
+        st.text(min_size=1).map(lambda x: f'"{x}"'),
+        st.text(min_size=1).map(lambda x: f"'{x}'"),
+        st.lists(value()).map(lambda lst: f"[{', '.join(lst)}]"),
+        inline_table(),
+        st.text(min_size=1).map(lambda x: f'"""{x}"""'),  # Multi-line basic string
+        st.text(min_size=1).map(lambda x: f"'''{x}'''"),  # Multi-line literal string
+        escape_sequence().map(lambda esc: f'"{esc}"'),
+        unicode_escape(),
+        hex_int(),
+        oct_int(),
+        bin_int(),
     ))
-
-@composite
-def array(draw):
-    elements = draw(st.lists(st.one_of(value(), array(), inline_table())))
-    return f"[{', '.join(elements)}]"
 
 @composite
 def inline_table(draw):
-    elements = draw(st.lists(st.tuples(key(), value())))
-    return f"{{{', '.join(f'{k} = {v}' for k, v in elements)}}}"
-
-@composite
-def table(draw):
-    return draw(st.one_of(
-        key().map(lambda k: f"[{k}]"),
-        key().map(lambda k: f"[[{k}]]")
-    ))
+    keyvals = draw(st.lists(st.tuples(key(), value()), min_size=1, max_size=5))
+    return "{" + ", ".join(f"{k}={v}" for k, v in keyvals) + "}"
 
 @composite
 def pair(draw):
-    return f"{draw(key())} = {draw(value())}"
+    k = draw(key())
+    v = draw(value())
+    return f"{k} = {v}"
+
+@composite
+def table(draw):
+    k = draw(key())
+    return f"[{k}]"
 
 @composite
 def document(draw):
-    elements = draw(st.lists(st.one_of(pair(), table())))
+    elements = draw(st.lists(st.one_of(pair(), table()), min_size=1))
     return "\n".join(elements)
 
-toml_strategy = document()
+@composite
+def deep_array(draw):
+    n = draw(st.integers(min_value=60_000, max_value=100_000))
+    return "[" * n + "1" + "]" * n
+
+@composite
+def deep_inline_table(draw):
+    n = draw(st.integers(min_value=85_000, max_value=115_000))
+    return "{a=" * n + "1" + "}" * n
+
+@composite
+def deep_dotted_key(draw):
+    n = draw(st.integers(min_value=90_000, max_value=100_000))
+    return "a." * n + "k"
+
+@composite
+def deep_mixed_nesting(draw):
+    n = draw(st.integers(min_value=60_000, max_value=80_000))
+    return "[{a=" * n + "1" + "}]" * n
+
+@composite
+def deep_quoted_mixed(draw):
+    n = draw(st.integers(min_value=20_000, max_value=45_000))
+    return '[{"k"=' * n + "1" + "}]" * n
+
+@composite
+def many_siblings(draw):
+    n = draw(st.integers(min_value=10_000, max_value=60_000))
+    lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
+    return "\n".join(lines)
+
+toml_strategy = st.one_of(
+    *([document()] * 20),
+    deep_array(),
+    deep_inline_table(),
+    deep_dotted_key(),
+    deep_mixed_nesting(),
+    deep_quoted_mixed(),
+    many_siblings()
+)

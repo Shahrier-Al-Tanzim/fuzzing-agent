@@ -1,0 +1,41 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 17031,
+      "seconds": 32.14,
+      "stats": {
+        "samples": 25,
+        "mean_len": 93281.4,
+        "max_len": 359676,
+        "sample_max_depth": 89917,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.5,
+        "top_rejects": [
+          "line 1: key exists",
+          "line 1: newline not allowed in inline table",
+          "line 1: bad escape char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 93281.4,
+    "max_len": 359676,
+    "sample_max_depth": 89917,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.5,
+    "top_rejects": [
+      "line 1: key exists",
+      "line 1: newline not allowed in inline table",
+      "line 1: bad escape char"
+    ]
+  }
+}

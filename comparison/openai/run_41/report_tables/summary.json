@@ -1,0 +1,7 @@
+{
+  "run_id": 41,
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "total_tokens": 244781,
+  "iterations": []
+}

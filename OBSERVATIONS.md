@@ -8,6 +8,61 @@ assumed to relate to earlier ones unless stated.
 
 ---
 
+> ## ⭐ START HERE — the headline finding
+>
+> **[Case 5: prompt anchoring — an example's constant became a hard
+> ceiling](#case-5-prompt-anchoring--an-examples-constant-became-a-hard-ceiling-)**
+>
+> A prompt rule told the model to reach extreme nesting depth by drawing an
+> integer and repeating a string instead of recursing. It worked
+> immediately: **max depth went from 4 to 5,000 — a ~1,250× jump, the
+> largest single improvement in the project.**
+>
+> But depth then froze at *exactly* 5,000, because the model had copied the
+> rule's own illustrative bound (`max_value=5000`) **verbatim** — treating a
+> number written casually into an example as the specification, **in
+> preference to the feedback signal that was concurrently asking for
+> 30,000–90,000.**
+>
+> **An illustrative constant in a prompt example acts as a hard ceiling, not
+> a starting point.** This is the most transferable finding here — nothing
+> about it is specific to TOML, `tomlc99`, or fuzzing.
+>
+> Runner-up, for the "proxy signal" part of the report:
+> **[Case 4](#case-4-the-first-full-5-iteration-loop-run--breadth-climbed-but-the-proxy-signal-got-gamed)**
+> — breadth climbed while the generator quietly got structurally simpler,
+> the exact signal-gaming failure the assignment warns about.
+
+---
+
+## Bugs found — summary (updated as of Run 25, 2026-08-20)
+
+All real bugs confirmed in `tomlc99` so far, in one place. Signature IDs
+are the folder names under `triage/reports/`.
+
+| # | Bug | Mechanism | Signature(s) | How found | Deterministic? |
+|---|---|---|---|---|---|
+| 1 | Array-nesting stack overflow | `parse_array` (`toml.c:1057`) recurses into itself once per `[`, no depth limit | `939402a0547c`, `e857b4530c96` (frameless variant, same root cause) | Found by hand in Module 1 (`grammar/early_findings/01_...`), then rediscovered by the agentic loop itself in Run 11+ | Yes (3/3) |
+| 2 | Dotted-key stack overflow | `parse_keyval` (`toml.c:1106`) recurses into itself once per `.` in `a.b.c...=1`, no depth limit — separate from bug 1's function and separate from the table-header path's depth-10 guard, which doesn't cover this case | `55628614cd6c` | Found by hand reading `toml.c` during crash-hunting planning (`grammar/early_findings/02_...`) | Signature unstable (crashes 3/3, but ASan can't always get a clean backtrace at this depth) |
+| 3 | Inline-table stack overflow | `parse_inline_table` and `parse_keyval` recurse into each other once per nested `{`, no depth limit | `26e809dd9d85` | Found via the hand-written `crash_hunt` parametric generator, cross-confirmed by the agentic loop | Yes (3/3) |
+| 4 | Many-siblings O(n²) hang | `toml_table_in()` scans existing keys linearly on every insert, so N keys in one table costs O(N²) total — thousands of `kN = 1` lines under one table blows past the 5s timeout | `unparsed_timeout` | Taught to the LLM as prompt rule 17; **first fired autonomously by the agentic loop itself in Run 15** (72 occurrences) — not yet confirmed via a hand-written probe, the reverse order of bugs 1-3 | No — inherently flaky near a timing cutoff, not a memory-safety bug, expected (see Case 6) |
+| 5 | Alternating array/inline-table stack overflow | `parse_array` and `parse_inline_table` recurse into EACH OTHER (not into themselves) once per `[{`/`}]` pair — a third, distinct recursion cycle from bugs 1 and 3, which each involve only one of the two functions calling itself | `af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2` (3 signatures, same root cause — see Case 9) | Predicted by the hand-written `crash_hunt` probe (`pipeline/crash_hunt_strategy.py`'s `deep_mixed_nesting` campaign), taught to the LLM via the rule 16 amendment on `module-7b-crash-hunting-2`, **first fired autonomously by the agentic loop in Run 25** | Crashes every run; signature not stable across runs (see Case 9 for why the instability is worse here than for bugs 1-3) |
+
+**Bug class split:** 4 are memory-safety bugs (unbounded recursion →
+stack exhaustion, would be a real CVE-class issue in production use); 1 is
+an algorithmic-complexity / denial-of-service bug (slow, not unsafe). All
+5 stem from the same root pattern: `tomlc99`'s recursive-descent parser
+and its table implementation have no limits on attacker-controlled input
+size or nesting, anywhere.
+
+**Not a new bug class, just a new confirmation:** Run 15 (Gemini) also
+re-found bugs 1-3 (159 crashing inputs total, deduplicating to the same
+signatures as before) alongside bug 4. See Case 6 for the acceptance/
+breadth numbers from that run, and Case 5 for how bugs 1-3's crash
+thresholds were originally discovered.
+
+---
+
 ## Case 1: 7B model reliability in Module 4 (agentic seed generation)
 
 **Date:** 2026-08-13
@@ -251,9 +306,21 @@ The assignment explicitly asks for documented normalization choices and judgment
 
 **Addendum, 2026-08-14:** the exact same bug — the two-state `deterministic`/`flaky` model missing the `unstable_signature` case — was found a *third* time, independently, in `report/generate_artifacts.py`'s `crash_table()` while checking Module 7. That file re-derived the same verification-status logic inline instead of reading `metadata.json`'s already-fixed `description` field, and reintroduced the identical mislabeling bug in the process. It was dormant only by coincidence (the crash happened to read as `deterministic: True` at the time), not because the code was correct. Fixed the same way: read the shared `description` field, with a fail-loud fallback rather than a re-derived guess. The recurrence itself is the finding — it's evidence this specific mistake (re-deriving state logic instead of reusing a single computed source of truth) isn't a one-off, but a pattern worth watching for anywhere verification status gets displayed.
 
+### Bug 3: frameless overflows collapse distinct bugs into one bucket (2026-08-16)
+
+Found while adding a *second* hand-found crash (a dotted-key stack overflow, `parse_keyval` recursion at `toml.c:1138`, distinct from the array bug's `parse_array` chain — see `planning/hunting/step-01-second-crash-dotted-key.md`). The dotted-key crash kept getting bucketed under the array bug's frameless signature (`e857b4530c96`, `stack-overflow@unknown`) instead of its own — hiding that it's a genuinely different bug.
+
+**Root cause:** the "unstable signature" property from Bug 2 above has a sharper consequence than first documented. When ASan can't unwind a deep overflow's stack, the report has *zero* frames, and `parse_signature()` falls back to a single `unparsed_<verdict>` key — which is **identical for every frameless overflow regardless of which bug caused it**. So two distinct stack-overflow bugs collapse into one bucket whenever both happen to produce a frameless run. Since `collect_findings()` read each input's signature from a *single* run, one unlucky frameless collection run mislabeled the whole bug. Depth made it worse, not better: past ~120k the overflow is so violent it almost never unwinds, so a "deeper = more reliable crash" instinct actively degraded signature quality.
+
+**Fix:** `_run_for_parseable_crash()` in `triage/run_triage.py` retries a crashing extra input up to 6 times to obtain a run with a *parseable* stack before giving up (still reporting a genuinely-always-frameless crash in the unparsed bucket, just not letting one unlucky roll mislabel a bug that usually does parse). The crash is still the crash; the retry only affects which frames get read for bucketing.
+
+**Bonus effect:** the same retry stabilized the *array* bug's verification. It had been reported as "crashed every run (3/3) but signature unstable (2/3 matched)" — now that minimization and verification start from a parseable-signature baseline, it verifies cleanly as deterministic (3/3). Net result: `2 crashes -> 2 unique bug(s)`, both deterministic, correctly separated by root cause.
+
+**Why this belongs in the report:** it's a concrete, non-obvious deduplication/normalization judgment call — exactly what the assignment asks to be documented. "Prefer a parseable signature over the first observed one, because a frameless fallback key is not bug-specific" is a defensible normalization choice with a real defect (distinct bugs silently merged) traceable to *not* making it. It also sharpens the earlier "unstable signature" finding: the instability doesn't just vary the match ratio, it can erase the discriminating information entirely.
+
 ---
 
-## Case 4: the first full 5-iteration loop run — coverage climbed, but the proxy signal got gamed
+## Case 4: the first full 5-iteration loop run — breadth climbed, but the proxy signal got gamed
 
 **Date:** 2026-08-14
 **Module:** Module 5 (`agent/loop.py`), first full `python -m agent.loop` run, Groq/`llama-3.3-70b-versatile`
@@ -261,14 +328,14 @@ The assignment explicitly asks for documented normalization choices and judgment
 
 ### TL;DR
 
-- The one real success: **cumulative grammar coverage climbed every iteration — 18% → 26% → 32% → 40% → 47%.** That is the core evidence the feedback signal works, and it's genuine.
+- The one real success: **cumulative grammar breadth climbed every iteration — 18% → 26% → 32% → 40% → 47%.** That is the core evidence the feedback signal works, and it's genuine.
 - Everything else about this run is a problem, and none of it was visible from the console output alone:
   - Only **9-11% of the configured 500 examples per iteration actually ran** (38, 43, 54, 44, 51) — the console printed "running 500 examples..." regardless, because that line is hardcoded to the config value, not the actual count.
   - **Nesting depth never moved off 1**, across all five iterations, including in *rejected* documents — not merely "deep documents got rejected," the strategy structurally could not produce depth > 1 at all.
-  - **Generated documents shrank every iteration** (max bytes 285 → 87 → 69 → 43 → 48; mean 34 → 18 → 18 → 11 → 13), and the coverage gain came from generating more distinct *trivial* scalar values, not more structural complexity.
+  - **Generated documents shrank every iteration** (max bytes 285 → 87 → 69 → 43 → 48; mean 34 → 18 → 18 → 11 → 13), and the breadth gain came from generating more distinct *trivial* scalar values, not more structural complexity.
   - `findings: 0` for all five iterations was therefore inevitable, not informative — the known stack-overflow bug needs ~48,000 levels of nesting, and this generator never exceeded 1.
 
-This is a close-to-textbook case of **a proxy signal being gamed**: coverage (the metric being optimized) went up, while the thing coverage was supposed to be a stand-in for (structural testing depth) went to essentially zero. Worth stating plainly in the report as exactly this — not hidden, not softened.
+This is a close-to-textbook case of **a proxy signal being gamed**: breadth (the metric being optimized) went up, while the thing breadth was supposed to be a stand-in for (structural testing depth) went to essentially zero. Worth stating plainly in the report as exactly this — not hidden, not softened.
 
 ### The example-count shortfall: two different root causes now observed, not one
 
@@ -321,12 +388,31 @@ A standing, numbered record of every `STRATEGY_CONTRACT` rule added in response 
 
 3. **Rule 12** (2026-08-14) - added immediately after rule 11's own test run surfaced a new bottleneck once genuine recursion started working: acceptance rate collapsed to 2-5% (floor is 20%). Real generated samples showed the cause directly - bare, standalone lines like `{}` and `[14:36:03, true, 13:19:07]` sitting at the top level of the document with no key in front of them, which is invalid TOML at any depth. `document()` was choosing `array()`/`inline_table()` directly as one of its own top-level options instead of only ever reaching them as a value after `key =`. Rule 12 states the top-level document grammar explicitly: every line must be `key = value`, `[table]`, or `[[array_table]]`, never a bare container. **Outcome: confirmed working, and then some.** The next full 5-iteration loop run passed generation on attempt 1 for *every* iteration (5 API calls total for the whole loop, versus a worst case of 40), all 500/500 examples ran every iteration (the earlier ~145-example shortfall from before rules 9-12 didn't recur once), and acceptance held steady at 31-41% throughout, never approaching the floor. All four fixes (9, 10, 11, 12) validated together in one clean run.
 4. **Rule 13** (2026-08-15) - added after a full loop run (logged live in `logs/RUN_HISTORY.md`, the project's new permanent attempt-history file) passed iterations 0-2 cleanly but failed all 7 attempts at iteration 3, every single one at the `acceptance` stage (8-18% accepted, floor 20%) - no crashes, no fabricated APIs, just consistently-too-low acceptance. Checked 5 of the 7 rejected attempts' code directly: **all 5 had the identical bug**, independently generated each time - `table()` built `[header]`/`[[header]]` lines from raw, unrestricted `st.text()` instead of reusing the already-correct `key()` function, which properly quotes or restricts its output. Real generated samples showed the damage directly: bare, unquoted headers like `[[\x9f7]]` and `[衜@¶À]` containing control characters and non-ASCII symbols with no quoting at all - invalid, since TOML's unquoted-key rule only allows ASCII letters/digits/`_`/`-`. Since `document()` picks between `pair()` and `table()` roughly evenly, a broken `table()` drags down a large share of every generated document. Rule 13 states explicitly that table/array-table headers must be built from the same key-generation logic as regular keys, never raw text directly. **Outcome: confirmed working.** The very next full loop run (`logs/RUN_HISTORY.md`, 2026-08-15 09:48-09:53) passed all 5 iterations - specifically iteration 3, the one that had just failed 7/7 attempts in a row, passed on attempt 2. Full run: iter 0 passed on attempt 2, iter 1 on attempt 1, iter 2 on attempt 1, iter 3 on attempt 2, iter 4 on attempt 1 - 6 total attempts for the whole 5-iteration loop.
+5. **Rule 14** (2026-08-16, `module-7b-crash-hunting`) - added after crash-hunting work (see `planning/hunting-generation/`) proved the loop's 0-findings history was a *reachability* gap, not an empty search: a hand-written parametric generator (`pipeline/crash_hunt_strategy.py`) found 3-4 distinct stack-overflow bugs the agentic loop never came close to, because `render_feedback()`'s depth directive only ever asked for "12+" against bugs that need 48,000-105,000+ levels of nesting - and even a perfectly-obedient model can't get there with a balanced `st.one_of(value(), array(), inline_table())`, since a uniform 1-in-3 recursion choice decays to near-zero probability of reaching four-to-five-digit depths. Two changes together: `agent/summarize.py`'s flat "aim for 12+" replaced with `DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`, escalating geometrically per completed iteration; and rule 14 added to `STRATEGY_CONTRACT`, which stops asking for a bigger number past target 200 and instead teaches two concrete biasing techniques with working code - repeating the recursive branch in `one_of()`, and threading a depth counter through `draw()` that is *actually incremented on the recursive call* (directly naming the earlier dead-`current_depth` bug class from this file's "Latest full run (2026-08-14)" entry, so the model is shown the exact mistake to avoid, not just told "don't do that"). **Outcome: not yet confirmed.** Both changes were verified structurally (imports clean, escalation targets correct at every iteration count via direct calls to `render_feedback()` with synthetic data, prompts build without error) but **never tested against a real Groq call** - no `python -m agent.loop` was run this session. Whether the model actually follows rule 14 and reaches meaningfully higher depth in a live run is an open question, not a confirmed result - unlike every earlier entry in this log, which was validated against a real run before being marked done.
+
+**Addendum, 2026-08-16 - the first live test found a real regression in rule 14 itself.** Run 6 (`logs/RUN_HISTORY.md`): depth barely moved (3 -> 4 across 5 iterations, nowhere near the escalating targets), and iteration 4's acceptance collapsed from 42% to 7% - `pipeline/logs/iteration_04.jsonl` showed 389/464 rejects were `"missing ="`. Read the actual generated `agent/strategies/iter_04_strategy.py`: `toml_strategy` was built as `st.one_of(document(), document(), document(), document(), document(), array(), dotted_key(), ml_basic_string(), ..., st.integers(...).map(lambda x: f"0x{x:x}"))` - only 5 of 17 branches were real documents; the other 12 exposed bare fragments (a raw array, a raw dotted key, a raw hex number) directly as if they were whole files, which is invalid TOML at any depth (a file must be `key=value`/table lines, never a bare value alone). **Root cause traced to rule 14's own closing sentence**, which said to "combine both with `st.one_of()` in the final `toml_strategy`" without stating that every branch must still be a complete document - the model took that literally and stopped routing the depth-seeking constructs through `pair()`'s value position (which rule 12 already establishes as the only valid place for `array()`/`inline_table()`), instead giving them a second, unwrapped, top-level home right next to `document()`. **Fixed the same day**, before any further live testing: rule 14's closing paragraph now explicitly forbids bare recursive/scalar strategies inside `toml_strategy`'s own `one_of()`, with a "Wrong" example matching the actual failure verbatim and a "Right" example showing depth-seeking routed through a `document_depth_biased()` variant that still emits full `key =` lines throughout. Not yet re-tested against a live run. Notable process point: this is the *fastest* a new rule has gone from "written" to "found breaking something in production" to "patched" in this log - a single run - which argues for treating any newly-added rule as unverified until it survives at least one live iteration, not just a structural/import check.
+
+6. **Rule 15** (2026-08-16, Run 7) - the rule-14 fix above got its live test immediately, and surfaced a *different*, pre-existing bug that rule 14 wasn't responsible for: acceptance stayed chronically low (12-23%) across *all 5* iterations this time (not just one), and depth barely moved (2-4). `"missing ="` was again the dominant reject reason in every iteration - but this time the generated `toml_strategy = document()` alone, no bare fragments (rule 14's fix held). Traced to the actual generated documents instead of guessed at: `key()`'s unquoted branch was completely unrestricted `st.text(...).map(lambda x: x)`, producing literal keys like `[»\x1aî(\U0008e78b\U00055fad!v9×]` (control characters and symbols; unquoted TOML keys may only contain ASCII letters/digits/`_`/`-`). Separately, `value()`'s quoted-string branches wrapped raw, unrestricted `st.text()` output in quotes with no exclusion of the quote character or control characters, producing `"\nDJ" = 0` - a literal, unescaped newline landing inside a single-line basic string, which doesn't just invalidate that one value but corrupts line-counting for the rest of the document (hence the many "line 2: ..." errors that were actually fallout from line 1's corruption). Rule 15 requires both branches to restrict their alphabet directly at construction time (never `.filter()`, per rule 9) - `string.ascii_letters + string.digits + "-_"` for unquoted keys, and the printable set minus the quote character/backslash/newline/carriage-return for quoted content. **Outcome: not yet tested.** Structurally verified only (15 rules present, prompts build, imports clean) - this fix has not yet survived a live run, and per the process point above should be treated as unconfirmed until it does.
+
+7. **Rule 16** (2026-08-17, Run 8) - **the most important finding in this log for the report's "Challenges" section: recursive generation is structurally incapable of reaching crash depth, and no prompt can fix that.** Rule 15 worked (Run 8 acceptance recovered to 40-53%, the best sustained figures across all 8 runs, and the `"missing ="`/`"invalid key"` rejects that dominated Run 7 vanished entirely - the top reject became the benign `"key exists"`). But depth still sat at 1-4, so the generated `iter_04_strategy.py` was measured directly instead of assumed about. **The model had obeyed rule 14 correctly** - `array()` listed its recursive branch 4x against `VALUE` once and genuinely threaded `depth=depth+1` - yet 30 direct `.example()` draws of that same `array()` never exceeded depth 2. A controlled A/B isolated the cause: holding the bias ratio and depth counter identical and changing only the list size, unconstrained `st.lists(...)` reached **max depth 3** while forcing `min_size=1, max_size=1` reached **max depth 13**. Hypothesis's default `st.lists()` averages ~50-90 elements, so a biased recursive strategy spreads *sideways* into a bushy tree and burns its data budget on width at depth 2-3 - the branching factor, not the recursion bias, was the real cap. **But the deeper conclusion is that even the corrected chain shape only reached 13**, against bugs needing 48,000-105,000: Hypothesis's own generation budget inherently resists deep recursion, so `st.recursive`/`@composite` cannot reach crash depth *by any amount of prompt engineering*. This reframes the whole "loop finds no crashes" story - it was never a model-obedience or prompt-quality failure. Rule 16 therefore teaches the only technique that does work, the same one `pipeline/crash_hunt_strategy.py` already uses to hit 60k-115k reliably: draw the depth as an *integer* and build the string by repetition (`"[" * n + "1" + "]" * n`), no recursion involved, wrapped in a normal `key = value` line per rules 12/14 and kept as one branch beside the shallow ones so grammar breadth survives. **Outcome: not yet tested** (16 rules present, prompts build, imports clean) - though unlike rules 14/15 the underlying *technique* is already proven, since `crash_hunt` uses it to find all four stack-overflow bugs; what's unverified is only whether the model adopts it when told to.
+
+**Addendum, 2026-08-17 - Run 9: rule 16 worked, and immediately exposed prompt-anchoring as a distinct failure mode.** *(Written up as a standalone case — see [Case 5](#case-5-prompt-anchoring--an-examples-constant-became-a-hard-ceiling-) for the report-facing version; this entry keeps the chronological rule-change record.)* Depth went from 4 to **5,000** in a single iteration - a ~1,250x jump, and the single largest metric improvement of the entire project - while acceptance stayed healthy (32-46%) and breadth reached 84%. The model fully adopted the integer-repetition technique, confirming the rule-16 diagnosis was correct. But depth then sat at *exactly* 4999-5000 for all five iterations, which is not a plateau the model discovered - reading the generated `iter_04_strategy.py` showed it had copied the rule's example bounds **verbatim**: `n = draw(st.integers(min_value=200, max_value=5000))`. The measured crash thresholds are ~48,000 (arrays), ~80,000 (inline tables), ~90,000-100,000 (dotted keys), so a hard ceiling of 5,000 put every generated document safely below all of them - hence `findings: 0` again despite the technique working perfectly. **The finding worth reporting: an illustrative constant inside a prompt example acts as a hard ceiling, not a starting point.** The model treated `max_value=5000` as the specification rather than the `DEPTH_TARGETS` escalation (which was concurrently asking for 30,000-90,000) - so a number written casually into an example silently overrode the actual feedback signal. A second, smaller instance of the same class: the model defined `deep_inline_table` and `deep_dotted_key` but wired only `deep_array` into `toml_strategy`, so two of three shapes never executed once. Rule 16 was amended for both: example bounds raised to `1_000`-`120_000` (verified to stay under the 1 MB harness cap - 234 KB, 469 KB, 234 KB respectively at max depth), an explicit instruction to set `max_value` *from the feedback's depth target rather than from the example*, and a requirement to wire all three shapes into `one_of`. Also added a guard against a subtle self-defeating interaction discovered while reasoning about the change: a crashing document is not an "accepted" one, so if deep branches dominate `toml_strategy` the measured acceptance rate drops below the 20% validator floor and the strategy is rejected *before it runs* - losing the very crashes it exists to find. The rule now requires deep branches to stay a minority (~1 per 2 ordinary `document()` branches). Not yet re-tested.
+
+8. **Rule 16 amended again** (2026-08-20, `module-7b-crash-hunting-2`) - added after four consecutive full runs (17, 20, 21, 24) each triaged to the *identical* five buckets (`939402a0547c`, `e857b4530c96`, `26e809dd9d85`, `55628614cd6c`, `unparsed_timeout`). The loop had plateaued: more depth and more iterations only re-found the same four bugs. Reading `pipeline/crash_hunt_strategy.py` against the triage history found the reason, and it was not a model failure - it was a gap in what rule 16 *teaches*. Two distinct defects, fixed together:
+   **(a) A proven crash shape was missing from the prompt entirely.** `crash_hunt`'s fourth campaign, `deep_mixed_nesting` (`x = [{a=` … `}]`, arrays and inline tables alternating at every level), is documented in its own docstring as producing signature **`af1d0280777e`** - "a DISTINCT signature from both deep_array and deep_inline_table, reproducing 4/4 with parseable frames - the most stable of the four campaigns." Verified directly: `af1d0280777e` appears **nowhere** in `triage/reports/`. So the hand-written prober had found a fifth bug that the agentic loop has never once reached, purely because rule 16 taught three *pure* shapes and nothing alternating. This maps exactly onto the parser: `toml.c` has four distinct recursion cycles (`parse_array`→itself at 1060; `parse_keyval`→itself at 1138; `parse_keyval`↔`parse_inline_table` at 1180/961; and `parse_array`→`parse_inline_table`→`parse_keyval`→`parse_array` at 1075/961/1171) and the loop was exercising only the first three. Rule 16 now teaches all four shapes and states why the mixed one is not a duplicate.
+   **(b) One shared depth floor across shapes with very different thresholds.** Rule 16 told the model to draw `min_value=1_000` for all three shapes, but the measured crash thresholds are ~48,000 (arrays), ~80,000 (inline tables), ~90,000-100,000 (dotted keys), and `crash_hunt` - which reproduces each bug reliably - uses shape-specific ranges far above that floor (60k-100k / 85k-115k / 100k-130k / 60k-80k). With one low floor, most inline-table and dotted-key draws landed *below* their own crash threshold and did nothing at all. The damage is visible in run 24's occurrence counts: the array shape crashed **120** times while the dotted-key shape crashed **3** and the inline-table shape **11** - the two thinnest pieces of evidence in the whole project, and a weakness already flagged in `comparison/gemini/run_24/ANALYSIS.md`. Rule 16 now carries the four measured per-shape floors, reusing `crash_hunt`'s proven constants rather than inventing new ones, and explicitly says to widen the range by raising `max_value`, never by lowering `min_value` (so the Case 5 anti-anchoring instruction and the new floors don't contradict each other).
+   **The deliberate trade this forces.** A crashing document does not count as "accepted", and with high per-shape floors almost every deep draw now crashes rather than only ~23-65% of them. At the previous "one deep branch per two ordinary" ratio that would have driven acceptance under the 20% validator floor, getting the strategy rejected *before it ever runs* - the exact self-defeating interaction rule 16 already warned about. So the deep-branch share was cut in the same edit: four deep branches against at least sixteen ordinary `document()` branches (~1 in 5), written as a worked `one_of` example rather than a ratio in prose. The goal is explicitly **not** more crashing documents overall - it is the same or fewer, redistributed so each one lands on a shape that clears its own threshold, including the never-yet-hit mixed shape.
+   **Outcome: confirmed working, Run 25.** Acceptance held 29%-58% across all 5 iterations (never threatened the 20% floor), and the mixed-nesting shape fired autonomously - see Case 9 for the full result, including the honest correction that it surfaced as 3 triage signatures (`af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`) for one root cause rather than the single new row originally expected. The per-shape floor fix also had a large secondary effect: bug 2 went from 3 occurrences (Run 24) to 158, bug 3 from 11 to 120 - both were being drawn too shallow to trigger under the old shared floor, exactly as predicted.
+
+9. **Rule 16 extended with `deep_quoted_mixed`** (2026-08-20, `module-7b-crash-hunting-3`) - the shape was chosen by *measurement, not guesswork*, and the first candidate was discarded after being tested. Candidate A (`deep_mixed_dotted`, `"[{a.b=" * n`) reasoned that adding `parse_keyval`'s dotted self-recursion into bug 5's cycle would make it four functions per level and yield a new signature. Probed directly against the harness at n=40,000/55,000/70,000 before writing any prompt text: it crashes every time, but produced `55628614cd6c`, `80953bb88ca2` and `e857b4530c96` - **all already-known buckets**. It was therefore dropped rather than shipped, since adding a shape that yields no new signature is exactly the mistake rule 18 made. Candidate B changed *what sits at each level* instead of which constructs alternate - a QUOTED key (`'[{"k"=' * n`), which forces `normalize_key` -> `norm_basic_str` (the string-unescaping path) onto the stack. That produced **`c04d038a7956`** - `malloc / expand toml.c:411 / norm_basic_str toml.c:506 / normalize_key toml.c:652 / create_keyarray_in_table toml.c:830` - the **first signature in this project's history with `norm_basic_str` in it**. Reproducibility was measured across a depth sweep (3 trials each): 25,000 gave 3/3, and 20,000-45,000 gave 1-3/3, while 50,000+ reverted to the known `80953bb88ca2` bucket - a quoted key does more work per level, so the stack runs out sooner and going deeper actually *hides* this signature. Hence the deliberately lower `min_value=20_000, max_value=45_000` in the rule, and the rule now states the general principle the experiment established: **what sits at each nesting level matters as much as how deep the nesting goes.** **Outcome: confirmed live, Run 26** - `c04d038a7956` fired autonomously via the agentic loop (145 occurrences), the first time this signature was produced without a hand-written probe.
+
+   **Milestone worth calling out on its own: this bug was found at a LOWER depth than every other one in the project, not a higher one.** Every earlier bug hunt in this log moved in one direction - push depth further (Case 5; rule 16's original three shapes at 48k/80k/90-100k; `DEPTH_TARGETS` climbing to 90,000). `deep_quoted_mixed` breaks that pattern: it reproduces best around ~25,000, roughly half of the *shallowest* of the other four shapes, and gets LESS reliable, not more, past ~45,000 (reverting to the known `80953bb88ca2` bucket by 50,000+). So the newest bug in this project was found by going less deep, not more - direct, concrete evidence for Case 10's Defect 2 finding that raw depth was never the actual lever; what occupies each nesting level is. Worth stating plainly in the report: the project's search strategy shifted from "how far can we push one number" to "what varies at each step," and that shift produced the 5th bug's newest signature - not another round of bigger `max_value`s.
 
 ### Latest full run (2026-08-14) — rules 9-12 confirmed working together, plus one new finding
 
 ✅ **Status: passing.** All 5 iterations passed generation on attempt 1 (5 total API calls for the whole loop — the best result seen so far), all 500/500 examples ran every iteration, and acceptance held 31-41% throughout without ever threatening the floor. Real numbers:
 
-| Iter | Accept | Coverage | Novelty | Depth | Findings |
+| Iter | Accept | Breadth | Novelty | Depth | Findings |
 |---|---|---|---|---|---|
 | 0 | 31% | 60% | 40% | 3 | 0 |
 | 1 | 41% | 74% | 20% | 3 | 0 |
@@ -351,4 +437,1095 @@ def array(draw, max_depth=12, current_depth=0):
 
 ### Why this belongs in the report
 
-This is arguably the single most report-worthy finding in the whole project so far. The assignment explicitly warns against a proxy signal that can be gamed, and this run demonstrated exactly that failure mode with real numbers: coverage climbing while the generator quietly got structurally simpler, not more complex. Catching it, tracing it to two specific code defects (a prompt gap and a validator gap that let the defect hide), and fixing and verifying both is stronger evidence of understanding the signal's limitations than a run that happened not to hit this failure mode at all.
+This is arguably the single most report-worthy finding in the whole project so far. The assignment explicitly warns against a proxy signal that can be gamed, and this run demonstrated exactly that failure mode with real numbers: breadth climbing while the generator quietly got structurally simpler, not more complex. Catching it, tracing it to two specific code defects (a prompt gap and a validator gap that let the defect hide), and fixing and verifying both is stronger evidence of understanding the signal's limitations than a run that happened not to hit this failure mode at all.
+
+### The loop working correctly is not the same as the loop finding bugs (2026-08-16)
+
+Across every real run logged in `logs/RUN_HISTORY.md`, the agentic loop itself has been working as intended - all 5 iterations complete, acceptance/breadth/novelty/depth metrics genuinely improve run over run, and prompt rules 9-13 have driven real, verified fixes. But **zero crashes or timeouts have been found across 2500+ generated examples** (`pipeline/logs/iteration_00.jsonl` through `iteration_04.jsonl`, verified directly: every record is `accept` or `reject`, none `crash`/`timeout`).
+
+This isn't a bug in the loop - it's a structural mismatch between what the loop optimizes for and what the one known bug in this project needs. The one confirmed crash (`triage/reports/939402a0547c/`, `triage/reports/e857b4530c96/` - both from the same hand-found source, `grammar/early_findings/01_array_nesting_stackoverflow.toml`) requires array nesting thousands of levels deep to overflow `tomlc99`'s recursive-descent `parse_array` (`toml.c:1057`). The generator's real inputs plateau at a max nesting depth in the low single digits (see the dead `current_depth` counter finding above) - not because of a bug in this case, but because nothing in the current proxy signal (acceptance/breadth/novelty/depth-as-currently-measured) specifically rewards pushing depth into the thousands the way it rewards touching more grammar productions.
+
+**This is a legitimate, reportable outcome** - the assignment's own Step 5 wording anticipates it directly: *"if none were found, a documented explanation of why, and what you'd try next."* The honest framing for the report: the agentic loop succeeded at its actual job (turning a grammar into a self-improving generator under a feedback signal, with no coverage instrumentation available) but the specific proxy signal chosen wasn't tuned to reproduce the one bug already known to exist in this library, and that gap - between "the loop runs well" and "the loop finds bugs" - is worth stating explicitly rather than implying they're the same success criterion.
+
+**What would change it, if pursued further:** a strategy that deliberately biases toward extreme depth (e.g. weighting `st.one_of()` toward the recursive branch, or a dedicated "generate a pathologically deep array" mode alongside the balanced one), or a feedback directive that rewards depth on a log/exponential scale rather than linearly, since a linear "aim for 12+" directive (as seen in `agent/summarize.py`'s `render_feedback()`) has no mechanism to ever suggest depth 1000+.
+
+**Addendum, 2026-08-16 (`module-7b-crash-hunting`):** pursued further, on a separate branch. A hand-written parametric generator (not the LLM/loop) proved the "dedicated pathologically-deep mode" idea above directly: `pipeline/crash_hunt_strategy.py` found 3-4 distinct stack-overflow bugs (`grammar/early_findings/02_dotted_key_stackoverflow.toml` plus two/three more via `pipeline/run_crash_hunt.py`, see `planning/hunting-generation/`) beyond the one original array bug - confirming this really was a reachability gap, not a fact about `tomlc99` having no more bugs. The "log/exponential feedback directive" idea above was also implemented (`DEPTH_TARGETS` in `agent/summarize.py`, plus prompt rule 14 - see this file's "Prompt-rule fix log" entry 5) but **not yet validated against a live loop run**, so whether the *agentic* loop itself can now reach these depths remains the open question this addendum doesn't answer.
+
+---
+
+## Case 5: prompt anchoring — an example's constant became a hard ceiling ⭐
+
+**Date:** 2026-08-17 (Run 9)
+**Branch:** `module-7b-crash-hunting`
+**Why this is flagged:** this is the most transferable prompt-engineering
+finding in the project — it is not about TOML, `tomlc99`, or fuzzing, and
+would reproduce on any LLM-driven code-generation task.
+
+### TL;DR
+
+- Prompt rule 16 told the model to stop trying to reach extreme nesting via
+  recursion and instead draw an integer and repeat a string. **It worked
+  immediately and spectacularly: max depth went from 4 to 5,000 in one
+  iteration — a ~1,250× jump, the single largest metric improvement of the
+  entire project** — while acceptance stayed healthy (32–46%) and breadth
+  reached 84%.
+- **But depth then sat at exactly 4999–5000 for all five iterations.** Not a
+  plateau the model discovered — the model had copied the rule's own
+  illustrative bounds **verbatim**:
+  `n = draw(st.integers(min_value=200, max_value=5000))`.
+- The measured crash thresholds are ~48,000 (arrays), ~80,000 (inline
+  tables), ~90,000–100,000 (dotted keys). A hard ceiling of 5,000 kept every
+  generated document safely below all of them — so `findings: 0` again,
+  despite the technique itself working perfectly.
+
+### The finding
+
+**An illustrative constant inside a prompt example acts as a hard ceiling,
+not a starting point.** The number `5000` was written casually into a code
+example purely to make it concrete. The model treated it as the
+specification.
+
+Critically, it did so **in preference to the actual feedback signal**:
+`DEPTH_TARGETS` in `agent/summarize.py` was concurrently and explicitly
+asking for 30,000 → 90,000. A number embedded in an example silently
+overrode a directive written in prose — the example won.
+
+A second, milder instance of the same class appeared in the same run: the
+model defined `deep_inline_table` and `deep_dotted_key` but wired only
+`deep_array` into `toml_strategy`, so two of the three shapes never
+executed once. Anything demonstrated but not explicitly required tended not
+to be carried through.
+
+### Fixes applied to rule 16
+
+1. Example bounds raised to `1_000`–`120_000` (verified to stay under the
+   1 MB harness cap: 234 KB / 469 KB / 234 KB respectively at max depth).
+2. An explicit instruction to set `max_value` **from the feedback's depth
+   target rather than from the example**, naming the anchoring failure as a
+   real prior failure so it reads as a correction, not a suggestion.
+3. A requirement to wire **all three** deep shapes into `one_of`, not just
+   define them.
+4. A guard against a self-defeating interaction found while reasoning about
+   the change: a crashing document does not count as "accepted", so if deep
+   branches dominate `toml_strategy`, measured acceptance falls below the
+   20% validator floor and the strategy is rejected *before it ever runs* —
+   losing the very crashes it exists to find. Deep branches must stay a
+   minority (~1 per 2 ordinary `document()` branches).
+
+**Status:** not yet re-tested. 120,000 clears all three measured crash
+thresholds, so the next run is the first with a genuine chance of
+`findings > 0` from the agentic loop itself.
+
+### Why this belongs in the report
+
+The assignment asks for documented judgment calls and challenges. This is a
+clean, measured, causally-traced example of a non-obvious LLM failure mode:
+the model obeyed instructions *exactly*, produced correct code, and still
+failed the objective — because a detail chosen for illustration was read as
+a constraint. It also demonstrates the diagnostic method that caught it:
+the metric (depth pinned at a suspiciously round 5,000) prompted reading
+the actual generated source rather than trusting the summary line.
+
+### What `crash_hunt` is, and its actual (indirect) role in Run 11
+
+Worth stating plainly, since it's easy to conflate "found the depth
+threshold data" with "found the crashes" - they are not the same claim.
+
+**What it is:** `pipeline/crash_hunt_strategy.py` + `pipeline/run_crash_hunt.py`
+- a hand-written, non-LLM generator (no model involved in writing it at
+all). Four fixed campaigns, each drawing one integer and repeating a
+character that many times to build one deliberately pathological
+construct: nested arrays, dotted keys, inline tables, and alternating
+array/inline-table mixes. This is the exact "draw an integer, repeat a
+string" technique that rule 16 later taught the LLM.
+
+**How it connects to the pipeline:** fully - it lives inside `pipeline/`
+(originally a separate top-level `crash_hunt/` package, relocated after
+review to mirror `baseline_strategy.py`/`run_baseline.py`'s existing
+shape), reuses the same `HarnessRunner`/`RunLogger`/`config.yaml` as
+everything else, and logs to `pipeline/logs/crashhunt_*.jsonl` in the
+same format `triage/` already reads from `iteration_0X.jsonl`.
+
+**Its role in Run 11's actual crash results: none, directly - verified,
+not assumed.** Every one of Run 11's 4 triage reports' `sources` fields
+trace only to `iteration_00.jsonl`-`iteration_04.jsonl` (the agentic
+loop's own logs); `crash_hunt`'s logs were sitting outside
+`pipeline/logs/` at the time and contributed zero inputs to that triage
+run.
+
+**Its role in Run 11 happening at all: the reason rule 16 existed to be
+followed.** `crash_hunt` is what first *proved* the three crash
+mechanisms were reachable and *measured* their real thresholds
+(~48k/80k/90k) - that evidence became rule 16's worked example, which the
+LLM then adopted on its own in Run 11. So: zero direct contribution to
+Run 11's crashing inputs, but it is the reason the prompt knew what
+number to aim for and which technique to teach. Correlation (both
+projects found the same bugs) should not be read as the same claim as
+causation (crash_hunt did not generate any of Run 11's crashing inputs).
+
+## Case 6: Run 15 (Gemini, first full 5-iteration run) — acceptance falls every iteration while breadth sits at 100%
+
+Real output, full run, no manual intervention beyond resuming past two
+transient Gemini API failures (a read timeout and a 503 - both now
+retried automatically, see `agent/gemini_client.py`):
+
+```
+iter 0: accept 61%  cov 97%   depth 40574  findings 30
+iter 1: accept 56%  cov 100%  depth 49985  findings 32
+iter 2: accept 29%  cov 100%  depth 49985  findings 30
+iter 3: accept 26%  cov 100%  depth 49985  findings 32
+iter 4: accept 24%  cov 100%  depth 49985  findings 34
+```
+
+Two things about this table are not self-explanatory from the printed
+line alone, so worth recording precisely (traced to code, not guessed):
+
+**What "grammar breadth" actually measures.** `agent/breadth.py`'s
+`breadth_fraction` = the fraction of a fixed list of tracked TOML
+grammar productions (`pipeline/features.py`'s `PRODUCTIONS` tuple - e.g.
+`array`, `inline_table`, `basic_string`, `datetime`) that have appeared
+at least once in an *accepted* document, **cumulative across the whole
+run**, never reset between iterations. So "100%" does not mean "no more
+bugs to find" or "every possible document shape" - it means every
+grammar construct we bothered to track has shown up in at least one
+successfully-parsed document at some point since iteration 0. It says
+nothing about depth, combination, or the pathological shapes that
+actually cause crashes. The `+36 this run` figure is also a minor
+mislabel worth flagging: it's `len(productions_this_iteration)`, i.e.
+"36 distinct productions appeared in *this* iteration's accepted
+records" - not "36 newly-reached productions." Once breadth is already
+100%, this number is not a "new ground broken" count; it just tracks
+this iteration's accepted-document diversity from the fixed set.
+
+**Why acceptance keeps dropping.** "Accepted" here means the harness
+process exited 0 - the underlying `tomlc99` library actually parsed the
+generated document (`pipeline/schema.py`'s `Verdict.ACCEPT`) - not
+Hypothesis's own internal example filtering. Acceptance rate is
+per-iteration, not cumulative (unlike breadth), recomputed fresh each
+time from that iteration's own records
+(`agent/summarize.py::render_feedback`). The decline lines up exactly
+with `DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`
+(`agent/summarize.py`): every iteration's feedback explicitly instructs
+the model to bias its strategy toward deeper, more unbalanced nesting as
+the target climbs, and Run 15's own `max depth` column confirms the
+strategy actually did this (40574 → 49985, hitting the ceiling by
+iteration 1). Pushing generation toward tens of thousands of nesting
+levels makes a document far more likely to be malformed, exceed a
+size/depth limit the parser itself enforces, or otherwise fail to parse
+- i.e. more REJECT/CRASH/TIMEOUT harness verdicts, not more Hypothesis-
+level filtering. This is the deliberate acceptance-for-depth trade the
+depth-escalation design makes on purpose (see Case 4/5): the 20%
+acceptance floor exists specifically so this trade has a hard stop
+before the strategy collapses to producing nothing useful at all. Run
+15's iteration 4 (24%) stayed just above that floor.
+
+**Why this belongs in the report:** it is the same escalating-depth
+mechanism documented in Case 4/5, now observed end-to-end on a full
+5-iteration run with real numbers, and it resolves what could otherwise
+look like two unrelated anomalies ("breadth stuck at 100%, is something
+broken?" and "why does the model seem to be getting worse?") into one
+explained, intentional trade-off.
+
+**Triage of Run 15's 159 crashing inputs (real, run after this write-up):**
+rule 17's many-siblings O(n²) hang fired autonomously for the first time
+via the agentic loop itself, not just the hand-written `crash_hunt` probe
+- 72 timeout occurrences, minimized reproducer is exactly the predicted
+shape (`[a]` followed by thousands of `kN = 1` lines). This resolves a
+previously-open question (whether rule 17 would ever be confirmed live).
+It reports `DID NOT REPRODUCE (0/3)` under `triage`'s verify step, but
+that is expected for this bug class specifically: it is a *timing*
+threshold (crosses the 5s harness cutoff), not a memory-safety crash, so
+pass/fail near the boundary is inherently sensitive to system load at
+verify-time - unlike the three stack-overflow bugs, which reproduce
+deterministically (3/3) every time. `triage`'s verify step was designed
+around deterministic crashes; it doesn't yet have a notion of "reproduces
+under load, marginal near a timing cutoff" for hang-class bugs. Worth
+noting as a known gap rather than a failure: **the other 4 signatures
+found in Run 15 are the same 3-4 stack-overflow bugs already known** -
+this run found no new memory-safety bug class, only confirmed the hang
+class was reachable by the LLM-driven loop on its own.
+
+## Case 7: abstract prompt rules underperform concrete ones for this model — measured, then reverted
+
+A direct A/B test of a genuine assignment-design question: **should the
+prompt hand the model concrete, worked crash-shape examples, or abstract
+"go find bugs"-style guidance and let it discover the shapes itself?** The
+abstract version is more intellectually appealing (the loop does more of
+the discovery), so it was worth actually trying rather than assuming.
+
+**The change tested.** Rules 16-17 were rewritten from concrete to
+abstract. The concrete originals gave the model:
+- three fully worked deep-nesting composites (`deep_array`,
+  `deep_inline_table`, `deep_dotted_key`) with the exact integer-repetition
+  technique spelled out, and
+- a fully worked `many_siblings` composite for the O(n²) key-count hang.
+
+The abstract rewrite removed every specific shape and magic number,
+keeping only: the *technique* ("draw an integer N, build by repetition,
+because recursion provably can't reach the scale") and a list of abstract
+*dimensions* to stress ("how deeply constructs nest; how many elements a
+collection holds; how many entries share a scope; how long a single token
+is"), with the model told to work out which TOML constructs map onto each
+dimension itself.
+
+**Result (live test, Gemini `gemini-3.6-flash`):** worse on both axes the
+project cares about.
+- **Findings: did not help** - the abstract prompt did not improve on the
+  concrete baseline and, by observation, produced weaker crash-finding.
+- **Speed: markedly worse** - roughly ~5 minutes per iteration, versus the
+  concrete baseline's ~2.5-4 min/iteration in Run 15 (154s / 181s / 251s /
+  234s / 179s). The likely cause: an abstract prompt gives a reasoning
+  model more open-ended work to do (decide the dimensions, invent the
+  shapes, choose the magnitudes) on every single generation, so it spends
+  more tokens/time reasoning and still lands on less effective code.
+
+Evidence note, kept honest: the concrete baseline's per-iteration numbers
+are measured (Run 15, logged). The abstract run's underperformance is from
+a live test observed during the session (slower wall-clock, no improvement
+in findings), not a fully re-logged 5-iteration run with a saved metrics
+table - so this is recorded at "observed, decisive enough to revert"
+strength, not "fully tabulated" strength. It was decisive enough that the
+concrete rules were restored byte-for-byte to the proven Run-15 version.
+
+**Why this belongs in the report.** It directly answers a question the
+assignment implicitly raises - how much should the LLM be *told* versus
+left to *discover* - with a measured answer for this model/task:
+**concrete worked examples of a technique outperform abstract guidance,
+both in result quality and in cost.** This is not a claim that abstraction
+never works; it is a claim that for a mid-size instruction-following model
+pointed at a very specific, high-scale bug class, a concrete demonstration
+of the *technique* (not the specific bug - the technique) is what actually
+moves the metrics. It also pairs cleanly with Case 5 (prompt anchoring):
+together they show the model treats concrete numbers in the prompt as
+strong signal - which is a liability when the number is illustrative
+(Case 5) but an asset when the whole worked example is the thing you want
+followed (this case).
+
+## Case 8: Run 21 (Gemini) — same 4 bugs, but verification quality jumped from "unstable" to deterministic
+
+**Date:** 2026-08-19 (triaged) · **Model:** `gemini-3.6-flash`
+
+Run 21's triage (`triage/reports/run_21/`) produced **5 signatures after
+deduplication from 154 crashing/hanging inputs**, and every one maps to a
+bug already documented — **no new bug class**.
+
+| Signature | Bug (already known) | Type | Occurrences | Verify |
+|---|---|---|---|---|
+| `939402a0547c` | Array-nesting overflow, `parse_array` (`toml.c:1057`) | stack overflow | 92 | **deterministic 3/3** |
+| `unparsed_timeout` | O(n²) many-siblings hang (bug 4) | hang/DoS | 29 | did-not-reproduce (expected) |
+| `e857b4530c96` | Frameless variant of the array bug (crash too violent to unwind) | stack overflow | 23 | crashes 3/3, signature unstable |
+| `26e809dd9d85` | Inline-table overflow, `parse_keyval`→`parse_inline_table` (`toml.c:1177`) | stack overflow | 8 | **deterministic 3/3** |
+| `55628614cd6c` | Dotted-key overflow, `parse_keyval` self-recursion (`toml.c:1132`) | stack overflow | 2 | **deterministic 3/3** |
+
+**The reportable finding is the verification-quality jump, not a new bug.**
+In Run 20 (`triage/reports/run_20/INDEX.md`) the three parseable stack
+overflows (`939402a0547c`, `26e809dd9d85`, `55628614cd6c`) all verified as
+`unstable-sig` — they crashed every run but the captured stack shifted
+between runs. In Run 21 **all three verify cleanly as deterministic (3/3)**,
+which is stronger, cleaner evidence for the exact same bugs. The array bug
+also fired far more often (92 vs 47 occurrences).
+
+Two rows are *not* separate bugs: `e857b4530c96` is the same array overflow
+as `939402a0547c` crashing so violently ASan can't unwind a stack (frameless
+bucket, see Case/Bug 3 on frameless collapse); `unparsed_timeout` is the
+O(n²) hang, which still reports `DID NOT REPRODUCE (0/3)` under verify — that
+is expected for a timing-threshold bug, not a failure (see Case 6).
+
+## Case 9: Run 25 — the rule 16 amendment worked, and triage's own count needed correcting by hand
+
+**Date:** 2026-08-20 · **Branch:** `module-7b-crash-hunting-2` · **Model:**
+`gemini-3.6-flash`
+
+This confirms the rule 16 amendment from fix-log entry 8 (four per-shape
+depth floors instead of one shared floor, plus a fourth taught shape —
+alternating array/inline-table nesting). It also produces the clearest case
+yet for why `INDEX.md`'s "N unique bugs after deduplication" line is a
+signature count, not a bug count, and must be read by hand before it goes in
+the report.
+
+### The floor fix worked exactly as predicted
+
+Total crashing/hanging inputs jumped from Run 24's 219 to **1,127** across
+Run 25's five iterations, while acceptance stayed clear of the 20%
+validator floor throughout (29%–58%). This is not "more bugs" — it is the
+*same* bugs firing far more often, because per-shape floors replaced one
+shared low floor. The occurrence counts make the mechanism visible directly:
+bug 2 (dotted-key) went from 3 occurrences in Run 24 to **158** in Run 25;
+bug 3 (inline-table) went from 11 to **120**. Before the fix, most draws for
+these two shapes landed below their own crash threshold and did nothing;
+after it, nearly every draw clears its threshold. Exactly the failure mode
+predicted in fix-log entry 8, now measured.
+
+### `INDEX.md` said 8 unique bugs. It's 5.
+
+Run 25's triage (`triage/reports/run_25/INDEX.md`) reports **8** signatures
+after deduplication: the 4 already-known bugs, plus three that had never
+appeared before — `af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`. Taken at
+face value, that reads as three new bugs. It isn't.
+
+**Checked by reading the actual saved crashing input for each of the three,
+not just the signature name.** All three are byte-for-byte the same
+generated shape: `v = [{a=[{a=[{a=...1...}]}]}]`, the alternating
+array/inline-table construct taught in the rule 16 amendment, each roughly
+69–73 KB. Their captured stack frames confirm why triage split them:
+
+| Signature | Top frames captured |
+|---|---|
+| `af1d0280777e` | `malloc → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)` |
+| `3db1e06f41e9` | `strnlen → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)` |
+| `80953bb88ca2` | `malloc → expand → expand_arritem → create_table_in_array (toml.c:903) → parse_array (toml.c:1072)` |
+
+`parse_keyval` (via `create_keyarray_in_table`, the `key = [` step) and
+`parse_array` (via `create_table_in_array`, the `{...}` step) are the two
+halves of the *same* alternating recursion cycle — the construct calls one,
+which calls the other, which calls the first again, all the way down. Which
+half is executing at the exact instant the stack finally runs out is not
+controlled by anything in the generated input; it is decided by the
+runtime's own stack layout at 60,000+ nested calls. So the same single
+overflow gets fingerprinted three different ways depending on which phase
+of the cycle it happens to be caught in — `af1d0280777e` and `3db1e06f41e9`
+aren't even fully stable between each other (`malloc` vs `strnlen` as the
+literal top frame), which is the same instability already seen and named for
+bug 1 in Bug 2/Bug 3 above, now hitting a bug with *two* alternating phases
+instead of one repeating call, so it has two ways to fragment instead of
+one.
+
+**This is a sharper case of the exact normalization problem the assignment
+explicitly asks to be documented** ("this is what determines whether you
+found one bug or several"). The fix applied for bugs 1/3 (retry a crashing
+input up to 6 times to get a parseable stack before giving up) reduces how
+often a signature comes back *frameless*, but does nothing for a signature
+that is fully parseable and still unstable *between two different real
+call sites* — retrying doesn't converge here, because both captured
+outcomes are equally valid, equally parseable descriptions of where the
+stack happened to be. Automatically merging by "same input shape" isn't a
+general fix either — two genuinely different bugs could coincidentally
+share an input shape. The honest resolution for this project was manual:
+read the actual crashing input, not just the digest, before trusting
+`INDEX.md`'s count.
+
+### The number for the report
+
+**5 distinct root-cause bugs, confirmed across every run to date** — not 8,
+not 4. Bug 5 (alternating array/inline-table recursion) is real, newly
+confirmed in Run 25, predicted correctly in advance by the hand-written
+`crash_hunt` probe before the agentic loop ever reached it, and is a
+genuinely different recursion cycle from bugs 1 and 3 (two functions taking
+turns, not one function repeating) — see the bugs-found summary table above,
+row 5, for the canonical three-signature mapping. State the 8-vs-5 gap
+explicitly in the report rather than quoting `INDEX.md`'s count unexamined:
+it is a real, demonstrated case where the automated triage number needed a
+human check before being trustworthy, which is itself evidence of triage
+instinct, not a flaw to hide.
+
+## Case 10: two defects in the feedback signal itself — one of them permanently unsatisfiable ⭐
+
+**Date:** 2026-08-20 · **Branch:** `module-7b-crash-hunting-3`
+
+Belongs in the report's **proxy-signal** discussion, which the assignment
+asks about directly ("what proxy signal did you choose to make the loop
+actually improve the generator across iterations, and why?"). Both defects
+are in `agent/summarize.py`'s `render_feedback()` — the function that
+*is* the feedback signal — and neither is visible from the loop's console
+output. They were found by tracing the data path rather than by observing
+a failure, which is why they survived 25 runs.
+
+### Defect 1: the depth directive could never be satisfied
+
+`DEPTH_TARGETS`' final value is **90,000**. The directive fires when
+`max_depth_cumulative < depth_target`. But tracing where that number comes
+from:
+
+- `summarize()` computes `accepted = [r for r in records if r.verdict ==
+  ACCEPT]`, then derives `depths` from `accepted` **only**;
+- `LoopState.observe()` likewise updates `max_depth_reached` inside
+  `if accepted:`.
+
+So both depth figures count **only documents that did not crash**. Arrays
+crash at ~48,000 and inline tables at ~80,000 — therefore *a document deep
+enough to reach the 90,000 target crashes, and a crashing document is never
+counted*. The target is unreachable by construction.
+
+The consequence is measurable in Run 25: accepted depths were 7 / 14 /
+4,194 / 34,899 / 41,802 against a 90,000 target, so `"PUSH DEPTH MUCH
+FURTHER"` fired on **every iteration of a run that was already producing
+1,127 crashes**. Wasted directive pressure that competed with genuinely
+useful directives, and pushed toward exactly the deep-branch dominance that
+threatens the 20% acceptance floor.
+
+**Fix:** a new `max_depth_generated` figure computed from *all* records,
+crashes included, now gates the directive; the feedback body shows both
+numbers with the distinction spelled out. `max_depth_this_iteration` and
+`max_depth_cumulative` deliberately keep their accepted-only meaning,
+because `comparison/gemini/metrics.{md,csv}` already stores those figures
+for runs 15-25 and redefining them would silently break cross-run
+comparability.
+
+**The transferable finding:** a metric that filters out failures cannot be
+used as a target for producing failures. The depth signal and the crash
+objective were in direct contradiction, and the loop had no way to report
+that — it just kept asking for something it had already achieved but
+refused to measure.
+
+### Defect 2: no crash-diversity term at all
+
+The feedback reported crashes as
+`"N unique crash signature(s) so far: 939402a0547c, e857b4530c96, ..."` —
+raw hex digests, which carry nothing the model can act on, since nothing
+tells it what *shape* produced each one. More importantly, **no directive
+in the entire list ever asked for a crash mechanism that had not been seen
+yet.** The signal steered on acceptance, missing productions, depth, and
+novelty — never on crash variety. Nothing pushed away from re-finding the
+same bugs, which is precisely the observed behaviour: runs 17, 20, 21 and
+24 each returned the identical five buckets.
+
+**Fix:** a `CRASH_MECHANISMS` table maps each known digest to the input
+shape behind it ("nested arrays", "dotted keys", "alternating
+array/inline-table nesting", …), so the feedback names mechanisms instead
+of digests; and a new directive names the shapes already found and asks for
+one that stresses a different parser path. An unrecognised digest
+deliberately falls through to the digest itself — a signature missing from
+the table is a newly-discovered one, and hiding it behind a generic label
+would defeat the purpose.
+
+**Why it points at level *content*, not more depth:** the accompanying
+experiment (fix-log entry 9) established that two documents nested equally
+deep crash in *different* parser functions depending on what each level
+contains. Changing the alternation pattern re-landed in known buckets;
+changing a bare key to a **quoted** one produced `c04d038a7956`, the first
+signature ever to contain `norm_basic_str`. So the directive asks the model
+to vary what sits at each level, which is the lever that actually moves
+signatures.
+
+**Status:** both fixes verified against synthetic state — the depth
+directive now stops firing once generated depth clears the target, the
+diversity directive fires with readable mechanism names, and an unknown
+digest survives the mapping. Not yet observed on a live run.
+
+## Case 11: Run 29 — deleting rules 16/17 entirely (not just abstracting them)
+
+Case 7 tested *rewording* rules 16-17 from concrete to abstract, keeping
+them in the prompt. This is a stronger test: **delete rules 16 and 17
+outright** (commented out, not just softened) and see what a completely
+unguided prompt produces on its own, five bugs deep into the project.
+
+**What survived without the rules.** `agent/strategies/iter_02_strategy.py`
+(Run 29, iteration 2) shows the model independently reinvented the same
+*technique* rule 16 used to spell out — a `deep_toml_value()` composite
+that draws a random integer depth and builds the string by repetition
+(`"[" * depth + val + "]" * depth`) rather than real recursion. Nobody
+told it to do this in Run 29's prompt; it follows from rule 14's general
+"recursion can't reach extreme scale, use a counter" guidance, which was
+*not* removed. Triage still surfaced 5 of the 9 known signatures
+(`e857b4530c96`, `3db1e06f41e9`, `939402a0547c`, `80953bb88ca2`,
+`af1d0280777e` — `triage/reports/run_29/INDEX.md`), so the core
+overflow-by-deep-nesting idea is robust to losing the worked example.
+
+**What did NOT survive.** Three things dropped out entirely:
+- The dotted-key overflow (`55628614cd6c`) and the quoted-key alternating
+  variant (`c04d038a7956`) never appeared. `deep_toml_value()` only builds
+  `array`/`inline`/`mixed` shapes with a bare key — nothing dotted, nothing
+  quoted — because rule 16 was the only place those two specific shapes
+  were ever named.
+- The sibling-key O(n²) hang (`unparsed_timeout`) never appeared either.
+  With rule 17 gone, nothing in the prompt asks for many flat sibling keys
+  in one table at all; that bug class needs its own distinct instruction,
+  it doesn't fall out of the depth-escalation guidance.
+
+**Why the numbers looked strange at first glance (both explained by
+reading the actual code, not guessed):**
+- *"findings: 0" in iterations 0, 1, and 3.* `DEPTH_TARGETS = [12, 200,
+  4_000, 30_000, 90_000]` (`agent/summarize.py`) ramps the requested depth
+  up gradually by iteration index — iterations 0-1 aren't even asking for
+  dangerous depth yet (measured max depth 7 and 19 that run), so nothing
+  crosses a real crash threshold. Iteration 3's zero is different: the
+  model was asking for real depth by then, but `deep_toml_value()` draws
+  its depth from **one shared range (100-50,000) for every shape**, unlike
+  rule 16's five *measured, per-shape* floors (arrays ~48k, inline tables
+  ~80k, dotted keys ~90k-100k, ...). Without differentiated floors, whether
+  a given draw actually clears the real threshold for whatever shape it
+  happened to pick is down to chance, not design — so a whole iteration can
+  legitimately land under threshold on every draw.
+- *"max depth" jumping to 10,889 and then staying there.* This field
+  (`max_depth_cumulative` in `agent/summarize.py`) is a **running maximum
+  across the entire run**, never reset per iteration — it only reports the
+  single deepest *accepted* (non-crashing) document seen so far. Iteration
+  2 happened to draw a depth (comfortably under the real ~48k array
+  threshold) that parsed successfully; that value then persists through
+  iterations 3-4 unchanged because nothing later beat it. It does not mean
+  iterations 3-4 stopped generating deep documents.
+
+**Why this belongs in the report, alongside Case 7.** Case 7 showed
+*rewording* the rules abstractly hurt speed and results. Case 11 shows a
+sharper distinction: the general *technique* (rule 14's counter-based
+repetition idea) is robust and gets reinvented on its own — but the
+*specific, measured parameters* (per-shape thresholds) and the
+*deliberately distinct bug classes* (dotted keys, quoted keys, sibling-key
+count) do not emerge without being named. This draws an honest line for
+the report between "the LLM discovered this" (bugs 1-4's core mechanism,
+robust across Case 11) and "the LLM reproduces this because it was told
+the recipe" (bugs 1-4's exact thresholds, and bug 5's specific shape,
+Case 9) — the same distinction Case 7's revert already implied but this
+run makes concrete with signature-level evidence.
+
+**Recommendation: keep both versions, and disclose which bug came from
+which.** Neither "rules in" nor "rules out" is simply the better choice —
+they answer different questions the assignment cares about:
+- **Rules in** (runs 27-28): 9 signatures, all 5 bug types, every run.
+  Reliable, but can't honestly be presented as pure LLM discovery for
+  bugs 2 (dotted-key), 4 (sibling-key hang), and the quoted-key variant
+  of bug 5 - the prompt names the exact shape and measured threshold for
+  each.
+- **Rules out** (Run 29): only 3 of the 5 bug types (array overflow,
+  inline-table overflow, the bare-key alternating variant) - fewer bugs,
+  but every one of them is genuinely LLM-driven: the model reinvented the
+  underlying repetition technique from rule 14's general guidance alone,
+  without being shown the specific shape.
+The strongest, most honest thing to put in the report is not "the LLM
+found 9 bugs" - it is a one-line attribution per bug: which came from the
+loop's own exploration (bugs 1, 3, and the bare-key variant of 5) and
+which only appeared after the prompt was deliberately given the exact
+recipe (bug 2, bug 4, the quoted-key variant of 5). The assignment's own
+Challenges section explicitly asks for judgment calls like this one to be
+named, not hidden behind a single combined bug count.
+
+## Case 12: `crash_signatures` was declared in Module 5 and never once written — the loop was blind to its own crashes
+
+While designing what would replace rules 16-17 (Case 11), a check of
+whether `LoopState.crash_signatures` was actually being used turned up
+something bigger than the prompt question it was meant to answer:
+`crash_signatures` is **read in four places in `agent/summarize.py` and
+written in exactly zero.** Confirmed on run 29's saved state — 5 iterations,
+110 logged crashes — `agent/state/loop_state.json` had `"crash_signatures":
+[]`, and the feedback the model actually received in iteration 4
+simultaneously said `'crash': 17` in the outcome counts **and** "No crashes
+found yet by any iteration." in the crash-summary line right below it.
+
+**Why it happened.** The sanitizer's full symbolized backtrace was captured
+correctly the whole time (`pipeline/runner.py` stores it on
+`RunRecord.stderr`) and written to every `iteration_NN.jsonl`. Nothing on
+the `agent.loop` path ever called `triage.signature.parse_signature()` on
+it - that function only ran later, in the separate `triage.run_triage`
+step, which happens after a run is already finished and can no longer
+influence it. The live loop and the after-the-fact triage step were reading
+the same crash data, but only one of them was capable of learning from it.
+
+**Consequence for everything already believed about this project's
+prompts:** the hand-written `CRASH_MECHANISMS` digest-to-English dictionary
+in `agent/summarize.py`, and the directive built from it ("FIND A CRASH
+WITH A DIFFERENT MECHANISM... e.g. quoted keys, dotted keys"), had **never
+fired on any run to date** - `state.crash_signatures` being permanently
+empty meant the `if state.crash_signatures:` guard around that directive
+was always false. So run 29 (Case 11) was a cleaner test of "no hardcoded
+bug knowledge" than first credited: the leaked hint was sitting in the
+code, but structurally could not have reached the model yet.
+
+**The fix, tried on `module-7c-tweaking-prompts`:**
+- `agent/loop.py` called `parse_signature(rec.stderr, rec.signal)` on
+  every finding as it happened, folding the digest and its normalized top
+  frames into a new `LoopState.crash_frames` field (backward-compatible:
+  given a default, so `--resume` against an old `loop_state.json` still
+  loads real state rather than silently falling back to blank - verified
+  directly against run 29's saved file).
+- `render_feedback()` named the actual target **functions** a crash landed
+  in (`state.crashed_functions`, filtered to frames carrying a `file:line`
+  - libc frames like `malloc`/`strnlen` never get one from the sanitizer,
+  so that distinction, not a list of known function names, is what
+  separates target code from noise) instead of the dead digest→mechanism
+  table. The diversity directive lost every hand-written TOML construct
+  name ("quoted keys", "dotted keys") and only ever stated which functions
+  had already been hit and asked for a different one.
+- The depth ladder (`DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`,
+  whose own old comment admitted it was sized to tomlc99's *known* ~48k-105k
+  thresholds) was replaced with a formula: next target = 8x the deepest
+  document actually generated so far, bootstrapped at 12 for the cold
+  start, capped at roughly `harness.max_input_bytes / 8` so it could not
+  ask for an unreachable multi-million-level target.
+- Verified end-to-end offline, no API calls spent: replayed run 29's five
+  `iteration_NN.jsonl` logs through the new code and confirmed the parsed
+  digests matched `triage/reports/run_29/INDEX.md` exactly, the rendered
+  feedback contained real function names and none of "No crashes found
+  yet", "quoted keys", "dotted keys", or "tomlc99 needs", and the existing
+  `loop_state.json` still loaded as populated state rather than a blank
+  fallback.
+
+**Outcome across two live runs, then reverted.** Run 30 (fixed feedback,
+still no rules 16/17) found 3 honest bugs, same as run 29 but including one
+run 29 had missed (`nested_inline_tables`) - concrete evidence the fix
+genuinely worked, and the loop's live `crash_signatures` matched triage's
+own count exactly for the first time ever. Run 31 regressed to 1 bug: it
+crashed on the easiest bug (`nested_arrays`) in iteration 0, and the new
+"stop pushing depth once anything has crashed" gate then suppressed the
+depth directive for the rest of the run - "deepest generated" stayed flat
+at 11,919-28,000 for all 5 remaining iterations, well short of the
+~48,000-80,000 range the other bugs need, because nothing ever asked the
+model to go back there. The gate fixed the runaway-target problem (Run 30
+asked for 200,000, then 1,594,216, then 11,694,760 - each iteration
+multiplying an ask the strategy had already proven unreachable) but was
+too aggressive in the other direction: reaching one easy bug should not
+retire the search for harder ones at greater depth.
+
+**Decision: reverted on `module-7-report`.** Across 3 runs (29, 30, 31)
+without rules 16/17, the ceiling found was 3 of the 5 known bugs, never
+more; rules 16/17 (runs 27, 28) reliably find 5. The fix in this case is
+real and worth keeping as a documented attempt - `crash_signatures` being
+permanently dead was a genuine bug independent of the rules-16/17 question
+- but the net result across the whole experiment did not outperform the
+hardcoded baseline, so the code was reverted rather than merged. The
+attempt lives on `module-7c-tweaking-prompts` (commit `c068b98`) as a
+complete, reproducible record.
+
+**Why this belongs in the report as its own point.** This is not a
+rewording of Case 11; it is a bug in the loop's OWN plumbing that made
+every prior run's crash-related feedback silently inert, discovered only
+because Case 11's question ("can prompts avoid hardcoding?") led to
+checking whether the feedback path was even connected. It also means any
+run before this fix that appeared to respond to "keep generating known
+crashes, find a different mechanism" was doing so by chance, not because
+that directive ever actually reached the model. The subsequent regression
+(Run 31) is itself a useful negative result: a real plumbing fix can still
+make an unrelated design choice (the depth-suppression gate) look worse
+than it would in isolation, which is exactly the kind of confound worth
+naming rather than papering over.
+
+## Case 13: the proxy signal was one-dimensional, which capped what the loop could ever find ⭐
+
+Cases 11 and 12 both asked "can the prompt avoid hardcoding the answer?" and
+both stalled at the same ceiling: 3 of the 5 known bugs, across three
+separate runs (29, 30, 31). This case found the reason, and it is not about
+prompting at all.
+
+**The measurement.** Feeding the project's *own* dotted-key crash
+reproducer — `triage/reports/run_27/dotted_keys-55628614cd6c/minimized.toml`,
+180,505 bytes, a chain of 90,252 dots that reliably overflows the parser's
+stack — through `pipeline/features.py`'s `extract_features()` returned:
+
+```
+actual dots       : 90252
+max_depth reported: 0
+```
+
+`_max_depth()` counts `[`/`]` and `{`/`}` and nothing else. A dot chain is
+not brackets, so the deepest input this project has ever produced measured
+as **zero depth**. The sibling-key hang measures the same way: 15,000 flat
+keys in one table reports `max_depth: 1`.
+
+**Why that caps discovery.** The loop steers by this signal. Had the model
+generated either reproducer by chance, the feedback would have reported
+"max depth 0" and the next directive — `PUSH DEPTH MUCH FURTHER` — would
+have steered it *away* from the shape that had just worked. There was never
+a reward gradient toward bugs 2 and 4; they were not hard to find, they were
+**invisible to the search**. Rules 16-17 "worked" precisely because they
+bypassed the broken signal, writing the shapes and thresholds directly into
+the prompt. That reframes the whole Case 11 result: the honest conclusion is
+not "the LLM cannot discover these" but "this loop could not, because its
+own instrument could not see them."
+
+**The fix, and why it is not hardcoding.** The axes were read off
+`grammar/TomlParser.g4` mechanically — every rule that recurses or carries a
+`*`/`+` quantifier is an axis along which a document can grow without bound:
+
+| Grammar rule | Axis | Measured before? |
+|---|---|---|
+| `array_`/`inline_table` (recursive) | nesting depth | yes |
+| `dotted_key : simple_key (DOT simple_key)+` | dot-chain length | **no** |
+| `document : expression (NL expression)*` | entries in one scope | **no** |
+
+That procedure is target-agnostic: applied to any other format's grammar it
+yields that format's axes, and it names no bug, no threshold, and no crash
+shape. `extract_features()` now returns `dotted_key_depth` and
+`max_siblings` alongside `max_depth`; `LoopState.scale_axes_reached` tracks
+the best value on each (over *generated* documents, not accepted ones — the
+Case 10 lesson); and a new directive reports all three and calls out any
+axis an order of magnitude behind the leader.
+
+**Calibration, from data rather than taste.** The lagging-axis threshold was
+first set at 100x and did not fire on real run-31 state (nesting 28,014 vs
+dot-chain 299 vs entries 723 — 93x and 39x behind). Both of those axes were
+nowhere near the scale at which anything breaks, so both *should* be
+flagged; the threshold was lowered to 10x, which fires on both and still
+means "an order of magnitude behind" rather than ordinary variation.
+
+**Two implementation notes worth keeping.** (1) The axis dict deliberately
+records an axis whose best is still `0`; an `if value > existing` guard left
+never-exercised axes absent from the dict entirely, which is exactly the
+case the imbalance check most needs to see. (2) `_key_part()` must count a
+key-like line with **no `=` at all**: delta-debugging minimizes the
+dotted-key reproducer down to a bare `a.a.a...a`, because the crash happens
+while the key is still being read and the value is never reached — the first
+version of the helper required an `=` and reported that input as depth 0,
+reproducing the very blindness this case is about.
+
+**Also fixed here, found while testing:** `LoopState.load_or_new()` splatted
+saved JSON straight into the constructor, so a state file written while an
+extra field existed (e.g. `crash_frames`, from the Case 12 branch) raised
+`TypeError`, which the bare `except` swallowed — silently returning blank
+state and discarding the entire breadth history on the next `--resume`, the
+one thing the module docstring says cannot be reconstructed afterwards.
+Unknown fields are now dropped with a printed warning instead of taking the
+whole file down.
+
+**Status:** verified offline against real logged data — both reproducers now
+measure correctly (90,252 and 15,000), float arrays and quoted dots do not
+produce false positives, the directive fires as priority 1 on replayed run
+31 state, feedback stays inside its ~2,200-character budget (1,853), and the
+existing `loop_state.json` loads as populated state rather than a blank
+fallback. Not yet run live.
+
+**Why this belongs in the report.** The assignment asks what proxy signal
+was chosen to steer refinement "since there's no coverage instrumentation"
+and why it was expected to work. This is the honest answer to the follow-up
+question: the signal chosen was *structurally incomplete* — it measured one
+of the grammar's three unbounded axes — and that incompleteness, not the
+model and not the prompt, set the ceiling on what the loop could discover.
+It also gives the "which parts of the grammar are still under-tested"
+section a precise, measured answer instead of a guess.
+
+**Outcome across two live runs, then kept as a documented experiment, not
+merged.** Run 32 (rules 16/17 still active - a confound) found all 9
+signatures / 5 bugs, but that cannot be credited to the axis fix alone since
+the prompt was still handing over the answer. Run 33 (rules 16/17 removed,
+axes alone) is the clean test: the dot-chain axis climbed from 3 to 999
+across five iterations - genuine, unprompted progress on an axis the loop
+had never been able to see before - but 999 fell short of the ~90,000
+needed to actually crash the dotted-key bug, so only 1 distinct bug was
+found that run. In the SAME run, nesting depth reached 109,406, because
+rule 14 demonstrates that axis with a concrete code example while the new
+scale-axis directive was prose-only - a second, independent confirmation of
+Case 5 (prompt anchoring): a number embedded in a worked example moves the
+model; the same instruction in prose does not, even when the underlying
+measurement is accurate.
+
+**Decision: kept here as a documented, reproducible experiment - not merged
+into `module-7-report`.** The blindness this case found and fixed is real,
+and worth keeping as evidence of a properly-diagnosed root cause. But
+across all attempts to date, the hardcoded rules 16/17 baseline (runs 27,
+28, 32) is still the only configuration that reliably finds all 5 known
+bugs, so it remains what `module-7-report` runs. The natural next step - an
+anchored numeric target instead of a prose one - was scoped but not run;
+see the branch for the reasoning.
+
+## Terminology note: "grammar breadth", not "coverage"
+
+The metric formerly called "coverage" throughout this project (in code,
+logs, and prose) was renamed to **"grammar breadth"** across the entire
+repository on `module-7b-crash-hunting-rename`. Worth documenting as its
+own entry, because the reasoning is a real judgment call, not a cosmetic
+preference.
+
+**Why it mattered.** The assignment explicitly forbids real code coverage
+of the target library — no instrumenting `tomlc99`'s compiled binary to
+see which lines/branches executed. This project never did that. But the
+project's own proxy signal had, since early on, been calling itself
+"grammar-production coverage" - a name that shares a word, and therefore
+an easy-to-conflate surface, with the thing being forbidden. A reader
+skimming the report or the code could reasonably misread "coverage" as a
+claim of using the forbidden signal, when the actual mechanism is
+completely different: a regex scan over the *generator's own output
+text*, computed before that text is ever sent to the parser (see
+`pipeline/features.py`'s `PRODUCTIONS` and `_max_depth`-style helpers).
+It measures "which grammar constructs has our own generator's output
+contained," never "which lines of `tomlc99.c` ran."
+
+**What changed, concretely:** `agent/coverage.py` → `agent/breadth.py`;
+`coverage_fraction` → `breadth_fraction`; `cumulative_coverage` →
+`cumulative_breadth`; `covered_productions` → `reached_productions`;
+every JSON/CSV field, console print, prompt-rule sentence, and prose
+mention across `OBSERVATIONS.md`, `progress_report.md`,
+`PROJECT_SUMMARY.md`, `explanation.md`, `logs/RUN_HISTORY.{md,jsonl}`,
+`comparison/*/metrics.csv`, `comparison/*/README.md`, and
+`report/generate_artifacts.py`'s generated tables. Historical data
+(already-logged JSONL/CSV records, the persisted `loop_state.json`) was
+migrated in place rather than left inconsistent with the renamed code.
+
+**What deliberately did NOT change:** every place the word legitimately
+refers to the *forbidden* kind - e.g. `progress_report.md`'s "no
+code-coverage instrumentation available" and its own "what I'd change...
+with real coverage instrumentation" future-work paragraph, and
+`PROJECT_SUMMARY.md`'s "(no code coverage available)" section header.
+Those sentences are correctly using the word for what it actually means;
+renaming them would have introduced the opposite confusion.
+
+**Why this belongs in the report as its own point, not just a rename:**
+it demonstrates the same self-auditing discipline as Case 9 and Case 10 -
+noticing that a term this project chose could be misread against the
+assignment's own explicit constraint, and fixing it deliberately rather
+than leaving it for a grader to puzzle over.
+
+---
+
+## Case 14: OpenAI `gpt-4o-mini` failure modes, validation gaps, and triage outcome
+
+**Date:** 2026-09-03  
+**Model:** `gpt-4o-mini` via OpenAI API  
+**Runs under test:** Run 40 and Run 41  
+
+This case documents the specific failure patterns observed when evaluating OpenAI's `gpt-4o-mini` model against the agentic refinement loop.
+
+### 1. Failure Modes Observed in Generated Strategies
+
+- **Method Binding Error (`AttributeError: 'int' object has no attribute 'map'`):**  
+  In Run 40 (Iteration 3), `gpt-4o-mini` generated strategy helper functions (`unicode_escape`, `hex_int`) that called `.map(...)` on the return value of `draw(st.integers(...))` rather than on the strategy object itself. Because `draw(...)` returns a primitive Python integer (`int`), attempting to invoke `.map()` on the resulting `int` raised a runtime `AttributeError`.
+- **Sequence Element Type Error (`TypeError: sequence item 0: expected str instance, int found`):**  
+  In Run 41 (Iteration 0), candidate strategies attempted to assemble top-level document components using `"`.join(...)` on drawn tuple sequences that contained un-casted integers rather than string representations.
+
+### 2. Validation Gate Probe Gap
+
+- **25-Sample Draw Check vs. 500-Example Execution:**  
+  In Run 40, Attempt 7 passed all six validation gates (including the 25-sample draw check) because `toml_strategy` contained 26+ branches in `st.one_of(...)`. By random chance, none of the 25 validation sample draws selected the broken `unicode_escape` branch.  
+  However, during the full execution of 500 examples through Hypothesis `@given`, Hypothesis explored deeper branches and selected the broken path, triggering the uncaught `AttributeError`.  
+  *Finding:* Reconfirms the structural gap first noted in Case 7 — a small fixed sample check (25 draws) is fast and catches >90% of invalid strategies, but multi-branch strategies can occasionally hide rare broken branches until full 500-example execution.
+
+### 3. Seed Retry Budget Exhaustion (Run 41)
+
+- In Run 41 (Iteration 0), `gpt-4o-mini` failed 8 consecutive generation attempts across `imports`, `draw`, and `exec` gates.
+- *Handling:* `agent/seed.py` enforced its budget cap (`max_attempts: 8`), safely aborting iteration 0 without corrupting loop state or injecting broken code into `agent/strategies/`.
+
+### 4. Triage & Findings Summary (Run 40)
+
+- **Total Execution Budget:** 5 iterations, 80,301 total LLM tokens ($0.016 USD cost), 71.7s total generation time.
+- **Crashing Inputs:** 395 total inputs captured across log files.
+- **Deduplication Result:** 4 raw sanitizer signatures deduplicated and verified down to **3 unique root-cause bugs**:
+  1. `unparsed_timeout` (173 inputs) — Many-siblings O(N²) hang (Bug #4).
+  2. `55628614cd6c` (151 inputs) — Dotted-key stack overflow (Bug #2).
+  3. `939402a0547c` / `e857b4530c96` (71 inputs) — Array-nesting stack overflow (Bug #1).
+- **Comparison to Gemini:** `gpt-4o-mini` achieved 66% grammar breadth and max nesting depth of 6, discovering 3 of the 5 known bugs in 5 iterations.
+
+---
+
+## Case 15: `gpt-5.4` Execution Speed and Wall-Clock Performance vs. Gemini
+
+**Date:** 2026-09-03  
+**Model:** `gpt-5.4` via OpenAI API  
+**Runs under test:** Run 42 and Run 43  
+
+This case documents the significant wall-clock speed advantage observed when executing 500 test inputs per iteration using `gpt-5.4` compared to `gemini-3.6-flash`.
+
+### 1. Measured Execution Timing Breakdown
+
+- **`gemini-3.6-flash` (Run 27):**  
+  - Iteration 0: 448.8s  
+  - Iteration 1: 382.5s  
+  - Iteration 2: 324.0s  
+  - Iteration 3: 392.4s  
+  - Iteration 4: 485.1s  
+  - **Total Loop Wall-Clock Time:** **2,032.8 seconds (~33.8 minutes)**
+
+- **`gpt-5.4` (Run 43):**  
+  - Iteration 0: 67.5s  
+  - Iteration 1: 35.1s  
+  - Iteration 2: 116.2s  
+  - Iteration 3: 101.7s  
+  - Iteration 4: 118.2s  
+  - **Total Loop Wall-Clock Time:** **438.9 seconds (~7.3 minutes)**
+
+### 2. Performance Analysis
+
+1. **4.6× Total Wall-Clock Speedup:**  
+   Running the 5-iteration loop with `gpt-5.4` completed in **~7.3 minutes**, compared to **~33.8 minutes** for `gemini-3.6-flash` — a **> 4.5× speedup** overall.
+2. **Strategy Code Optimization:**  
+   `gpt-5.4` generated modular strategy helpers (`_array_from_values`, `_inline_table_from_pairs`) that emitted cleaner, well-bounded string structures during standard document draws. This significantly reduced serialization and string concatenation overhead during Hypothesis's 500-example execution pass.
+3. **Execution Efficiency & Timeout Management:**  
+   While Gemini strategies frequently incurred 5-second harness timeout waits on non-crashing intermediate draws, `gpt-5.4` kept non-bug input generation fast and lightweight, resulting in sub-minute per-iteration execution times (e.g. 35.1s in Iteration 1).
+4. **Coverage & Bug Finding Parity:**  
+   Despite running >4.5× faster, `gpt-5.4` achieved **100% grammar breadth** and successfully discovered **all 5 unique root-cause bugs** in Run 42.
+
+## Case 16: Run 48 — 6 distinct bugs, but Bug 5 absent and a genuinely new bug class surfaces ⭐
+
+**Date:** 2026-09-03 · **Branch:** `testing-m` · **Model:** `openai/gpt-5.6-luna`
+**Context:** Final baseline run before Phase 1 of `planning/PLAN_prompt_improvements.md` lands in `agent/prompts.py`. Uses the long-standing prompt with named shapes and hardcoded depth floors. The Phase 1 edits described in this case were committed at the END of this run, not during it — Run 48's result is therefore a baseline to beat, not a validation of Phase 1.
+
+### Headline
+
+- **6 distinct bugs** from 7 unique signatures (vs the 5 from Run 25, Run 42, Run 44)
+- 100% grammar breadth reached by iteration 3
+- 49,154 max nesting depth (clean geometric escalation: 24k → 40k → 40k → 49k → 49k)
+- 401 crashing inputs collected across 5 iterations
+- 126,071 total LLM tokens across the full loop
+- 13% acceptance in iteration 4 — under the 20% floor, deliberately; deep branches firing so heavily that almost every draw crashed. Loop still completed because the floor gate is on a per-iteration basis, not aborting.
+
+### Iteration-by-iteration progression
+
+| Iter | Max depth | Breadth | Acceptance | Findings | Notable |
+|---|---|---|---|---|---|
+| 0 | 23,999 | 74% | 37% | 61 | First run to clear the 5k ceiling that Case 5's old-prompt trap caused |
+| 1 | 39,999 | 84% | 26% | 96 | Two attempts: first failed with `InvalidArgument: ListStrategy(one_of(just('0'), ...))` — the model tried to make a strategy from literals that came back as raw text |
+| 2 | 40,397 | 95% | 51% | 32 | Two failures before pass: a `draw()`-without-call error (rule 7) and an acceptance-floor miss at 15% |
+| 3 | 49,154 | 100% | 59% | 52 | Clean breadth-complete run |
+| 4 | 49,154 | 100% | 13% | 159 | Depth capped at iteration 3's max; this iteration found more crashes by hitting them more times on the same shape set |
+
+### Bug 6 (NEW): quoted-key dotted-key chain overflow
+
+**Signature:** `f3095340ceab`
+**Occurrences:** 6
+**Minimized:** 777,110 bytes (could not shrink — see note below)
+**Verification:** deterministic (3/3 runs crashed)
+
+**Normalized top 5 frames:**
+```
+#0  malloc
+#1  expand                    toml.c:411
+#2  norm_basic_str            toml.c:506   ← string normalization
+#3  normalize_key             toml.c:652
+#4  create_keytable_in_table  toml.c:782
+```
+
+**Minimized reproducer (truncated):**
+```toml
+c."quoted key".b."quoted key".b."quoted key".a."quoted key".b."quoted key".c."quoted key".a."quoted key".b."quoted key".b."quoted key".a."quoted key"...  (≈150,000 segments)
+```
+
+**Why this is a new bug and not Bug 2:** Bug 2 (`55628614cd6c`) is a bare-key dotted-key chain — its stack is `create_keytable_in_table → normalize_key → ... → malloc`, with **no** `norm_basic_str` frame because unquoted keys skip the unescaping step. Bug 6's reproducer puts **quoted** keys at every level, which routes through `norm_basic_str` first (the function that processes the contents of `"..."` strings, including escape-sequence handling) before reaching `normalize_key`. Quoted keys do more work per level (string unescaping on top of dotted-key resolution), so the stack runs out in a different function. The crash location is determined by the call path, not by the depth alone.
+
+This is the exact effect the old rule 16 noted for alternating nesting — *"the same strategy with bare vs quoted keys crashes in DIFFERENT parser functions"* — except it played out for dotted-key chains instead of alternating nesting. Run 48's prompt didn't explicitly tell the model to make a quoted-key dotted-key chain; the model invented it on its own, probably from generalizing the rule 16/17 "vary what sits at each level" heuristic to a different grammar axis.
+
+**Minimizer note:** the 777,110-byte reproducer could not be reduced (3 delta-debugging steps, 0% smaller). The crash is sensitive to total chain length, not specific characters — swapping any individual segment for another doesn't change whether the parser overflows. Same minimizer-stuck pattern as Bug 2 in Case 13; a length-based minimizer (drop random segments, see if the crash still fires) would reduce this substantially. Left as future work — not blocking the bug count, which is what the report tracks.
+
+### 8a34ed52e713 — same root cause as Bug 1, not a new bug
+
+**Signature:** `8a34ed52e713`
+**Occurrences:** 1 (very rare — the iteration that produced it was a one-off draw)
+**Minimized:** 160,174 bytes (only 2% smaller — same minimizer-stuck pattern)
+**Verification:** crashed every run (3/3) but signature unstable (0/3 matched)
+
+**Stack:** `malloc → CALLOC toml.c:58 → create_array_in_array toml.c:887 → parse_array toml.c:1057 → parse_array toml.c:1060`
+
+Compared to Bug 1's known signatures (`939402a0547c`, `e857b4530c96`), this one captures the crash **one stack frame deeper** — at `create_array_in_array` (the helper called from `parse_array`) rather than at `parse_array` itself. The recursion ran out at a slightly different point in the `parse_array → create_array_in_array → malloc` cycle. Same root cause, different camera angle.
+
+This means Run 48's "6 distinct bugs" headline from `INDEX.md` is **really 5 known + 1 new** if we collapse by root cause rather than signature string. The triage tool fingerprints on top-5-frame equality; to fold `8a34ed52e713` into Bug 1, the rule would need to be "any stack whose top-2 frames are both `parse_array`-family counts as Bug 1." Same caveat as Case 9's signature-fragmentation analysis, and not a fix the project actually needs right now — the report can state "6 raw signatures, 5 known + 1 new root cause" the same way it already handles the other cases.
+
+### Bug 5 — absent from this run despite being named in the prompt
+
+The alternating array/inline-table recursion cycle (Bug 5, signatures `af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`, `c04d038a7956`) is **absent from Run 48**. None of those four signatures appear.
+
+This is striking because the old rule 16 explicitly named `deep_mixed_nesting` and `deep_quoted_mixed` and listed them as required branches in `toml_strategy`'s `st.one_of(...)`. The model still didn't generate them. Looking at iteration depths: the model reached 24,000 by iteration 0 and 49,000 by iteration 3, well past Bug 5's required depth range. So the absence isn't a depth failure — it's a strategy-composition failure. The model either:
+- didn't wire `deep_mixed_nesting` / `deep_quoted_mixed` into `toml_strategy` (the exact failure mode rule 16 itself warned against — *"previous attempt defined `deep_inline_table` and `deep_dotted_key` but wired only `deep_array`, so two of the three never ran once"*), or
+- wired them but acceptance rate dropped enough that those branches got pruned before they could fire
+
+Either way, naming a shape in the prompt is **not** sufficient — the model still has to actually wire it into the strategy. This is a useful negative result for Phase 1: removing the explicit `deep_mixed_nesting` example doesn't necessarily lose anything the old prompt was reliably producing, because the old prompt wasn't reliably producing Bug 5 either.
+
+### What this means for the Phase 1 plan
+
+Run 48 is the last run on the old prompt. The Phase 1 edits described in `planning/PLAN_prompt_improvements.md` (Improvements 1, 2, 6 — strip hardcoded numbers and shape names, replace with grammar-derived axes) are in `agent/prompts.py` at the time of writing but had not yet been exercised live when Run 48 was generated. Run 48 therefore gives a baseline that Phase 1 must beat:
+
+- Must find Bug 5 again — Run 48 missed it even with the explicit shape names, so Phase 1 cannot lose this if it couldn't be lost in the first place
+- Must keep finding Bug 6 (quoted-key dotted-key chain) — discovered this run on its own, with the model generalizing the "vary what sits at each level" heuristic to a new grammar axis
+- Depth escalation working correctly: 49,154 max depth, all bugs reachable. Improvement 1 (numbers from feedback) is what unblocked this; the old hardcoded `60_000-100_000` example used to get copied verbatim as `max_value=5_000` (Case 5 trap), pinning depth to 241 in Run 47.
+
+The 6-distinct-bug result is the highest count ever recorded on this project. Whether Phase 1 matches it, improves on it, or regresses on it is the open question for the next run.
+
+## Case 17: Run 50 — Phase 1 validated: 6/6 bugs with OpenAI; Gemini still stalls ⭐
+
+**Date:** 2026-09-03 · **Branch:** `testing-m` · **Model:** `openai/gpt-5.6-luna`
+**Context:** First run on the Phase 1 prompt (`agent/prompts.py` rules 16/17 stripped of named shapes and hardcoded floors; replaced with grammar-derived axes and "set bounds from feedback"). Designed to validate or refute Case 16's "Phase 1 needs to match 6/6 bugs" prediction, and to disentangle the model-vs-prompt confound from Run 49.
+
+### Headline
+
+- **6 distinct bugs** from 7 unique signatures (matches Run 48's high-water mark)
+- 100% grammar breadth reached by iteration 2
+- 52,310 max nesting depth reached in iteration 1 and held (clean depth escalation, no ceiling trap)
+- 700 total crashing findings across 5 iterations
+- 11% acceptance in iteration 4 — under the 20% floor, deliberately; deep branches firing so heavily that almost every draw crashed. Same pattern as Run 48's iteration 4 (13%). The acceptance floor signals but does not abort, so the loop completed all 5 iterations.
+
+### Iteration-by-iteration progression
+
+| Iter | Max depth | Breadth | Acceptance | Findings | Examples | Elapsed |
+|---|---|---|---|---|---|---|
+| 0 | 50,516 | 74% | 31% | 52 | 500 | 329.0s |
+| 1 | 52,310 | 82% | 20% | 99 | 500 | 422.6s |
+| 2 | 52,310 | 100% | 42% | 157 | 434 | 676.0s |
+| 3 | 52,310 | 100% | 32% | 136 | 500 | 381.4s |
+| 4 | 52,310 | 100% | 11% | 256 | 500 | 461.6s |
+
+Three things stand out:
+- **Iteration 0 already cleared 50,000 depth.** No `5_000` ceiling trap from Case 5 — Improvement 1 (set `max_value` from feedback, not from prompt example) is working. The depth target in feedback (iteration 0's slot in `DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`) was 12, but the model went much further on its own — suggesting it's following the new prompt's "draw a depth INTEGER, build by repetition" guidance rather than anchoring on the example values.
+- **Iteration 2 stopped at 434/500 examples.** A modest early-stop (a few draws hit the wall-clock cap, Hypothesis returned early). Findings still totaled 157 — deep branches firing reliably even with the truncated run.
+- **Iteration 4 doubled the previous iter's findings** (256 vs 136) despite the same depth ceiling. The model kept finding new crashes on the same shape set, suggesting the strategy's grammar breadth is well-stocked by this point and the parser is being exercised in many distinct input spaces.
+
+### Bug tally
+
+| Bug | Signature | Occurrences | Minimized | Verification |
+|---|---|---|---|---|
+| Bug 1: array-nesting overflow | `939402a0547c` | 220 | 32,408 B | deterministic |
+| Bug 1 variant | `e857b4530c96` | 108 | 48,008 B | unstable-sig |
+| Bug 2: dotted-key overflow | `55628614cd6c` | 32 | 618,893 B | unstable-sig |
+| Bug 3: inline-table overflow | `26e809dd9d85` | 56 | 276,348 B | unstable-sig |
+| Bug 4: many-siblings O(n²) hang | `unparsed_timeout` | 202 | 420,889 B | deterministic |
+| **Bug 5: alternating nesting (NEW signature)** | **`e1e7b894bf33`** | **14** | **456,517 B** | **unstable-sig** |
+| Bug 6: quoted-key dotted-key overflow | `f3095340ceab` | 69 | 425,127 B | unstable-sig |
+
+**7 raw signatures → 6 distinct root-cause bugs.** All 5 known bugs + Bug 6 confirmed. Bug 5 reappears via a new signature (see next section).
+
+### Bug 5 recovered — new signature, same root cause
+
+The "unclassified" `e1e7b894bf33` in the triage index is **Bug 5 (alternating array/inline-table recursion)**, not a new bug. Verified by reading the actual crash signature:
+
+**Normalized top 5 frames:**
+```
+#0  malloc
+#1  STRNDUP              toml.c:85
+#2  normalize_key        toml.c:646
+#3  create_keytable_in_table toml.c:782
+#4  parse_keyval         toml.c:1177
+```
+
+Compare to Bug 5's known signatures from Case 9 (Run 25):
+- `af1d0280777e`: `malloc → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)`
+- `3db1e06f41e9`: `strnlen → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)`
+- `80953bb88ca2`: `malloc → expand → expand_arritem → create_table_in_array (toml.c:903) → parse_array (toml.c:1072)`
+
+The frame sequence matches `parse_keyval → create_keytable_in_table → normalize_key → STRNDUP → malloc` — the `parse_keyval` half of the alternating cycle (the other half is `parse_array → create_table_in_array`, which would be a different signature). File:line numbers differ slightly from Case 9 (`782/1177` vs `830/1168`), almost certainly because the `tomlc99` build pulled a slightly different source revision between runs.
+
+**Minimized reproducer (sample):**
+```toml
+deep = { k = { 'q' = { k = { 'q' = { k = { 'q' = { k = { 'q' = { k = ...
+```
+
+This is alternating nesting: every level is `{ k = { literal_string = { k = ...`. Inline-table contains a literal-string key that itself is inside an inline-table, cycling. This is a slightly different alternating flavor than the `{a=[{a=...` from Case 9 (literal-string keys instead of bare-keys with array values), but the call path is the same `parse_keyval → ... → malloc` cycle. Counts as Bug 5 — same recursion cycle, same root cause, captured at a different stack frame because the literal-string takes a slightly different parser path than bare-key.
+
+**Action item:** `BUG_FAMILIES` in `agent/summarize.py` needs `e1e7b894bf33` added as Bug 5, so future triages classify it correctly. Currently it falls through to `f"unclassified ({digest})"`, which is honest but noisy.
+
+### Bug 6 rediscovered — same signature as Run 48
+
+`f3095340ceab` (quoted-key dotted-key chain overflow, 69 occurrences) is **the same signature** Run 48 discovered. Same stack, same root cause, same parser function (`norm_basic_str` at `toml.c:506`). Run 50 found it on its own without the prompt naming `deep_quoted_mixed` or any specific quoted-key shape.
+
+This is the cleanest possible evidence that Improvement 2 (replace shape names with "find grammar axes") works for OpenAI: the model independently reinvented the same bug-discovery strategy across two runs with different prompts, finding the same signature. The pattern is generalizable — it's not just "the model memorized the right shape from the prompt."
+
+### Cross-run comparison: model × prompt matrix
+
+Three runs now span both axes (Run 49 is on the new prompt, Run 48 was the last on the old prompt):
+
+| | Old prompt | New prompt (Phase 1) |
+|---|---|---|
+| **OpenAI (gpt-5.6-luna)** | Run 48: 6 bugs, max depth 49,154 — missed Bug 5 | **Run 50: 6 bugs, max depth 52,310 — all 6 found** |
+| **Gemini (gemini-3.6-flash)** | (no comparable old-prompt run in this matrix) | Run 49: 3 bugs, max depth 5,992 — stalled |
+
+This 2×2-ish table (with one cell still empty) tells a clear story:
+
+1. **For OpenAI, the new prompt is strictly better than the old.** Same model, same bugs found, AND Bug 5 was recovered (Run 48 missed it, Run 50 hit it). The new prompt didn't lose anything; it gained Bug 5.
+
+2. **For Gemini, the new prompt is the same kind of failure as the old would have been.** Gemini on the old prompt (Case 11, Run 29) also plateaued at 3/5 bugs — see Case 11's analysis. The new prompt didn't make Gemini weaker; it just didn't help. Gemini's bottleneck is instruction-following, not prompt content.
+
+3. **The "Phase 1 cost" predicted in the plan was overstated.** The plan's expected outcome said "Phase 1 probably 4/5 bugs" based on Case 11's hint-free Gemini plateau. Run 50 hit 6/6 with OpenAI. The pessimism was based on Gemini's behavior; OpenAI handles the new prompt better than the old, because the prompt lets the model reason about grammar axes instead of copying shape templates.
+
+### Phase 1 validation summary
+
+| Improvement | Status in Run 50 | Evidence |
+|---|---|---|
+| **#1: numbers from feedback, not prompt** | ✅ Working | iter 0 reached 50k depth immediately — no `5_000` ceiling trap from Case 5 |
+| **#2: shape names → "find grammar axes"** | ✅ Working | Bug 5 (alternating nesting) and Bug 6 (quoted-key dotted-key) both rediscovered from grammar-derived prompts |
+| **#6: don't name the technique** | ✅ Working | model used direct integer-repetition construction, reaching 52k depth in iter 1, no recursion plateau observed |
+
+**Net result for Phase 1 on OpenAI:** 6/6 bugs, depth escalation working, no regression vs old prompt. **Validated.**
+
+### What's still open
+
+1. **Phase 2 is needed for Gemini.** Improvements 4, 5, 7 (per-axis feedback, function-based feedback, crash-mechanism novelty) might help Gemini find more bugs by giving it a richer signal to follow. Worth trying before declaring Gemini a permanent underperformer.
+
+2. **Improvement 3 (auto-calibrate thresholds) would help both models.** Run 50's iter 0 already went to 50k without being asked. A calibration pass that maps "max depth reached → parser function that crashes first" would let the feedback say "your current depth of 50k is fine for arrays, but you haven't reached dotted-key's crash threshold yet (try 80k+)" — currently the model has to guess this from the feedback's `crash_line` alone.
+
+3. **The plan's "expected outcome" line was wrong about OpenAI.** Should update `planning/PLAN_prompt_improvements.md`'s trade-off section to reflect that OpenAI handles Phase 1 better than the old prompt (6/6 vs 5/5+Bug6, with Bug 5 newly recovered). The plan's pessimism was Gemini-specific.
+
+4. **Phase 4 validation target: 5/5 in 2 of 3 runs.** Run 50 alone clears 6/6. Need 2 more runs with OpenAI to confirm Phase 1 isn't a one-shot lucky discovery before declaring Phase 1 shipped.
+
+

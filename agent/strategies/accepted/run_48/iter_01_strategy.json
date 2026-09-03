@@ -1,0 +1,50 @@
+{
+  "iteration": 1,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "draw",
+      "error": "drawing an example raised InvalidArgument: ListStrategy(one_of(just('0'), just('1'), just('true'), basic_string(), one_of(sampled_from(['0.0', '-0.0', '1.0', '-1.5', '3.1415926535', '1e0', '-1E+10', '6.02e23', '1_000.5', '9.9e-9', 'inf', '+inf', '-inf', 'nan', '+nan', '-nan']), tuples(integers(min_v",
+      "tokens": 16112,
+      "seconds": 43.58,
+      "stats": {}
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 15050,
+      "seconds": 27.75,
+      "stats": {
+        "samples": 25,
+        "mean_len": 92829.6,
+        "max_len": 526897,
+        "sample_max_depth": 67376,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.275,
+        "top_rejects": [
+          "line 1: key exists",
+          "line 3: key exists",
+          "line 1: unterminated quote"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 92829.6,
+    "max_len": 526897,
+    "sample_max_depth": 67376,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.275,
+    "top_rejects": [
+      "line 1: key exists",
+      "line 3: key exists",
+      "line 1: unterminated quote"
+    ]
+  }
+}

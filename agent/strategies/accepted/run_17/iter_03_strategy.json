@@ -1,0 +1,63 @@
+{
+  "iteration": 3,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 9: expect hex char', 'line 4: key exists', 'line 3: missing =']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 16642,
+      "seconds": 94.79,
+      "stats": {
+        "samples": 25,
+        "mean_len": 8928.4,
+        "max_len": 66314,
+        "sample_max_depth": 33151,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.175,
+        "top_rejects": [
+          "line 9: expect hex char",
+          "line 4: key exists",
+          "line 3: missing ="
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 16628,
+      "seconds": 74.04,
+      "stats": {
+        "samples": 25,
+        "mean_len": 25580.7,
+        "max_len": 222852,
+        "sample_max_depth": 30917,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.2,
+        "top_rejects": [
+          "line 2: expect hex char",
+          "line 6: missing =",
+          "line 1: expect hex char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 25580.7,
+    "max_len": 222852,
+    "sample_max_depth": 30917,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.2,
+    "top_rejects": [
+      "line 2: expect hex char",
+      "line 6: missing =",
+      "line 1: expect hex char"
+    ]
+  }
+}

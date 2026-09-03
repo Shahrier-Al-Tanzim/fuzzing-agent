@@ -1,146 +1,119 @@
 """Generated strategy - iteration 4, attempt 1.
 accepted: False
-generated: 2026-08-15T11:06:24.441501+00:00
+generated: 2026-09-02T20:52:49.949493+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
+UNQUOTED_KEY_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+ESCAPE_SEQUENCES = ['\\', '\b', '\f', '\n', '\r', '\t', '\v', '"', "'"]
+UNICODE_ESCAPE = lambda x: f'\\u{x:04x}'
+
 @composite
 def key(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=10).filter(lambda x: x.isidentifier()),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'")
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: x),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f'"{x}"'),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f"'{x}'"),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f"{x}.{x}"),  # Dotted key
     ))
-
-@composite
-def dotted_key(draw):
-    parts = draw(st.lists(key(), min_size=2, max_size=5))
-    return ".".join(parts)
-
-@composite
-def value(draw):
-    return draw(st.one_of(
-        st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-        st.floats(min_value=-1e10, max_value=1e10).map(str),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.booleans().map(lambda x: "true" if x else "false"),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"),
-        st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28),
-                  st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}"),
-        array(),
-        inline_table(),
-        ml_basic_string(),
-        ml_literal_string(),
-        escape_sequence(),
-        unicode_escape(),
-        hex_int(),
-        oct_int(),
-        bin_int(),
-        inf_nan(),
-        leading_zero_int(),
-        int_underscore(),
-        int_overflow(),
-        offset_date_time()
-    ))
-
-@composite
-def pair(draw):
-    k = draw(st.one_of(key(), dotted_key()))
-    v = draw(value())
-    return f"{k} = {v}"
-
-@composite
-def array(draw):
-    elements = draw(st.lists(st.one_of(value(), array(), inline_table()), min_size=0, max_size=10))
-    return f"[{', '.join(elements)}]"
-
-@composite
-def inline_table(draw):
-    pairs = draw(st.lists(pair(), min_size=0, max_size=10))
-    trailing_comma = draw(st.booleans())
-    if trailing_comma:
-        return f"{{{', '.join(pairs)}, }}"
-    else:
-        return f"{{{', '.join(pairs)}}}"
-
-@composite
-def table(draw):
-    return draw(st.one_of(
-        key().map(lambda k: f"[{k}]"),
-        key().map(lambda k: f"[[{k}]]")
-    ))
-
-@composite
-def document(draw):
-    elements = draw(st.lists(st.one_of(pair(), table()), min_size=0, max_size=10))
-    return "\n".join(elements)
-
-@composite
-def ml_basic_string(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f'"""{x}"""'))
-
-@composite
-def ml_literal_string(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f"'''{x}'''"))
 
 @composite
 def escape_sequence(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=1).map(lambda x: f"\\{x}"),
-        st.text(min_size=1, max_size=4).map(lambda x: f"\\u{x}"),
-        st.text(min_size=1, max_size=8).map(lambda x: f"\\U{x}")
-    ))
-
-@composite
-def unicode_escape(draw):
-    return draw(st.one_of(
-        st.text(min_size=1, max_size=4).map(lambda x: f"\\u{x}"),
-        st.text(min_size=1, max_size=8).map(lambda x: f"\\U{x}")
+        st.sampled_from(ESCAPE_SEQUENCES),
+        st.integers(min_value=0, max_value=0xFFFF).map(UNICODE_ESCAPE)
     ))
 
 @composite
 def hex_int(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f"0x{x}"))
+    return draw(st.integers(min_value=0).map(lambda x: f"0x{x:x}"))
 
 @composite
 def oct_int(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f"0o{x}"))
+    return draw(st.integers(min_value=0).map(lambda x: f"0o{x:o}"))
 
 @composite
 def bin_int(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f"0b{x}"))
+    return draw(st.integers(min_value=0).map(lambda x: f"0b{x:b}"))
 
 @composite
-def inf_nan(draw):
-    return draw(st.sampled_from(["inf", "-inf", "nan"]))
+def value(draw):
+    return draw(st.one_of(
+        st.integers(min_value=0, max_value=9223372036854775807).map(str),
+        st.integers(min_value=-9223372036854775808, max_value=-1).map(str),
+        st.floats().map(str),
+        st.just('true'),
+        st.just('false'),
+        st.lists(escape_sequence()).map(lambda lst: f'"{"".join(lst)}"'),
+        st.lists(escape_sequence()).map(lambda lst: f"'{''.join(lst)}'"),
+        st.lists(value()).map(lambda lst: f"[{', '.join(lst)}]"),
+        inline_table(),
+        st.text(min_size=1).map(lambda x: f'"""{x}"""'),  # Multi-line basic string
+        st.text(min_size=1).map(lambda x: f"'''{x}'''"),  # Multi-line literal string
+        hex_int(),
+        oct_int(),
+        bin_int(),
+    ))
 
 @composite
-def leading_zero_int(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f"0{x}"))
+def inline_table(draw):
+    keyvals = draw(st.lists(st.tuples(key(), value()), min_size=1, max_size=5))
+    return "{" + ", ".join(f"{k}={v}" for k, v in keyvals) + "}"
 
 @composite
-def int_underscore(draw):
-    return draw(st.text(min_size=1, max_size=10).map(lambda x: f"{x}_"))
+def pair(draw):
+    k = draw(key())
+    v = draw(value())
+    return f"{k} = {v}"
 
 @composite
-def int_overflow(draw):
-    return draw(st.integers(min_value=2**63, max_value=2**64-1).map(str))
+def table(draw):
+    k = draw(key())
+    return f"[{k}]"
 
 @composite
-def offset_date_time(draw):
-    return draw(st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28),
-                          st.integers(0, 23), st.integers(0, 59), st.integers(0, 59),
-                          st.sampled_from(['Z', '+00:00', '-00:00'])).map(
-                              lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}T{t[3]:02d}:{t[4]:02d}:{t[5]:02d}{t[6]}"))
+def document(draw):
+    elements = draw(st.lists(st.one_of(pair(), table()), min_size=1))
+    return "\n".join(elements)
 
-toml_strategy = st.recursive(
-    st.one_of(pair(), table()),
-    lambda x: st.one_of(array(), inline_table(), x),
-    max_leaves=50
+@composite
+def deep_array(draw):
+    n = draw(st.integers(min_value=60_000, max_value=100_000))
+    return "[" * n + "1" + "]" * n
+
+@composite
+def deep_inline_table(draw):
+    n = draw(st.integers(min_value=85_000, max_value=115_000))
+    return "{a=" * n + "1" + "}" * n
+
+@composite
+def deep_dotted_key(draw):
+    n = draw(st.integers(min_value=90_000, max_value=100_000))
+    return "a." * n + "k"
+
+@composite
+def deep_mixed_nesting(draw):
+    n = draw(st.integers(min_value=60_000, max_value=80_000))
+    return "[{a=" * n + "1" + "}]" * n
+
+@composite
+def deep_quoted_mixed(draw):
+    n = draw(st.integers(min_value=20_000, max_value=45_000))
+    return '[{"k"=' * n + "1" + "}]" * n
+
+@composite
+def many_siblings(draw):
+    n = draw(st.integers(min_value=10_000, max_value=60_000))
+    lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
+    return "\n".join(lines)
+
+toml_strategy = st.one_of(
+    *([document()] * 20),
+    deep_array(),
+    deep_inline_table(),
+    deep_dotted_key(),
+    deep_mixed_nesting(),
+    deep_quoted_mixed(),
+    many_siblings()
 )

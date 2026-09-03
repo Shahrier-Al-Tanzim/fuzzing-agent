@@ -1,0 +1,55 @@
+{
+  "signature": {
+    "digest": "3db1e06f41e9",
+    "short": "stack-overflow@strnlen",
+    "bug_type": "stack-overflow",
+    "frames": [
+      "strnlen",
+      "STRNDUP toml.c:84",
+      "normalize_key toml.c:681",
+      "create_keyarray_in_table toml.c:830",
+      "parse_keyval toml.c:1168"
+    ],
+    "signal": null,
+    "raw_frame_count": 188,
+    "recursion_collapsed": false
+  },
+  "occurrences": 44,
+  "sources": [
+    "iteration_00.jsonl#183",
+    "iteration_00.jsonl#232",
+    "iteration_00.jsonl#266",
+    "iteration_00.jsonl#271",
+    "iteration_00.jsonl#346",
+    "iteration_00.jsonl#404",
+    "iteration_00.jsonl#417",
+    "iteration_01.jsonl#23",
+    "iteration_01.jsonl#100",
+    "iteration_01.jsonl#135",
+    "iteration_01.jsonl#186",
+    "iteration_01.jsonl#284",
+    "iteration_01.jsonl#288",
+    "iteration_01.jsonl#311",
+    "iteration_01.jsonl#330",
+    "iteration_01.jsonl#359",
+    "iteration_01.jsonl#404",
+    "iteration_02.jsonl#70",
+    "iteration_02.jsonl#157",
+    "iteration_02.jsonl#197"
+  ],
+  "original_bytes": 360005,
+  "minimized_bytes": 360005,
+  "reduction": 0.0,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 3,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 1,
+    "deterministic": false,
+    "flaky": false,
+    "unstable_signature": true,
+    "description": "crashed every run (3/3) but signature unstable (1/3 matched)"
+  },
+  "triaged_at": "2026-09-01T21:45:45.736289+00:00"
+}

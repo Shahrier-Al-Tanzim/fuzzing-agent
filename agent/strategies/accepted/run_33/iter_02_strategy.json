@@ -1,0 +1,41 @@
+{
+  "iteration": 2,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 14998,
+      "seconds": 34.57,
+      "stats": {
+        "samples": 25,
+        "mean_len": 1914.1,
+        "max_len": 6033,
+        "sample_max_depth": 4,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.275,
+        "top_rejects": [
+          "line 1: table path is too deep; max allowed is 10.",
+          "line 1: expect hex char",
+          "line 99: expect hex char"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 1914.1,
+    "max_len": 6033,
+    "sample_max_depth": 4,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.275,
+    "top_rejects": [
+      "line 1: table path is too deep; max allowed is 10.",
+      "line 1: expect hex char",
+      "line 99: expect hex char"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "signature": {
+    "digest": "939402a0547c",
+    "short": "stack-overflow@malloc",
+    "bug_type": "stack-overflow",
+    "frames": [
+      "malloc",
+      "expand toml.c:411",
+      "expand_arritem toml.c:436",
+      "create_array_in_array toml.c:882",
+      "parse_array toml.c:1057"
+    ],
+    "signal": null,
+    "raw_frame_count": 191,
+    "recursion_collapsed": true
+  },
+  "occurrences": 44,
+  "sources": [
+    "iteration_03.jsonl#72",
+    "iteration_03.jsonl#73",
+    "iteration_03.jsonl#126",
+    "iteration_03.jsonl#127",
+    "iteration_03.jsonl#128",
+    "iteration_03.jsonl#129",
+    "iteration_03.jsonl#130",
+    "iteration_03.jsonl#131",
+    "iteration_03.jsonl#190",
+    "iteration_03.jsonl#191",
+    "iteration_03.jsonl#209",
+    "iteration_03.jsonl#301",
+    "iteration_03.jsonl#445",
+    "iteration_03.jsonl#446",
+    "iteration_03.jsonl#468",
+    "iteration_03.jsonl#470",
+    "iteration_03.jsonl#471",
+    "iteration_03.jsonl#472",
+    "iteration_04.jsonl#5",
+    "iteration_04.jsonl#6"
+  ],
+  "original_bytes": 120005,
+  "minimized_bytes": 28861,
+  "reduction": 0.76,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 15,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 3,
+    "deterministic": true,
+    "flaky": false,
+    "unstable_signature": false,
+    "description": "deterministic (3/3 runs crashed)"
+  },
+  "triaged_at": "2026-09-02T22:20:47.562295+00:00"
+}

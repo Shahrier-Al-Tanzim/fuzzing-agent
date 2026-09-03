@@ -30,18 +30,20 @@ Maps each item on the assignment's deliverables checklist to its location.
 - `agent/prompts.py`, `agent/validator.py` — seeding and the six gates
 - `agent/strategies/iter_00..NN_strategy.py` — every generated strategy,
   **including rejected candidates** (`*_rejected_attempt*.py`)
-- `agent/state/loop_state.json` — cumulative coverage/novelty/crash state
+- `agent/state/loop_state.json` — cumulative breadth/novelty/crash state
 - `agent/state/iteration_NN_feedback.md` — exactly what the model was told
 - `agent/state/prompts/` — full prompt/reply transcripts
 
 ## 5. Deduplicated, minimized crash reports
-- `triage/reports/INDEX.md` — one row per unique bug
-- `triage/reports/<signature>/report.md` — per-bug report
-- `triage/reports/<signature>/minimized.toml` — verified reproducer
-- `grammar/early_findings/` — the pre-loop stack overflow
+- `triage/reports/run_N/INDEX.md` — one row per triaged signature, per run
+  (latest: `run_27`; see `report.md` §2 for why 9 signatures there are 5 real bugs)
+- `triage/reports/run_N/<bug-name>-<signature>/report.md` — per-signature report
+- `triage/reports/run_N/<bug-name>-<signature>/minimized.toml` — verified reproducer
+- `grammar/early_findings/` — the pre-loop stack overflow, found by hand
+- `OBSERVATIONS.md` Case 9 — the full reasoning for the 9-signatures-to-5-bugs count
 
 ## 6. Written report
-- `report/REPORT.md` — the two-page report
+- `report/report.md` — the two-page report
 - `report/generated/` — every table, regenerated from data
 - `report/generated/summary.json` — all numbers, machine-readable
 

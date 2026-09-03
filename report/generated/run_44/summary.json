@@ -1,0 +1,485 @@
+{
+  "run_id": 44,
+  "provider": "openai",
+  "model": "gpt-5.4",
+  "total_tokens": 111300,
+  "iterations": [
+    {
+      "iteration": 0,
+      "summary": {
+        "acceptance_rate": 0.6,
+        "cumulative_breadth": 0.947,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.328,
+        "max_depth_cumulative": 1200,
+        "findings": 0,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 1,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 1/40 (2%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 2: bad key', 'line 1: bad escape char', 'line 2: key exists']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 12322,
+            "seconds": 23.0,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 29105.8,
+              "max_len": 258191,
+              "sample_max_depth": 90000,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.025,
+              "top_rejects": [
+                "line 2: bad key",
+                "line 1: bad escape char",
+                "line 2: key exists"
+              ]
+            },
+            "at": "2026-09-02T22:07:42.235943+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 2,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: table path is too deep; max allowed is 10.', 'line 6: key exists', 'line 1: expect hex char']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 12263,
+            "seconds": 20.79,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 58319.7,
+              "max_len": 398353,
+              "sample_max_depth": 89733,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.125,
+              "top_rejects": [
+                "line 1: table path is too deep; max allowed is 10.",
+                "line 6: key exists",
+                "line 1: expect hex char"
+              ]
+            },
+            "at": "2026-09-02T22:08:10.319351+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 3,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 12335,
+            "seconds": 21.15,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 2210.3,
+              "max_len": 15626,
+              "sample_max_depth": 703,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.45,
+              "top_rejects": [
+                "line 1: newline not allowed in inline table",
+                "line 1: missing =",
+                "line 2: invalid key"
+              ]
+            },
+            "at": "2026-09-02T22:08:32.197632+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 84.6
+    },
+    {
+      "iteration": 1,
+      "summary": {
+        "acceptance_rate": 0.666,
+        "cumulative_breadth": 1.0,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.294,
+        "max_depth_cumulative": 1200,
+        "findings": 0,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 1,
+            "attempt": 1,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 15931,
+            "seconds": 20.58,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 1339.4,
+              "max_len": 10455,
+              "sample_max_depth": 782,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.8,
+              "top_rejects": [
+                "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+                "line 2: key exists",
+                "line 1: key exists"
+              ]
+            },
+            "at": "2026-09-02T22:08:59.917697+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 28.4
+    },
+    {
+      "iteration": 2,
+      "summary": {
+        "acceptance_rate": 0.674,
+        "cumulative_breadth": 1.0,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.244,
+        "max_depth_cumulative": 16256,
+        "findings": 18,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 2,
+            "attempt": 1,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 17118,
+            "seconds": 22.57,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 24826.6,
+              "max_len": 176289,
+              "sample_max_depth": 17055,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.75,
+              "top_rejects": [
+                "line 2: key exists",
+                "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)"
+              ]
+            },
+            "at": "2026-09-02T22:09:44.483369+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 174.3
+    },
+    {
+      "iteration": 3,
+      "summary": {
+        "acceptance_rate": 0.428,
+        "cumulative_breadth": 1.0,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.266,
+        "max_depth_cumulative": 16256,
+        "findings": 140,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 1,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 19145,
+            "seconds": 33.74,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 60410.9,
+              "max_len": 407838,
+              "sample_max_depth": 101956,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.65,
+              "top_rejects": [
+                "line 2: key exists"
+              ]
+            },
+            "at": "2026-09-02T22:12:39.690663+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 205.9
+    },
+    {
+      "iteration": 4,
+      "summary": {
+        "acceptance_rate": 0.508,
+        "cumulative_breadth": 1.0,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.352,
+        "max_depth_cumulative": 16256,
+        "findings": 103,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 44,
+            "source": "loop",
+            "iteration": 4,
+            "attempt": 1,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 22186,
+            "seconds": 39.74,
+            "provider": "openai",
+            "model": "gpt-5.4",
+            "stats": {
+              "samples": 25,
+              "mean_len": 89904.4,
+              "max_len": 397915,
+              "sample_max_depth": 99476,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.575,
+              "top_rejects": [
+                "line 1: newline not allowed in inline table",
+                "line 2: key exists",
+                "line 5: key exists"
+              ]
+            },
+            "at": "2026-09-02T22:16:14.996991+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 155.0
+    }
+  ]
+}
