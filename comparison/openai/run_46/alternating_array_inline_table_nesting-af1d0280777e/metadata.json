@@ -1,0 +1,46 @@
+{
+  "signature": {
+    "digest": "af1d0280777e",
+    "short": "stack-overflow@malloc",
+    "bug_type": "stack-overflow",
+    "frames": [
+      "malloc",
+      "STRNDUP toml.c:85",
+      "normalize_key toml.c:681",
+      "create_keyarray_in_table toml.c:830",
+      "parse_keyval toml.c:1168"
+    ],
+    "signal": null,
+    "raw_frame_count": 186,
+    "recursion_collapsed": false
+  },
+  "occurrences": 11,
+  "sources": [
+    "iteration_00.jsonl#12",
+    "iteration_00.jsonl#125",
+    "iteration_00.jsonl#173",
+    "iteration_00.jsonl#385",
+    "iteration_01.jsonl#46",
+    "iteration_01.jsonl#339",
+    "iteration_02.jsonl#211",
+    "iteration_02.jsonl#418",
+    "iteration_03.jsonl#43",
+    "iteration_03.jsonl#44",
+    "iteration_04.jsonl#218"
+  ],
+  "original_bytes": 360008,
+  "minimized_bytes": 360008,
+  "reduction": 0.0,
+  "minimize_method": "delta-debugging",
+  "minimize_steps": 3,
+  "verification": {
+    "runs": 3,
+    "crashes": 3,
+    "signature_matches": 2,
+    "deterministic": false,
+    "flaky": false,
+    "unstable_signature": true,
+    "description": "crashed every run (3/3) but signature unstable (2/3 matched)"
+  },
+  "triaged_at": "2026-09-02T23:17:20.189174+00:00"
+}
