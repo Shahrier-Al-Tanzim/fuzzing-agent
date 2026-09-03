@@ -1,0 +1,63 @@
+{
+  "iteration": 0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": false,
+      "stage": "acceptance",
+      "error": "only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 2: key exists', 'line 1: newline not allowed in inline table', 'line 1: bad key']. Fix the syntax causing these before adding more edge cases.",
+      "tokens": 12283,
+      "seconds": 21.72,
+      "stats": {
+        "samples": 25,
+        "mean_len": 34897.8,
+        "max_len": 382796,
+        "sample_max_depth": 63798,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.15,
+        "top_rejects": [
+          "line 2: key exists",
+          "line 1: newline not allowed in inline table",
+          "line 1: bad key"
+        ]
+      }
+    },
+    {
+      "attempt": 2,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 11606,
+      "seconds": 16.92,
+      "stats": {
+        "samples": 25,
+        "mean_len": 622.9,
+        "max_len": 2622,
+        "sample_max_depth": 1197,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.375,
+        "top_rejects": [
+          "line 2: key exists",
+          "line 1: missing =",
+          "line 1: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 622.9,
+    "max_len": 2622,
+    "sample_max_depth": 1197,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.375,
+    "top_rejects": [
+      "line 2: key exists",
+      "line 1: missing =",
+      "line 1: key exists"
+    ]
+  }
+}

@@ -1,0 +1,778 @@
+{
+  "run_id": 40,
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "total_tokens": 285066,
+  "iterations": [
+    {
+      "iteration": 0,
+      "summary": {
+        "acceptance_rate": 0.192,
+        "cumulative_breadth": 0.474,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.162,
+        "max_depth_cumulative": 6,
+        "findings": 84,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 1,
+            "ok": false,
+            "stage": "syntax",
+            "error": "the code does not parse: line 13: unmatched ')'",
+            "tokens": 9854,
+            "seconds": 8.17,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:22:54.538070+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 2,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 9794,
+            "seconds": 4.88,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:22:59.421950+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 3,
+            "ok": false,
+            "stage": "syntax",
+            "error": "the code does not parse: line 21: unmatched ')'",
+            "tokens": 9909,
+            "seconds": 5.88,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:23:05.308075+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 4,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 10139,
+            "seconds": 11.98,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:23:17.293646+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 5,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 2/40 (5%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1113)', 'line 1: bad escape char']. Fix the syntax causing these before a",
+            "tokens": 9822,
+            "seconds": 6.83,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 132336.0,
+              "max_len": 634351,
+              "sample_max_depth": 99180,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.05,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1113)",
+                "line 1: bad escape char"
+              ]
+            },
+            "at": "2026-09-02T20:24:01.900154+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 6,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 9914,
+            "seconds": 6.59,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:24:08.497092+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 0,
+            "attempt": 7,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 10073,
+            "seconds": 9.53,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 189191.2,
+              "max_len": 475049,
+              "sample_max_depth": 110566,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.275,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 1: syntax error",
+                "line 6: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:24:28.040528+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 376.2
+    },
+    {
+      "iteration": 1,
+      "summary": {
+        "acceptance_rate": 0.266,
+        "cumulative_breadth": 0.526,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.152,
+        "max_depth_cumulative": 6,
+        "findings": 59,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 1,
+            "attempt": 1,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 11102,
+            "seconds": 7.99,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:29:10.568548+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 1,
+            "attempt": 2,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'line 4: unterminated quote', 'line 2: key exists']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 11020,
+            "seconds": 7.02,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 199476.2,
+              "max_len": 493595,
+              "sample_max_depth": 101320,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.1,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 4: unterminated quote",
+                "line 2: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:29:33.568445+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 1,
+            "attempt": 3,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 11175,
+            "seconds": 8.05,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:29:41.629971+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 1,
+            "attempt": 4,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 11020,
+            "seconds": 9.33,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 140055.6,
+              "max_len": 441979,
+              "sample_max_depth": 99419,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.2,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 1: syntax error",
+                "line 4: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:30:10.098473+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 288.1
+    },
+    {
+      "iteration": 2,
+      "summary": {
+        "acceptance_rate": 0.22,
+        "cumulative_breadth": 0.605,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.158,
+        "max_depth_cumulative": 6,
+        "findings": 78,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 2,
+            "attempt": 1,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 11057,
+            "seconds": 9.61,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 192401.3,
+              "max_len": 593508,
+              "sample_max_depth": 111851,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.25,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 1: syntax error",
+                "line 3: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:34:10.787002+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 237.4
+    },
+    {
+      "iteration": 3,
+      "summary": {
+        "acceptance_rate": 0.126,
+        "cumulative_breadth": 0.632,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.118,
+        "max_depth_cumulative": 6,
+        "findings": 90,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 1,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'line 2: key exists', 'line 1: syntax error']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 11413,
+            "seconds": 11.45,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 159770.8,
+              "max_len": 460001,
+              "sample_max_depth": 115000,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.175,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 2: key exists",
+                "line 1: syntax error"
+              ]
+            },
+            "at": "2026-09-02T20:38:34.692399+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 2,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 11400,
+            "seconds": 7.77,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:38:42.470581+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 3,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 3/40 (8%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'line 4: expect hex char', 'line 1: syntax error']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 11359,
+            "seconds": 9.26,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 92245.3,
+              "max_len": 620436,
+              "sample_max_depth": 96837,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.075,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 4: expect hex char",
+                "line 1: syntax error"
+              ]
+            },
+            "at": "2026-09-02T20:39:14.928384+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 4,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 11510,
+            "seconds": 10.01,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:39:24.944088+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 5,
+            "ok": false,
+            "stage": "draw",
+            "error": "drawing an example raised AttributeError: 'str' object has no attribute 'map'",
+            "tokens": 11343,
+            "seconds": 8.59,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:39:33.615962+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 6,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 11408,
+            "seconds": 9.82,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:39:43.438567+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 7,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 11453,
+            "seconds": 10.0,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 118287.8,
+              "max_len": 477115,
+              "sample_max_depth": 108214,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.375,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 3: key exists",
+                "line 1: syntax error"
+              ]
+            },
+            "at": "2026-09-02T20:40:02.423124+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 1,
+            "ok": false,
+            "stage": "draw",
+            "error": "drawing an example raised AttributeError: 'int' object has no attribute 'map'",
+            "tokens": 11471,
+            "seconds": 12.23,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:46:18.171089+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 2,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'line 3: key exists', 'line 2: key exists']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 11338,
+            "seconds": 9.34,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 116119.0,
+              "max_len": 417053,
+              "sample_max_depth": 104263,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.15,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 3: key exists",
+                "line 2: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:46:49.800698+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 3,
+            "attempt": 3,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 11426,
+            "seconds": 11.04,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 207516.6,
+              "max_len": 461011,
+              "sample_max_depth": 99188,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.25,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 1: syntax error",
+                "line 2: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:47:29.556601+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 363.8
+    },
+    {
+      "iteration": 4,
+      "summary": {
+        "acceptance_rate": 0.184,
+        "cumulative_breadth": 0.658,
+        "productions_this_iteration": [
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production",
+          "production"
+        ],
+        "novelty_rate": 0.172,
+        "max_depth_cumulative": 6,
+        "findings": 83,
+        "examples": 500
+      },
+      "generation": {
+        "attempts": [
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 4,
+            "attempt": 1,
+            "ok": false,
+            "stage": "acceptance",
+            "error": "only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The most common parser errors were: ['line 1: invalid or missing key', 'line 6: expect hex char', 'line 3: expect hex char']. Fix the syntax causing these before adding more edge cases.",
+            "tokens": 11553,
+            "seconds": 9.28,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 163212.4,
+              "max_len": 640423,
+              "sample_max_depth": 109202,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.15,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 6: expect hex char",
+                "line 3: expect hex char"
+              ]
+            },
+            "at": "2026-09-02T20:52:49.943187+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 4,
+            "attempt": 2,
+            "ok": false,
+            "stage": "imports",
+            "error": "illegal import `string`. Only `from hypothesis import strategies as st` is allowed.",
+            "tokens": 11456,
+            "seconds": 8.27,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:52:58.220211+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 4,
+            "attempt": 3,
+            "ok": false,
+            "stage": "draw",
+            "error": "drawing an example raised NameError: name 'array' is not defined",
+            "tokens": 11519,
+            "seconds": 11.84,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {},
+            "at": "2026-09-02T20:53:10.080053+00:00"
+          },
+          {
+            "kind": "attempt",
+            "run_id": 40,
+            "source": "loop",
+            "iteration": 4,
+            "attempt": 4,
+            "ok": true,
+            "stage": "acceptance",
+            "error": "",
+            "tokens": 11538,
+            "seconds": 9.68,
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "stats": {
+              "samples": 25,
+              "mean_len": 110049.3,
+              "max_len": 443827,
+              "sample_max_depth": 106212,
+              "uses_recursion": true,
+              "probe_examples": 40,
+              "acceptance_rate": 0.225,
+              "top_rejects": [
+                "line 1: invalid or missing key",
+                "line 2: key exists",
+                "line 6: key exists"
+              ]
+            },
+            "at": "2026-09-02T20:53:53.720164+00:00"
+          }
+        ]
+      },
+      "elapsed_s": 399.7
+    }
+  ]
+}

@@ -15,6 +15,7 @@ from agent.extract import extract_python
 from agent.gemini_client import GeminiClient
 from agent.groq_client import GroqClient
 from agent.ollama_client import OllamaClient, resolve_base_url
+from agent.openai_client import OpenAIClient
 from agent.prompts import SYSTEM_PROMPT, build_seed_prompt
 from agent.run_history import get_next_run_id, log_attempt, log_run_complete
 from agent.strategy_store import save_strategy
@@ -39,6 +40,8 @@ def generate_validated_strategy(iteration: int = 0, probe: bool = True,
         client = GeminiClient()
     elif provider == "groq":
         client = GroqClient()
+    elif provider == "openai":
+        client = OpenAIClient()
     else:
         client = OllamaClient()
 
@@ -119,7 +122,7 @@ def main() -> int:
     ap.add_argument("--iteration", type=int, default=0)
     ap.add_argument("--no-probe", action="store_true",
                     help="skip the harness acceptance gate (faster, weaker)")
-    ap.add_argument("--provider", choices=["ollama", "groq", "gemini"], default=None,
+    ap.add_argument("--provider", choices=["ollama", "groq", "gemini", "openai"], default=None,
                     help="which LLM backend to use "
                          "(default: llm.provider in config.yaml)")
     args = ap.parse_args()
@@ -129,6 +132,8 @@ def main() -> int:
         print("Provider: Gemini (remote)")
     elif provider == "groq":
         print("Provider: Groq (remote)")
+    elif provider == "openai":
+        print("Provider: OpenAI (remote)")
     else:
         print(f"Ollama: {resolve_base_url()}")
     result, path, client = generate_validated_strategy(

@@ -3,7 +3,7 @@
 **Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
 One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total runs: 39**
+**Total runs: 47**
 
 ---
 
@@ -1505,5 +1505,379 @@ One section per run, in order; within each run, one section per iteration, in or
 | 2026-09-01 23:41:16 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 19709 | 45.41 |  |
 
 **Result:** accepted 28% · breadth 100% · novelty 17% · max depth 4 · findings 359 · examples 500 · elapsed 413.0s
+
+---
+
+## Run 40 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/7 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 20:22:54 | 1 | FAIL | syntax | openai/gpt-4o-mini | 9854 | 8.17 | the code does not parse: line 13: unmatched ')' |
+| 2026-09-02 20:22:59 | 2 | FAIL | imports | openai/gpt-4o-mini | 9794 | 4.88 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:23:05 | 3 | FAIL | syntax | openai/gpt-4o-mini | 9909 | 5.88 | the code does not parse: line 21: unmatched ')' |
+| 2026-09-02 20:23:17 | 4 | FAIL | imports | openai/gpt-4o-mini | 10139 | 11.98 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:24:01 | 5 | FAIL | acceptance | openai/gpt-4o-mini | 9822 | 6.83 | only 2/40 (5%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
+| 2026-09-02 20:24:08 | 6 | FAIL | imports | openai/gpt-4o-mini | 9914 | 6.59 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:24:28 | 7 | PASS | acceptance | openai/gpt-4o-mini | 10073 | 9.53 |  |
+
+**Result:** accepted 19% · breadth 47% · novelty 16% · max depth 6 · findings 84 · examples 500 · elapsed 376.2s
+
+### Iteration 1 — 1/4 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 20:29:10 | 1 | FAIL | imports | openai/gpt-4o-mini | 11102 | 7.99 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:29:33 | 2 | FAIL | acceptance | openai/gpt-4o-mini | 11020 | 7.02 | only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 20:29:41 | 3 | FAIL | imports | openai/gpt-4o-mini | 11175 | 8.05 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:30:10 | 4 | PASS | acceptance | openai/gpt-4o-mini | 11020 | 9.33 |  |
+
+**Result:** accepted 27% · breadth 53% · novelty 15% · max depth 6 · findings 59 · examples 500 · elapsed 288.1s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 20:34:10 | 1 | PASS | acceptance | openai/gpt-4o-mini | 11057 | 9.61 |  |
+
+**Result:** accepted 22% · breadth 60% · novelty 16% · max depth 6 · findings 78 · examples 500 · elapsed 237.4s
+
+### Iteration 3 — 2/10 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 20:38:34 | 1 | FAIL | acceptance | openai/gpt-4o-mini | 11413 | 11.45 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 20:38:42 | 2 | FAIL | imports | openai/gpt-4o-mini | 11400 | 7.77 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:39:14 | 3 | FAIL | acceptance | openai/gpt-4o-mini | 11359 | 9.26 | only 3/40 (8%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
+| 2026-09-02 20:39:24 | 4 | FAIL | imports | openai/gpt-4o-mini | 11510 | 10.01 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:39:33 | 5 | FAIL | draw | openai/gpt-4o-mini | 11343 | 8.59 | drawing an example raised AttributeError: 'str' object has no attribute 'map' |
+| 2026-09-02 20:39:43 | 6 | FAIL | imports | openai/gpt-4o-mini | 11408 | 9.82 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:40:02 | 7 | PASS | acceptance | openai/gpt-4o-mini | 11453 | 10.0 |  |
+| 2026-09-02 20:46:18 | 1 | FAIL | draw | openai/gpt-4o-mini | 11471 | 12.23 | drawing an example raised AttributeError: 'int' object has no attribute 'map' |
+| 2026-09-02 20:46:49 | 2 | FAIL | acceptance | openai/gpt-4o-mini | 11338 | 9.34 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 20:47:29 | 3 | PASS | acceptance | openai/gpt-4o-mini | 11426 | 11.04 |  |
+
+**Result:** accepted 13% · breadth 63% · novelty 12% · max depth 6 · findings 90 · examples 500 · elapsed 363.8s
+
+### Iteration 4 — 1/4 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 20:52:49 | 1 | FAIL | acceptance | openai/gpt-4o-mini | 11553 | 9.28 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 20:52:58 | 2 | FAIL | imports | openai/gpt-4o-mini | 11456 | 8.27 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 20:53:10 | 3 | FAIL | draw | openai/gpt-4o-mini | 11519 | 11.84 | drawing an example raised NameError: name 'array' is not defined |
+| 2026-09-02 20:53:53 | 4 | PASS | acceptance | openai/gpt-4o-mini | 11538 | 9.68 |  |
+
+**Result:** accepted 18% · breadth 66% · novelty 17% · max depth 6 · findings 83 · examples 500 · elapsed 399.7s
+
+---
+
+## Run 41 — ❌ FAILED (ran out of attempts, no earlier strategy to fall back on)
+
+### Iteration 0 — 1/23 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:06:43 | 1 | FAIL | syntax | openai/gpt-4o-mini | 9873 | 7.17 | the code does not parse: line 13: unmatched ')' |
+| 2026-09-02 21:06:51 | 2 | FAIL | imports | openai/gpt-4o-mini | 10181 | 8.47 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:06:59 | 3 | FAIL | draw | openai/gpt-4o-mini | 9925 | 8.03 | drawing an example raised AttributeError: module 'hypothesis.strategies' has no attribute … |
+| 2026-09-02 21:07:06 | 4 | FAIL | draw | openai/gpt-4o-mini | 9984 | 6.42 | drawing an example raised TypeError: value.<locals>.<lambda>() takes 0 positional argument… |
+| 2026-09-02 21:09:22 | 5 | FAIL | syntax | openai/gpt-4o-mini | 25693 | 136.09 | the code does not parse: line 1: invalid syntax |
+| 2026-09-02 21:09:30 | 6 | FAIL | imports | openai/gpt-4o-mini | 10078 | 7.86 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:09:37 | 7 | FAIL | draw | openai/gpt-4o-mini | 10103 | 6.94 | drawing an example raised AttributeError: module 'hypothesis.strategies' has no attribute … |
+| 2026-09-02 21:09:49 | 8 | FAIL | imports | openai/gpt-4o-mini | 10000 | 12.23 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:11:14 | 1 | FAIL | imports | openai/gpt-4o-mini | 9879 | 6.79 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:11:20 | 2 | FAIL | draw | openai/gpt-4o-mini | 9797 | 6.21 | drawing an example raised NameError: name 'key_value_pairs' is not defined |
+| 2026-09-02 21:11:27 | 3 | FAIL | imports | openai/gpt-4o-mini | 9913 | 6.28 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:11:31 | 4 | FAIL | draw | openai/gpt-4o-mini | 9763 | 4.57 | drawing an example raised NameError: name 'key_value_pairs' is not defined |
+| 2026-09-02 21:11:36 | 5 | FAIL | imports | openai/gpt-4o-mini | 9776 | 4.71 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:11:41 | 6 | FAIL | draw | openai/gpt-4o-mini | 9760 | 4.44 | drawing an example raised NameError: name 'key_value' is not defined |
+| 2026-09-02 21:12:02 | 7 | PASS | acceptance | openai/gpt-4o-mini | 10191 | 7.89 |  |
+| 2026-09-02 21:21:30 | 1 | FAIL | imports | openai/gpt-4o-mini | 9952 | 6.8 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:21:37 | 2 | FAIL | draw | openai/gpt-4o-mini | 9955 | 6.44 | drawing an example raised AttributeError: 'list' object has no attribute 'map' |
+| 2026-09-02 21:21:43 | 3 | FAIL | imports | openai/gpt-4o-mini | 9984 | 5.86 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:21:51 | 4 | FAIL | draw | openai/gpt-4o-mini | 10147 | 7.9 | drawing an example raised AttributeError: module 'hypothesis.strategies' has no attribute … |
+| 2026-09-02 21:21:58 | 5 | FAIL | imports | openai/gpt-4o-mini | 10188 | 7.29 | illegal import `string`. Only `from hypothesis import strategies as st` is allowed. |
+| 2026-09-02 21:22:02 | 6 | FAIL | draw | openai/gpt-4o-mini | 9790 | 4.19 | drawing an example raised AttributeError: module 'hypothesis.strategies' has no attribute … |
+| 2026-09-02 21:22:08 | 7 | FAIL | exec | openai/gpt-4o-mini | 9940 | 5.14 | the module raised on import: TypeError: recursive() missing 1 required positional argument… |
+| 2026-09-02 21:22:13 | 8 | FAIL | exec | openai/gpt-4o-mini | 9909 | 5.64 | the module raised on import: TypeError: many_siblings() missing 1 required positional argu… |
+
+**FAILED** — stopped after iteration 0. an iteration ran out of every attempt with no earlier passing strategy to fall back on.
+
+---
+
+## Run 42 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:31:07 | 1 | FAIL | acceptance | openai/gpt-5.4 | 12165 | 20.88 | only 1/40 (2%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
+| 2026-09-02 21:31:33 | 2 | PASS | acceptance | openai/gpt-5.4 | 12758 | 24.28 |  |
+
+**Result:** accepted 44% · breadth 87% · novelty 32% · max depth 4000 · findings 0 · examples 500 · elapsed 73.8s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:32:10 | 1 | PASS | acceptance | openai/gpt-5.4 | 16601 | 23.25 |  |
+
+**Result:** accepted 45% · breadth 100% · novelty 34% · max depth 4000 · findings 0 · examples 500 · elapsed 34.3s
+
+### Iteration 2 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:32:53 | 1 | FAIL | acceptance | openai/gpt-5.4 | 17757 | 28.3 | only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 21:33:24 | 2 | PASS | acceptance | openai/gpt-5.4 | 17630 | 25.23 |  |
+
+**Result:** accepted 30% · breadth 100% · novelty 27% · max depth 4000 · findings 128 · examples 500 · elapsed 186.7s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:36:06 | 1 | PASS | acceptance | openai/gpt-5.4 | 19010 | 29.73 |  |
+
+**Result:** accepted 21% · breadth 100% · novelty 27% · max depth 4000 · findings 129 · examples 500 · elapsed 173.5s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:39:04 | 1 | PASS | acceptance | openai/gpt-5.4 | 21240 | 36.41 |  |
+
+**Result:** accepted 27% · breadth 100% · novelty 27% · max depth 4000 · findings 118 · examples 500 · elapsed 155.9s
+
+---
+
+## Run 43 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:58:07 | 1 | FAIL | acceptance | openai/gpt-5.4 | 12283 | 21.72 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 21:58:28 | 2 | PASS | acceptance | openai/gpt-5.4 | 11606 | 16.92 |  |
+
+**Result:** accepted 50% · breadth 95% · novelty 34% · max depth 1200 · findings 0 · examples 500 · elapsed 67.5s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:59:02 | 1 | PASS | acceptance | openai/gpt-5.4 | 14624 | 18.01 |  |
+
+**Result:** accepted 64% · breadth 100% · novelty 27% · max depth 1200 · findings 0 · examples 500 · elapsed 35.1s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 21:59:47 | 1 | PASS | acceptance | openai/gpt-5.4 | 16283 | 24.19 |  |
+
+**Result:** accepted 39% · breadth 100% · novelty 33% · max depth 1200 · findings 87 · examples 500 · elapsed 116.2s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:01:52 | 1 | PASS | acceptance | openai/gpt-5.4 | 19036 | 33.57 |  |
+
+**Result:** accepted 26% · breadth 100% · novelty 34% · max depth 1200 · findings 78 · examples 500 · elapsed 101.7s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:03:42 | 1 | PASS | acceptance | openai/gpt-5.4 | 22194 | 37.23 |  |
+
+**Result:** accepted 30% · breadth 100% · novelty 33% · max depth 1200 · findings 75 · examples 500 · elapsed 118.2s
+
+---
+
+## Run 44 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/3 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:07:42 | 1 | FAIL | acceptance | openai/gpt-5.4 | 12322 | 23.0 | only 1/40 (2%) of generated documents were accepted by tomlc99; the floor is 20%. The most… |
+| 2026-09-02 22:08:10 | 2 | FAIL | acceptance | openai/gpt-5.4 | 12263 | 20.79 | only 5/40 (12%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 22:08:32 | 3 | PASS | acceptance | openai/gpt-5.4 | 12335 | 21.15 |  |
+
+**Result:** accepted 60% · breadth 95% · novelty 33% · max depth 1200 · findings 0 · examples 500 · elapsed 84.6s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:08:59 | 1 | PASS | acceptance | openai/gpt-5.4 | 15931 | 20.58 |  |
+
+**Result:** accepted 67% · breadth 100% · novelty 29% · max depth 1200 · findings 0 · examples 500 · elapsed 28.4s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:09:44 | 1 | PASS | acceptance | openai/gpt-5.4 | 17118 | 22.57 |  |
+
+**Result:** accepted 67% · breadth 100% · novelty 24% · max depth 16256 · findings 18 · examples 500 · elapsed 174.3s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:12:39 | 1 | PASS | acceptance | openai/gpt-5.4 | 19145 | 33.74 |  |
+
+**Result:** accepted 43% · breadth 100% · novelty 27% · max depth 16256 · findings 140 · examples 500 · elapsed 205.9s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:16:14 | 1 | PASS | acceptance | openai/gpt-5.4 | 22186 | 39.74 |  |
+
+**Result:** accepted 51% · breadth 100% · novelty 35% · max depth 16256 · findings 103 · examples 500 · elapsed 155.0s
+
+---
+
+## Run 45 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:33:13 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 13940 | 35.29 |  |
+
+**Result:** accepted 16% · breadth 90% · novelty 31% · max depth 7 · findings 197 · examples 500 · elapsed 281.7s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:37:38 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17031 | 32.14 |  |
+
+**Result:** accepted 41% · breadth 97% · novelty 12% · max depth 7 · findings 260 · examples 500 · elapsed 353.5s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:43:26 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17130 | 28.56 |  |
+
+**Result:** accepted 44% · breadth 97% · novelty 31% · max depth 14 · findings 123 · examples 500 · elapsed 212.8s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:46:53 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 16678 | 20.94 |  |
+
+**Result:** accepted 42% · breadth 97% · novelty 27% · max depth 14 · findings 155 · examples 500 · elapsed 250.8s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 22:51:06 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 16925 | 25.37 |  |
+
+**Result:** accepted 23% · breadth 97% · novelty 35% · max depth 14 · findings 81 · examples 500 · elapsed 152.1s
+
+---
+
+## Run 46 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:06:16 | 1 | FAIL | acceptance | openai/gpt-5.6-luna | 13360 | 31.5 | only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 23:06:55 | 2 | PASS | acceptance | openai/gpt-5.6-luna | 12512 | 23.25 |  |
+
+**Result:** accepted 57% · breadth 95% · novelty 38% · max depth 7 · findings 109 · examples 500 · elapsed 231.2s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:10:18 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 15550 | 29.1 |  |
+
+**Result:** accepted 58% · breadth 97% · novelty 43% · max depth 7 · findings 71 · examples 500 · elapsed 139.6s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:12:10 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 15676 | 25.09 |  |
+
+**Result:** accepted 47% · breadth 100% · novelty 36% · max depth 7 · findings 70 · examples 500 · elapsed 98.1s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:14:12 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17348 | 38.05 |  |
+
+**Result:** accepted 60% · breadth 100% · novelty 37% · max depth 11 · findings 47 · examples 500 · elapsed 95.7s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:15:27 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17791 | 28.76 |  |
+
+**Result:** accepted 56% · breadth 100% · novelty 35% · max depth 11 · findings 47 · examples 500 · elapsed 88.1s
+
+---
+
+## Run 47 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/6 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:19:02 | 1 | FAIL | draw | openai/gpt-5.6-luna | 13857 | 34.74 | drawing an example raised ValueError: unsupported format character 'b' (0x62) at index 3 |
+| 2026-09-02 23:19:40 | 2 | FAIL | acceptance | openai/gpt-5.6-luna | 13106 | 27.76 | only 7/40 (18%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 23:20:09 | 3 | FAIL | exec | openai/gpt-5.6-luna | 13143 | 29.05 | the module raised on import: TypeError: accept.<locals>.deep_key_document() takes 0 positi… |
+| 2026-09-02 23:20:36 | 4 | FAIL | draw | openai/gpt-5.6-luna | 12821 | 26.87 | drawing an example raised InvalidArgument: Expected a SearchStrategy but got '10.000_001' … |
+| 2026-09-02 23:21:27 | 5 | FAIL | acceptance | openai/gpt-5.6-luna | 13322 | 29.59 | only 4/40 (10%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-02 23:22:16 | 6 | PASS | acceptance | openai/gpt-5.6-luna | 13565 | 33.49 |  |
+
+**Result:** accepted 43% · breadth 87% · novelty 25% · max depth 5 · findings 187 · examples 500 · elapsed 372.2s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:25:11 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 15765 | 28.26 |  |
+
+**Result:** accepted 36% · breadth 97% · novelty 35% · max depth 7 · findings 84 · examples 500 · elapsed 137.0s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:27:32 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 16873 | 28.12 |  |
+
+**Result:** accepted 42% · breadth 100% · novelty 38% · max depth 7 · findings 48 · examples 500 · elapsed 89.1s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:29:02 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17272 | 26.83 |  |
+
+**Result:** accepted 44% · breadth 100% · novelty 32% · max depth 17 · findings 73 · examples 500 · elapsed 118.7s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-02 23:31:16 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 18800 | 34.97 |  |
+
+**Result:** accepted 54% · breadth 100% · novelty 40% · max depth 241 · findings 39 · examples 500 · elapsed 104.0s
 
 ---

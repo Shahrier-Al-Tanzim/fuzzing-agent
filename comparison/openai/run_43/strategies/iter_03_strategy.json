@@ -1,0 +1,41 @@
+{
+  "iteration": 3,
+  "attempts": [
+    {
+      "attempt": 1,
+      "ok": true,
+      "stage": "acceptance",
+      "error": "",
+      "tokens": 19036,
+      "seconds": 33.57,
+      "stats": {
+        "samples": 25,
+        "mean_len": 38047.6,
+        "max_len": 472374,
+        "sample_max_depth": 96920,
+        "uses_recursion": true,
+        "probe_examples": 40,
+        "acceptance_rate": 0.225,
+        "top_rejects": [
+          "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+          "line 2: key exists",
+          "line 1: key exists"
+        ]
+      }
+    }
+  ],
+  "stats": {
+    "samples": 25,
+    "mean_len": 38047.6,
+    "max_len": 472374,
+    "sample_max_depth": 96920,
+    "uses_recursion": true,
+    "probe_examples": 40,
+    "acceptance_rate": 0.225,
+    "top_rejects": [
+      "internal error (/home/tanzim/fuzzing-agent/harness/vendor/tomlc99/toml.c:1096)",
+      "line 2: key exists",
+      "line 1: key exists"
+    ]
+  }
+}

@@ -1,100 +1,98 @@
 """Generated strategy - iteration 3, attempt 2.
 accepted: False
-generated: 2026-08-16T15:21:39.862252+00:00
+generated: 2026-09-02T20:46:49.805567+00:00
 """
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
+UNQUOTED_KEY_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+
 @composite
 def key(draw):
     return draw(st.one_of(
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.text(min_size=1, max_size=10).map(lambda x: x)
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: x),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f'"{x}"'),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f"'{x}'"),
+        st.text(alphabet=UNQUOTED_KEY_CHARS, min_size=1, max_size=10).map(lambda x: f"{x}.{x}"),  # Dotted key
     ))
-
-@composite
-def dotted_key(draw):
-    return draw(st.text(min_size=1, max_size=10) + st.text(min_size=1, max_size=10, alphabet='._'))
-
-@composite
-def unquoted_key(draw):
-    return draw(st.text(min_size=1, max_size=10, alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'))
 
 @composite
 def value(draw):
     return draw(st.one_of(
-        st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-        st.floats(min_value=-1e10, max_value=1e10).map(str),
-        st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-        st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'"),
-        st.booleans().map(lambda x: 'true' if x else 'false'),
-        st.tuples(st.integers(1970, 2100), st.integers(1, 12), st.integers(1, 28))
-            .map(lambda t: f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d}"),
-        st.tuples(st.integers(0, 23), st.integers(0, 59), st.integers(0, 59))
-            .map(lambda t: f"{t[0]:02d}:{t[1]:02d}:{t[2]:02d}"),
-        st.recursive(
-            st.one_of(st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-                       st.floats(min_value=-1e10, max_value=1e10).map(str),
-                       st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-                       st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'")),
-            lambda x: st.lists(x).map(lambda y: f"[{', '.join(y)}]"),
-            max_leaves=100
-        ),
-        st.recursive(
-            st.one_of(st.integers(min_value=-2**63, max_value=2**63-1).map(str),
-                       st.floats(min_value=-1e10, max_value=1e10).map(str),
-                       st.text(min_size=1, max_size=10).map(lambda x: f'"{x}"'),
-                       st.text(min_size=1, max_size=10).map(lambda x: f"'{x}'")),
-            lambda x: st.dictionaries(key(), x).map(lambda y: f"{{{', '.join(f'{k} = {v}' for k, v in y.items())}}}"),
-            max_leaves=100
-        )
+        st.integers(min_value=0, max_value=9223372036854775807).map(str),
+        st.integers(min_value=-9223372036854775808, max_value=-1).map(str),
+        st.floats().map(str),
+        st.just('true'),
+        st.just('false'),
+        st.text(min_size=1).map(lambda x: f'"{x}"'),
+        st.text(min_size=1).map(lambda x: f"'{x}'"),
+        st.lists(value()).map(lambda lst: f"[{', '.join(lst)}]"),
+        inline_table(),
+        st.text(min_size=1).map(lambda x: f'"""{x}"""'),  # Multi-line basic string
+        st.text(min_size=1).map(lambda x: f"'''{x}'''"),  # Multi-line literal string
+        st.text(min_size=1).map(lambda x: f"0x{x}"),  # HEX_INT
+        st.text(min_size=1).map(lambda x: f"0o{x}"),  # OCT_INT
+        st.text(min_size=1).map(lambda x: f"0b{x}")   # BIN_INT
     ))
+
+@composite
+def inline_table(draw):
+    keyvals = draw(st.lists(st.tuples(key(), value()), min_size=1, max_size=5))
+    return "{" + ", ".join(f"{k}={v}" for k, v in keyvals) + "}"
 
 @composite
 def pair(draw):
-    return f"{draw(key())} = {draw(value())}"
+    k = draw(key())
+    v = draw(value())
+    return f"{k} = {v}"
 
 @composite
 def table(draw):
-    return draw(st.one_of(
-        key().map(lambda k: f"[{k}]"),
-        key().map(lambda k: f"[[{k}]]")
-    ))
+    k = draw(key())
+    return f"[{k}]"
 
 @composite
 def document(draw):
-    elements = draw(st.lists(st.one_of(pair(), table())))
+    elements = draw(st.lists(st.one_of(pair(), table()), min_size=1))
     return "\n".join(elements)
 
 @composite
-def array(draw, depth=0):
-    if depth >= 20000:
-        return draw(value())
-    return draw(st.one_of(
-        value(),
-        array(depth=depth + 1), array(depth=depth + 1),
-        array(depth=depth + 1), array(depth=depth + 1)
-    ))
+def deep_array(draw):
+    n = draw(st.integers(min_value=60_000, max_value=100_000))
+    return "[" * n + "1" + "]" * n
 
 @composite
-def inline_table(draw, depth=0):
-    if depth >= 20000:
-        return draw(value())
-    return draw(st.one_of(
-        value(),
-        inline_table(depth=depth + 1), inline_table(depth=depth + 1),
-        inline_table(depth=depth + 1), inline_table(depth=depth + 1)
-    ))
+def deep_inline_table(draw):
+    n = draw(st.integers(min_value=85_000, max_value=115_000))
+    return "{a=" * n + "1" + "}" * n
 
 @composite
-def document_depth_biased(draw):
-    elements = draw(st.lists(st.one_of(
-        pair(),
-        table(),
-        pair().map(lambda p: p.replace(" = ", " = [") + "]"),
-        pair().map(lambda p: p.replace(" = ", " = {") + "}")
-    )))
-    return "\n".join(elements)
+def deep_dotted_key(draw):
+    n = draw(st.integers(min_value=90_000, max_value=100_000))
+    return "a." * n + "k"
 
-toml_strategy = st.one_of(document(), document_depth_biased())
+@composite
+def deep_mixed_nesting(draw):
+    n = draw(st.integers(min_value=60_000, max_value=80_000))
+    return "[{a=" * n + "1" + "}]" * n
+
+@composite
+def deep_quoted_mixed(draw):
+    n = draw(st.integers(min_value=20_000, max_value=45_000))
+    return '[{"k"=' * n + "1" + "}]" * n
+
+@composite
+def many_siblings(draw):
+    n = draw(st.integers(min_value=10_000, max_value=60_000))
+    lines = ["[a]"] + [f"k{i} = 1" for i in range(n)]
+    return "\n".join(lines)
+
+toml_strategy = st.one_of(
+    *([document()] * 20),
+    deep_array(),
+    deep_inline_table(),
+    deep_dotted_key(),
+    deep_mixed_nesting(),
+    deep_quoted_mixed(),
+    many_siblings()
+)

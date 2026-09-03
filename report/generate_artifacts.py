@@ -234,11 +234,24 @@ def budget_table(state: dict) -> str:
     model = state.get("model") or {
         "groq": cfg.get("llm.groq_model"),
         "gemini": cfg.get("llm.gemini_model"),
+        "openai": cfg.get("llm.openai_model"),
     }.get(provider, cfg.get("llm.model"))
-    spend_note = {
-        "groq": f"$0.00 (Groq free tier, {model})",
-        "gemini": f"$0.00 (Gemini free tier, {model})",
-    }.get(provider, f"$0.00 (local {model})")
+
+    total_tok = state.get("total_tokens", 0)
+    if provider == "openai":
+        if "mini" in str(model):
+            # $0.15/1M input, $0.60/1M output (~88% input / 12% output)
+            cost = total_tok * (0.88 * 0.15 + 0.12 * 0.60) / 1_000_000
+        else:
+            # $2.50/1M input, $10.00/1M output (~88% input / 12% output)
+            cost = total_tok * (0.88 * 2.50 + 0.12 * 10.00) / 1_000_000
+        spend_note = f"${cost:.3f} (OpenAI API, {model})"
+    elif provider == "groq":
+        spend_note = f"$0.00 (Groq free tier, {model})"
+    elif provider == "gemini":
+        spend_note = f"$0.00 (Gemini free tier, {model})"
+    else:
+        spend_note = f"$0.00 (local {model})"
 
     return (
         "| Constraint | Limit | Actual | Within budget |\n"
