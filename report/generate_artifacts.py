@@ -11,6 +11,7 @@ measured. If a number is wrong, fix it upstream, not here.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -156,7 +157,13 @@ def _latest_crash_run_dir(crash_dir: Path) -> Path | None:
     run_dirs = [d for d in crash_dir.glob("run_*") if d.is_dir()]
     if not run_dirs:
         return None
-    return max(run_dirs, key=lambda d: int(d.name.removeprefix("run_")))
+    # Some comparison-snapshot directories are named "run_48 (luna)" etc.
+    # with a space-and-tag suffix; match just the leading digits so those
+    # don't crash int() and so the latest numeric run still wins.
+    def _run_num(d: Path) -> int:
+        m = re.match(r"run_(\d+)", d.name)
+        return int(m.group(1)) if m else -1
+    return max(run_dirs, key=_run_num)
 
 
 def crash_table() -> str:

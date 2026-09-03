@@ -3,7 +3,7 @@
 **Auto-generated from `RUN_HISTORY.jsonl` — do not edit by hand,** this file is fully rewritten every time anything new is logged.
 One section per run, in order; within each run, one section per iteration, in order; every attempt shown, with the measured results printed right after whichever attempt passed.
 
-**Total runs: 47**
+**Total runs: 50**
 
 ---
 
@@ -1879,5 +1879,140 @@ One section per run, in order; within each run, one section per iteration, in or
 | 2026-09-02 23:31:16 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 18800 | 34.97 |  |
 
 **Result:** accepted 54% · breadth 100% · novelty 40% · max depth 241 · findings 39 · examples 500 · elapsed 104.0s
+
+---
+
+## Run 48 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:01:43 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 12172 | 40.64 |  |
+
+**Result:** accepted 37% · breadth 74% · novelty 32% · max depth 23999 · findings 61 · examples 500 · elapsed 130.0s
+
+### Iteration 1 — 1/2 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:03:46 | 1 | FAIL | draw | openai/gpt-5.6-luna | 16112 | 43.58 | drawing an example raised InvalidArgument: ListStrategy(one_of(just('0'), just('1'), just(… |
+| 2026-09-03 13:04:32 | 2 | PASS | acceptance | openai/gpt-5.6-luna | 15050 | 27.75 |  |
+
+**Result:** accepted 26% · breadth 84% · novelty 27% · max depth 39999 · findings 96 · examples 500 · elapsed 459.0s
+
+### Iteration 2 — 1/3 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:11:24 | 1 | FAIL | draw | openai/gpt-5.6-luna | 16142 | 42.72 | drawing an example raised InvalidArgument: Expected a SearchStrategy but got <function acc… |
+| 2026-09-03 13:12:36 | 2 | FAIL | acceptance | openai/gpt-5.6-luna | 15646 | 35.66 | only 6/40 (15%) of generated documents were accepted by tomlc99; the floor is 20%. The mos… |
+| 2026-09-03 13:13:22 | 3 | PASS | acceptance | openai/gpt-5.6-luna | 16141 | 38.58 |  |
+
+**Result:** accepted 51% · breadth 95% · novelty 41% · max depth 40397 · findings 32 · examples 500 · elapsed 250.4s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:15:48 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17409 | 47.16 |  |
+
+**Result:** accepted 59% · breadth 100% · novelty 45% · max depth 49154 · findings 52 · examples 500 · elapsed 169.6s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:18:38 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17399 | 42.61 |  |
+
+**Result:** accepted 13% · breadth 100% · novelty 31% · max depth 49154 · findings 159 · examples 500 · elapsed 426.2s
+
+---
+
+## Run 49 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:43:18 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 11776 | 97.44 |  |
+
+**Result:** accepted 63% · breadth 87% · novelty 32% · max depth 3000 · findings 0 · examples 500 · elapsed 106.1s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:46:18 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 14892 | 171.39 |  |
+
+**Result:** accepted 36% · breadth 97% · novelty 24% · max depth 3000 · findings 0 · examples 500 · elapsed 179.0s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:48:07 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16173 | 100.66 |  |
+
+**Result:** accepted 75% · breadth 100% · novelty 23% · max depth 5992 · findings 0 · examples 500 · elapsed 112.8s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:50:02 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16461 | 101.19 |  |
+
+**Result:** accepted 63% · breadth 100% · novelty 23% · max depth 5992 · findings 76 · examples 500 · elapsed 175.6s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 13:51:57 | 1 | PASS | acceptance | gemini/gemini-3.6-flash | 16680 | 34.94 |  |
+
+**Result:** accepted 48% · breadth 100% · novelty 17% · max depth 5992 · findings 86 · examples 500 · elapsed 158.4s
+
+---
+
+## Run 50 — ✅ PASSED (all iterations completed)
+
+### Iteration 0 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 14:06:06 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 13436 | 45.25 |  |
+
+**Result:** accepted 31% · breadth 74% · novelty 31% · max depth 50516 · findings 52 · examples 500 · elapsed 329.0s
+
+### Iteration 1 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 14:11:10 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 16498 | 35.16 |  |
+
+**Result:** accepted 20% · breadth 82% · novelty 32% · max depth 52310 · findings 99 · examples 500 · elapsed 422.6s
+
+### Iteration 2 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 14:18:14 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 16826 | 40.83 |  |
+
+**Result:** accepted 42% · breadth 100% · novelty 14% · max depth 52310 · findings 157 · examples 434 · elapsed 676.0s
+
+### Iteration 3 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 14:29:56 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 18154 | 59.06 |  |
+
+**Result:** accepted 32% · breadth 100% · novelty 31% · max depth 52310 · findings 136 · examples 500 · elapsed 381.4s
+
+### Iteration 4 — 1/1 attempts passed
+
+| At (UTC) | Attempt | Result | Stage | Provider / Model | Tokens | Sec | Error |
+|---|---|---|---|---|---|---|---|
+| 2026-09-03 14:36:06 | 1 | PASS | acceptance | openai/gpt-5.6-luna | 17399 | 39.16 |  |
+
+**Result:** accepted 11% · breadth 100% · novelty 21% · max depth 52310 · findings 256 · examples 500 · elapsed 461.6s
 
 ---
