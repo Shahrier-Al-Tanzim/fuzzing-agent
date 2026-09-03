@@ -50,6 +50,7 @@ llm:
   # confirmed live against a real full-size prompt, not just read from
   # docs. --provider on the command line always overrides this.
   provider: openai
+  # provider: gemini
   # openai/gpt-oss-120b, kept as the groq fallback if gemini also needs
   # replacing later. Re-check `curl https://api.groq.com/openai/v1/models
   # -H "Authorization: Bearer $GROQ_API_KEY"` if this one also disappears.

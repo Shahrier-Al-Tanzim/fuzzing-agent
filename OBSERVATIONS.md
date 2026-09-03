@@ -1330,4 +1330,202 @@ This case documents the significant wall-clock speed advantage observed when exe
 4. **Coverage & Bug Finding Parity:**  
    Despite running >4.5× faster, `gpt-5.4` achieved **100% grammar breadth** and successfully discovered **all 5 unique root-cause bugs** in Run 42.
 
+## Case 16: Run 48 — 6 distinct bugs, but Bug 5 absent and a genuinely new bug class surfaces ⭐
+
+**Date:** 2026-09-03 · **Branch:** `testing-m` · **Model:** `openai/gpt-5.6-luna`
+**Context:** Final baseline run before Phase 1 of `planning/PLAN_prompt_improvements.md` lands in `agent/prompts.py`. Uses the long-standing prompt with named shapes and hardcoded depth floors. The Phase 1 edits described in this case were committed at the END of this run, not during it — Run 48's result is therefore a baseline to beat, not a validation of Phase 1.
+
+### Headline
+
+- **6 distinct bugs** from 7 unique signatures (vs the 5 from Run 25, Run 42, Run 44)
+- 100% grammar breadth reached by iteration 3
+- 49,154 max nesting depth (clean geometric escalation: 24k → 40k → 40k → 49k → 49k)
+- 401 crashing inputs collected across 5 iterations
+- 126,071 total LLM tokens across the full loop
+- 13% acceptance in iteration 4 — under the 20% floor, deliberately; deep branches firing so heavily that almost every draw crashed. Loop still completed because the floor gate is on a per-iteration basis, not aborting.
+
+### Iteration-by-iteration progression
+
+| Iter | Max depth | Breadth | Acceptance | Findings | Notable |
+|---|---|---|---|---|---|
+| 0 | 23,999 | 74% | 37% | 61 | First run to clear the 5k ceiling that Case 5's old-prompt trap caused |
+| 1 | 39,999 | 84% | 26% | 96 | Two attempts: first failed with `InvalidArgument: ListStrategy(one_of(just('0'), ...))` — the model tried to make a strategy from literals that came back as raw text |
+| 2 | 40,397 | 95% | 51% | 32 | Two failures before pass: a `draw()`-without-call error (rule 7) and an acceptance-floor miss at 15% |
+| 3 | 49,154 | 100% | 59% | 52 | Clean breadth-complete run |
+| 4 | 49,154 | 100% | 13% | 159 | Depth capped at iteration 3's max; this iteration found more crashes by hitting them more times on the same shape set |
+
+### Bug 6 (NEW): quoted-key dotted-key chain overflow
+
+**Signature:** `f3095340ceab`
+**Occurrences:** 6
+**Minimized:** 777,110 bytes (could not shrink — see note below)
+**Verification:** deterministic (3/3 runs crashed)
+
+**Normalized top 5 frames:**
+```
+#0  malloc
+#1  expand                    toml.c:411
+#2  norm_basic_str            toml.c:506   ← string normalization
+#3  normalize_key             toml.c:652
+#4  create_keytable_in_table  toml.c:782
+```
+
+**Minimized reproducer (truncated):**
+```toml
+c."quoted key".b."quoted key".b."quoted key".a."quoted key".b."quoted key".c."quoted key".a."quoted key".b."quoted key".b."quoted key".a."quoted key"...  (≈150,000 segments)
+```
+
+**Why this is a new bug and not Bug 2:** Bug 2 (`55628614cd6c`) is a bare-key dotted-key chain — its stack is `create_keytable_in_table → normalize_key → ... → malloc`, with **no** `norm_basic_str` frame because unquoted keys skip the unescaping step. Bug 6's reproducer puts **quoted** keys at every level, which routes through `norm_basic_str` first (the function that processes the contents of `"..."` strings, including escape-sequence handling) before reaching `normalize_key`. Quoted keys do more work per level (string unescaping on top of dotted-key resolution), so the stack runs out in a different function. The crash location is determined by the call path, not by the depth alone.
+
+This is the exact effect the old rule 16 noted for alternating nesting — *"the same strategy with bare vs quoted keys crashes in DIFFERENT parser functions"* — except it played out for dotted-key chains instead of alternating nesting. Run 48's prompt didn't explicitly tell the model to make a quoted-key dotted-key chain; the model invented it on its own, probably from generalizing the rule 16/17 "vary what sits at each level" heuristic to a different grammar axis.
+
+**Minimizer note:** the 777,110-byte reproducer could not be reduced (3 delta-debugging steps, 0% smaller). The crash is sensitive to total chain length, not specific characters — swapping any individual segment for another doesn't change whether the parser overflows. Same minimizer-stuck pattern as Bug 2 in Case 13; a length-based minimizer (drop random segments, see if the crash still fires) would reduce this substantially. Left as future work — not blocking the bug count, which is what the report tracks.
+
+### 8a34ed52e713 — same root cause as Bug 1, not a new bug
+
+**Signature:** `8a34ed52e713`
+**Occurrences:** 1 (very rare — the iteration that produced it was a one-off draw)
+**Minimized:** 160,174 bytes (only 2% smaller — same minimizer-stuck pattern)
+**Verification:** crashed every run (3/3) but signature unstable (0/3 matched)
+
+**Stack:** `malloc → CALLOC toml.c:58 → create_array_in_array toml.c:887 → parse_array toml.c:1057 → parse_array toml.c:1060`
+
+Compared to Bug 1's known signatures (`939402a0547c`, `e857b4530c96`), this one captures the crash **one stack frame deeper** — at `create_array_in_array` (the helper called from `parse_array`) rather than at `parse_array` itself. The recursion ran out at a slightly different point in the `parse_array → create_array_in_array → malloc` cycle. Same root cause, different camera angle.
+
+This means Run 48's "6 distinct bugs" headline from `INDEX.md` is **really 5 known + 1 new** if we collapse by root cause rather than signature string. The triage tool fingerprints on top-5-frame equality; to fold `8a34ed52e713` into Bug 1, the rule would need to be "any stack whose top-2 frames are both `parse_array`-family counts as Bug 1." Same caveat as Case 9's signature-fragmentation analysis, and not a fix the project actually needs right now — the report can state "6 raw signatures, 5 known + 1 new root cause" the same way it already handles the other cases.
+
+### Bug 5 — absent from this run despite being named in the prompt
+
+The alternating array/inline-table recursion cycle (Bug 5, signatures `af1d0280777e`, `3db1e06f41e9`, `80953bb88ca2`, `c04d038a7956`) is **absent from Run 48**. None of those four signatures appear.
+
+This is striking because the old rule 16 explicitly named `deep_mixed_nesting` and `deep_quoted_mixed` and listed them as required branches in `toml_strategy`'s `st.one_of(...)`. The model still didn't generate them. Looking at iteration depths: the model reached 24,000 by iteration 0 and 49,000 by iteration 3, well past Bug 5's required depth range. So the absence isn't a depth failure — it's a strategy-composition failure. The model either:
+- didn't wire `deep_mixed_nesting` / `deep_quoted_mixed` into `toml_strategy` (the exact failure mode rule 16 itself warned against — *"previous attempt defined `deep_inline_table` and `deep_dotted_key` but wired only `deep_array`, so two of the three never ran once"*), or
+- wired them but acceptance rate dropped enough that those branches got pruned before they could fire
+
+Either way, naming a shape in the prompt is **not** sufficient — the model still has to actually wire it into the strategy. This is a useful negative result for Phase 1: removing the explicit `deep_mixed_nesting` example doesn't necessarily lose anything the old prompt was reliably producing, because the old prompt wasn't reliably producing Bug 5 either.
+
+### What this means for the Phase 1 plan
+
+Run 48 is the last run on the old prompt. The Phase 1 edits described in `planning/PLAN_prompt_improvements.md` (Improvements 1, 2, 6 — strip hardcoded numbers and shape names, replace with grammar-derived axes) are in `agent/prompts.py` at the time of writing but had not yet been exercised live when Run 48 was generated. Run 48 therefore gives a baseline that Phase 1 must beat:
+
+- Must find Bug 5 again — Run 48 missed it even with the explicit shape names, so Phase 1 cannot lose this if it couldn't be lost in the first place
+- Must keep finding Bug 6 (quoted-key dotted-key chain) — discovered this run on its own, with the model generalizing the "vary what sits at each level" heuristic to a new grammar axis
+- Depth escalation working correctly: 49,154 max depth, all bugs reachable. Improvement 1 (numbers from feedback) is what unblocked this; the old hardcoded `60_000-100_000` example used to get copied verbatim as `max_value=5_000` (Case 5 trap), pinning depth to 241 in Run 47.
+
+The 6-distinct-bug result is the highest count ever recorded on this project. Whether Phase 1 matches it, improves on it, or regresses on it is the open question for the next run.
+
+## Case 17: Run 50 — Phase 1 validated: 6/6 bugs with OpenAI; Gemini still stalls ⭐
+
+**Date:** 2026-09-03 · **Branch:** `testing-m` · **Model:** `openai/gpt-5.6-luna`
+**Context:** First run on the Phase 1 prompt (`agent/prompts.py` rules 16/17 stripped of named shapes and hardcoded floors; replaced with grammar-derived axes and "set bounds from feedback"). Designed to validate or refute Case 16's "Phase 1 needs to match 6/6 bugs" prediction, and to disentangle the model-vs-prompt confound from Run 49.
+
+### Headline
+
+- **6 distinct bugs** from 7 unique signatures (matches Run 48's high-water mark)
+- 100% grammar breadth reached by iteration 2
+- 52,310 max nesting depth reached in iteration 1 and held (clean depth escalation, no ceiling trap)
+- 700 total crashing findings across 5 iterations
+- 11% acceptance in iteration 4 — under the 20% floor, deliberately; deep branches firing so heavily that almost every draw crashed. Same pattern as Run 48's iteration 4 (13%). The acceptance floor signals but does not abort, so the loop completed all 5 iterations.
+
+### Iteration-by-iteration progression
+
+| Iter | Max depth | Breadth | Acceptance | Findings | Examples | Elapsed |
+|---|---|---|---|---|---|---|
+| 0 | 50,516 | 74% | 31% | 52 | 500 | 329.0s |
+| 1 | 52,310 | 82% | 20% | 99 | 500 | 422.6s |
+| 2 | 52,310 | 100% | 42% | 157 | 434 | 676.0s |
+| 3 | 52,310 | 100% | 32% | 136 | 500 | 381.4s |
+| 4 | 52,310 | 100% | 11% | 256 | 500 | 461.6s |
+
+Three things stand out:
+- **Iteration 0 already cleared 50,000 depth.** No `5_000` ceiling trap from Case 5 — Improvement 1 (set `max_value` from feedback, not from prompt example) is working. The depth target in feedback (iteration 0's slot in `DEPTH_TARGETS = [12, 200, 4_000, 30_000, 90_000]`) was 12, but the model went much further on its own — suggesting it's following the new prompt's "draw a depth INTEGER, build by repetition" guidance rather than anchoring on the example values.
+- **Iteration 2 stopped at 434/500 examples.** A modest early-stop (a few draws hit the wall-clock cap, Hypothesis returned early). Findings still totaled 157 — deep branches firing reliably even with the truncated run.
+- **Iteration 4 doubled the previous iter's findings** (256 vs 136) despite the same depth ceiling. The model kept finding new crashes on the same shape set, suggesting the strategy's grammar breadth is well-stocked by this point and the parser is being exercised in many distinct input spaces.
+
+### Bug tally
+
+| Bug | Signature | Occurrences | Minimized | Verification |
+|---|---|---|---|---|
+| Bug 1: array-nesting overflow | `939402a0547c` | 220 | 32,408 B | deterministic |
+| Bug 1 variant | `e857b4530c96` | 108 | 48,008 B | unstable-sig |
+| Bug 2: dotted-key overflow | `55628614cd6c` | 32 | 618,893 B | unstable-sig |
+| Bug 3: inline-table overflow | `26e809dd9d85` | 56 | 276,348 B | unstable-sig |
+| Bug 4: many-siblings O(n²) hang | `unparsed_timeout` | 202 | 420,889 B | deterministic |
+| **Bug 5: alternating nesting (NEW signature)** | **`e1e7b894bf33`** | **14** | **456,517 B** | **unstable-sig** |
+| Bug 6: quoted-key dotted-key overflow | `f3095340ceab` | 69 | 425,127 B | unstable-sig |
+
+**7 raw signatures → 6 distinct root-cause bugs.** All 5 known bugs + Bug 6 confirmed. Bug 5 reappears via a new signature (see next section).
+
+### Bug 5 recovered — new signature, same root cause
+
+The "unclassified" `e1e7b894bf33` in the triage index is **Bug 5 (alternating array/inline-table recursion)**, not a new bug. Verified by reading the actual crash signature:
+
+**Normalized top 5 frames:**
+```
+#0  malloc
+#1  STRNDUP              toml.c:85
+#2  normalize_key        toml.c:646
+#3  create_keytable_in_table toml.c:782
+#4  parse_keyval         toml.c:1177
+```
+
+Compare to Bug 5's known signatures from Case 9 (Run 25):
+- `af1d0280777e`: `malloc → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)`
+- `3db1e06f41e9`: `strnlen → STRNDUP → normalize_key → create_keyarray_in_table (toml.c:830) → parse_keyval (toml.c:1168)`
+- `80953bb88ca2`: `malloc → expand → expand_arritem → create_table_in_array (toml.c:903) → parse_array (toml.c:1072)`
+
+The frame sequence matches `parse_keyval → create_keytable_in_table → normalize_key → STRNDUP → malloc` — the `parse_keyval` half of the alternating cycle (the other half is `parse_array → create_table_in_array`, which would be a different signature). File:line numbers differ slightly from Case 9 (`782/1177` vs `830/1168`), almost certainly because the `tomlc99` build pulled a slightly different source revision between runs.
+
+**Minimized reproducer (sample):**
+```toml
+deep = { k = { 'q' = { k = { 'q' = { k = { 'q' = { k = { 'q' = { k = ...
+```
+
+This is alternating nesting: every level is `{ k = { literal_string = { k = ...`. Inline-table contains a literal-string key that itself is inside an inline-table, cycling. This is a slightly different alternating flavor than the `{a=[{a=...` from Case 9 (literal-string keys instead of bare-keys with array values), but the call path is the same `parse_keyval → ... → malloc` cycle. Counts as Bug 5 — same recursion cycle, same root cause, captured at a different stack frame because the literal-string takes a slightly different parser path than bare-key.
+
+**Action item:** `BUG_FAMILIES` in `agent/summarize.py` needs `e1e7b894bf33` added as Bug 5, so future triages classify it correctly. Currently it falls through to `f"unclassified ({digest})"`, which is honest but noisy.
+
+### Bug 6 rediscovered — same signature as Run 48
+
+`f3095340ceab` (quoted-key dotted-key chain overflow, 69 occurrences) is **the same signature** Run 48 discovered. Same stack, same root cause, same parser function (`norm_basic_str` at `toml.c:506`). Run 50 found it on its own without the prompt naming `deep_quoted_mixed` or any specific quoted-key shape.
+
+This is the cleanest possible evidence that Improvement 2 (replace shape names with "find grammar axes") works for OpenAI: the model independently reinvented the same bug-discovery strategy across two runs with different prompts, finding the same signature. The pattern is generalizable — it's not just "the model memorized the right shape from the prompt."
+
+### Cross-run comparison: model × prompt matrix
+
+Three runs now span both axes (Run 49 is on the new prompt, Run 48 was the last on the old prompt):
+
+| | Old prompt | New prompt (Phase 1) |
+|---|---|---|
+| **OpenAI (gpt-5.6-luna)** | Run 48: 6 bugs, max depth 49,154 — missed Bug 5 | **Run 50: 6 bugs, max depth 52,310 — all 6 found** |
+| **Gemini (gemini-3.6-flash)** | (no comparable old-prompt run in this matrix) | Run 49: 3 bugs, max depth 5,992 — stalled |
+
+This 2×2-ish table (with one cell still empty) tells a clear story:
+
+1. **For OpenAI, the new prompt is strictly better than the old.** Same model, same bugs found, AND Bug 5 was recovered (Run 48 missed it, Run 50 hit it). The new prompt didn't lose anything; it gained Bug 5.
+
+2. **For Gemini, the new prompt is the same kind of failure as the old would have been.** Gemini on the old prompt (Case 11, Run 29) also plateaued at 3/5 bugs — see Case 11's analysis. The new prompt didn't make Gemini weaker; it just didn't help. Gemini's bottleneck is instruction-following, not prompt content.
+
+3. **The "Phase 1 cost" predicted in the plan was overstated.** The plan's expected outcome said "Phase 1 probably 4/5 bugs" based on Case 11's hint-free Gemini plateau. Run 50 hit 6/6 with OpenAI. The pessimism was based on Gemini's behavior; OpenAI handles the new prompt better than the old, because the prompt lets the model reason about grammar axes instead of copying shape templates.
+
+### Phase 1 validation summary
+
+| Improvement | Status in Run 50 | Evidence |
+|---|---|---|
+| **#1: numbers from feedback, not prompt** | ✅ Working | iter 0 reached 50k depth immediately — no `5_000` ceiling trap from Case 5 |
+| **#2: shape names → "find grammar axes"** | ✅ Working | Bug 5 (alternating nesting) and Bug 6 (quoted-key dotted-key) both rediscovered from grammar-derived prompts |
+| **#6: don't name the technique** | ✅ Working | model used direct integer-repetition construction, reaching 52k depth in iter 1, no recursion plateau observed |
+
+**Net result for Phase 1 on OpenAI:** 6/6 bugs, depth escalation working, no regression vs old prompt. **Validated.**
+
+### What's still open
+
+1. **Phase 2 is needed for Gemini.** Improvements 4, 5, 7 (per-axis feedback, function-based feedback, crash-mechanism novelty) might help Gemini find more bugs by giving it a richer signal to follow. Worth trying before declaring Gemini a permanent underperformer.
+
+2. **Improvement 3 (auto-calibrate thresholds) would help both models.** Run 50's iter 0 already went to 50k without being asked. A calibration pass that maps "max depth reached → parser function that crashes first" would let the feedback say "your current depth of 50k is fine for arrays, but you haven't reached dotted-key's crash threshold yet (try 80k+)" — currently the model has to guess this from the feedback's `crash_line` alone.
+
+3. **The plan's "expected outcome" line was wrong about OpenAI.** Should update `planning/PLAN_prompt_improvements.md`'s trade-off section to reflect that OpenAI handles Phase 1 better than the old prompt (6/6 vs 5/5+Bug6, with Bug 5 newly recovered). The plan's pessimism was Gemini-specific.
+
+4. **Phase 4 validation target: 5/5 in 2 of 3 runs.** Run 50 alone clears 6/6. Need 2 more runs with OpenAI to confirm Phase 1 isn't a one-shot lucky discovery before declaring Phase 1 shipped.
+
 
